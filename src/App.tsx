@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import {
   Mail,
   Linkedin,
@@ -121,7 +121,63 @@ function useActiveSection(ids: string[]): string {
 }
 
 /* ----------------------------------------------------------------------------
- * Primitives
+ * Enhanced Visual Primitives
+ * -------------------------------------------------------------------------- */
+
+/** Ambient cursor-following glow orb */
+function CursorGlow() {
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (ref.current) {
+        ref.current.style.left = `${e.clientX}px`;
+        ref.current.style.top = `${e.clientY}px`;
+      }
+    };
+    window.addEventListener('mousemove', handler, { passive: true });
+    return () => window.removeEventListener('mousemove', handler);
+  }, []);
+  return <div ref={ref} className="cursor-glow" aria-hidden="true" />;
+}
+
+/** Floating ambient particles that drift upward */
+function FloatingParticles({ count = 18 }: { count?: number }) {
+  const particles = useRef(
+    Array.from({ length: count }, (_, i) => ({
+      id: i,
+      left: `${Math.random() * 100}%`,
+      delay: `${Math.random() * 12}s`,
+      duration: `${14 + Math.random() * 18}s`,
+    }))
+  ).current;
+  return (
+    <div className="absolute inset-0 overflow-hidden pointer-events-none" aria-hidden="true">
+      {particles.map((p) => (
+        <div
+          key={p.id}
+          className="particle"
+          style={{
+            '--left': p.left,
+            '--delay': p.delay,
+            '--duration': p.duration,
+          } as React.CSSProperties}
+        />
+      ))}
+    </div>
+  );
+}
+
+/** Section divider with animated pulse */
+function SectionDivider() {
+  return (
+    <div className="flex items-center justify-center py-4" aria-hidden="true">
+      <div className="section-separator" />
+    </div>
+  );
+}
+
+/* ----------------------------------------------------------------------------
+ * Original Primitives
  * -------------------------------------------------------------------------- */
 
 function TextureOverlay() {
@@ -291,6 +347,7 @@ function HeroSection() {
   return (
     <section id="home" className="relative min-h-[100svh] overflow-hidden rounded-b-[28px] md:rounded-b-[44px] bg-graphite">
       <HeroSchematic />
+      <FloatingParticles count={24} />
       <div className="relative mx-auto flex min-h-[100svh] max-w-container flex-col px-6 md:px-10 lg:px-14">
         <Navbar onHome />
 
@@ -314,9 +371,12 @@ function HeroSection() {
           </h1>
 
           <div className="mt-8 flex flex-wrap items-center justify-between gap-4 border-t border-bone/10 pt-6 boot-in boot-d6">
-            <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-bone/75">
-              {HERO.footnote}
-            </p>
+            <div className="flex items-center gap-3">
+              <span className="vital-dot" />
+              <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-bone/75">
+                {HERO.footnote}
+              </p>
+            </div>
             <span className="font-mono text-[11px] uppercase tracking-[0.22em] text-bone/60">
               {HERO.tag}
             </span>
@@ -360,7 +420,7 @@ function CredentialsSection() {
             <div className="liquid-glass relative overflow-hidden rounded-3xl">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-px bg-bone/10">
                 {CREDENTIALS.items.map((item, i) => (
-                  <div key={i} className="bg-graphite p-5 md:p-6">
+                  <div key={i} className="cred-cell bg-graphite p-5 md:p-6">
                     <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-vital">
                       {item.label}
                     </p>
@@ -422,10 +482,17 @@ function AboutSection() {
             {ABOUT.keywordRows.map((row, i) => (
               <div
                 key={i}
-                className="font-grotesk whitespace-nowrap uppercase text-bone/10 leading-none tracking-[0.04em] text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl"
-                style={{ transform: `translateX(${i % 2 === 0 ? '0' : '-4%'})` }}
+                className="overflow-hidden whitespace-nowrap"
               >
-                {row}&nbsp;&nbsp;·&nbsp;&nbsp;{row}
+                <div
+                  className="marquee-track inline-block font-grotesk uppercase text-bone/[0.07] leading-none tracking-[0.04em] text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl hover:text-bone/[0.14] transition-colors duration-700"
+                  style={{
+                    '--marquee-speed': `${35 + i * 8}s`,
+                    animationDirection: i % 2 === 0 ? 'normal' : 'reverse',
+                  } as React.CSSProperties}
+                >
+                  {row}&nbsp;&nbsp;·&nbsp;&nbsp;{row}&nbsp;&nbsp;·&nbsp;&nbsp;{row}&nbsp;&nbsp;·&nbsp;&nbsp;{row}&nbsp;&nbsp;·&nbsp;&nbsp;
+                </div>
               </div>
             ))}
           </div>
@@ -465,7 +532,7 @@ function ResearchSection() {
               data-reveal
               data-reveal-delay={String(cardIdx + 1)}
               href={`#/research/${card.slug}`}
-              className="scan-card liquid-glass group relative aspect-[4/5] overflow-hidden rounded-3xl transition-transform hover:-translate-y-2 hover:shadow-[0_0_40px_rgba(230,48,70,0.15)]"
+              className="scan-card glow-border tilt-card liquid-glass group relative aspect-[4/5] overflow-hidden rounded-3xl transition-all duration-500 hover:-translate-y-3 hover:shadow-[0_0_60px_rgba(230,48,70,0.12)]"
             >
               {cardBg[card.slug]}
 
@@ -729,9 +796,13 @@ function HomePage() {
   return (
     <>
       <HeroSection />
+      <SectionDivider />
       <CredentialsSection />
+      <SectionDivider />
       <AboutSection />
+      <SectionDivider />
       <ResearchSection />
+      <SectionDivider />
       <ContactSection />
     </>
   );
@@ -1446,6 +1517,7 @@ export default function App() {
 
   return (
     <>
+      <CursorGlow />
       <ScrollOnRouteChange route={route} />
       {body}
     </>

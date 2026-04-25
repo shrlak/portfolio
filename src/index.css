@@ -137,11 +137,11 @@
 
 /* ─── Boot sequence — hero element reveal on load ─────────────── */
 @keyframes boot-in {
-  from { opacity: 0; transform: translateY(20px); filter: blur(2px); }
+  from { opacity: 0; transform: translateY(24px); filter: blur(6px); }
   to   { opacity: 1; transform: translateY(0);    filter: blur(0); }
 }
 .boot-in {
-  animation: boot-in 0.85s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: boot-in 1s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 .boot-d1 { animation-delay: 0.05s; }
 .boot-d2 { animation-delay: 0.18s; }
@@ -150,17 +150,20 @@
 .boot-d5 { animation-delay: 0.65s; }
 .boot-d6 { animation-delay: 0.82s; }
 
-/* ─── Scroll reveal ───────────────────────────────────────────── */
+/* ─── Scroll reveal — enhanced with blur ──────────────────────── */
 [data-reveal] {
   opacity: 0;
-  transform: translateY(26px);
-  transition: opacity 0.75s cubic-bezier(0.16, 1, 0.3, 1),
-              transform 0.75s cubic-bezier(0.16, 1, 0.3, 1);
-  will-change: opacity, transform;
+  transform: translateY(32px);
+  filter: blur(4px);
+  transition: opacity 0.85s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.85s cubic-bezier(0.16, 1, 0.3, 1),
+              filter 0.85s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: opacity, transform, filter;
 }
 [data-reveal].is-revealed {
   opacity: 1;
   transform: translateY(0);
+  filter: blur(0);
 }
 [data-reveal-delay="1"] { transition-delay: 0.12s; }
 [data-reveal-delay="2"] { transition-delay: 0.22s; }
@@ -231,4 +234,216 @@
 }
 .field-wrap:focus-within::after {
   width: 100%;
+}
+
+/* ─── Cursor glow follow ─────────────────────────────────────── */
+.cursor-glow {
+  position: fixed;
+  width: 600px;
+  height: 600px;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 1;
+  background: radial-gradient(
+    circle,
+    rgba(230, 48, 70, 0.06) 0%,
+    rgba(230, 48, 70, 0.02) 30%,
+    transparent 70%
+  );
+  transform: translate(-50%, -50%);
+  transition: left 0.4s ease-out, top 0.4s ease-out;
+  will-change: left, top;
+}
+
+/* ─── Floating particles ─────────────────────────────────────── */
+@keyframes float-up {
+  0%   { transform: translateY(0) scale(1); opacity: 0; }
+  10%  { opacity: 1; }
+  90%  { opacity: 1; }
+  100% { transform: translateY(-100vh) scale(0.4); opacity: 0; }
+}
+.particle {
+  position: absolute;
+  width: 2px;
+  height: 2px;
+  background: rgba(230, 48, 70, 0.5);
+  border-radius: 50%;
+  pointer-events: none;
+  animation: float-up var(--duration) linear infinite;
+  animation-delay: var(--delay);
+  left: var(--left);
+  bottom: -10px;
+}
+.particle:nth-child(even) {
+  background: rgba(122, 184, 232, 0.4);
+  width: 1.5px;
+  height: 1.5px;
+}
+.particle:nth-child(3n) {
+  background: rgba(236, 230, 216, 0.25);
+  width: 1px;
+  height: 1px;
+}
+
+/* ─── 3D tilt card ────────────────────────────────────────────── */
+.tilt-card {
+  transform-style: preserve-3d;
+  perspective: 800px;
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.tilt-card:hover {
+  transform: translateY(-6px);
+}
+
+/* ─── Animated gradient border ────────────────────────────────── */
+@keyframes gradient-border-spin {
+  0%   { --gradient-angle: 0deg; }
+  100% { --gradient-angle: 360deg; }
+}
+@property --gradient-angle {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
+.glow-border {
+  position: relative;
+}
+.glow-border::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  background: conic-gradient(
+    from var(--gradient-angle),
+    transparent 0%,
+    rgba(230, 48, 70, 0.4) 25%,
+    transparent 50%,
+    rgba(122, 184, 232, 0.3) 75%,
+    transparent 100%
+  );
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  padding: 1.5px;
+  animation: gradient-border-spin 4s linear infinite;
+  opacity: 0;
+  transition: opacity 0.5s ease;
+  pointer-events: none;
+}
+.glow-border:hover::before {
+  opacity: 1;
+}
+
+/* ─── Number counter animation ────────────────────────────────── */
+@keyframes count-up {
+  from { opacity: 0; transform: translateY(12px); filter: blur(4px); }
+  to   { opacity: 1; transform: translateY(0); filter: blur(0); }
+}
+.count-animate {
+  animation: count-up 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* ─── Morphing background gradient ────────────────────────────── */
+@keyframes morph-gradient {
+  0%   { background-position: 0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+.morph-bg {
+  background-size: 200% 200%;
+  animation: morph-gradient 12s ease infinite;
+}
+
+/* ─── Section separator pulse ─────────────────────────────────── */
+@keyframes separator-pulse {
+  0%, 100% { opacity: 0.3; width: 40px; }
+  50%      { opacity: 1; width: 120px; }
+}
+.section-separator {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, #e63046, transparent);
+  animation: separator-pulse 4s ease-in-out infinite;
+  margin: 0 auto;
+}
+
+/* ─── Keyword marquee scroll ──────────────────────────────────── */
+@keyframes marquee-scroll {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+.marquee-track {
+  animation: marquee-scroll var(--marquee-speed, 40s) linear infinite;
+  will-change: transform;
+}
+.marquee-track:hover {
+  animation-play-state: paused;
+}
+
+/* ─── Staggered stat counter reveal ───────────────────────────── */
+@keyframes stat-reveal {
+  0%   { opacity: 0; transform: scale(0.8) translateY(10px); }
+  60%  { transform: scale(1.05) translateY(-2px); }
+  100% { opacity: 1; transform: scale(1) translateY(0); }
+}
+.stat-item {
+  opacity: 0;
+  animation: stat-reveal 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* ─── Glitch text on hover (for headings) ─────────────────────── */
+@keyframes glitch-shift {
+  0%, 100% { clip-path: inset(0 0 0 0); transform: translateX(0); }
+  20%      { clip-path: inset(20% 0 60% 0); transform: translateX(-2px); }
+  40%      { clip-path: inset(50% 0 20% 0); transform: translateX(2px); }
+  60%      { clip-path: inset(30% 0 40% 0); transform: translateX(-1px); }
+  80%      { clip-path: inset(70% 0 10% 0); transform: translateX(1px); }
+}
+
+/* ─── Smooth page transitions ─────────────────────────────────── */
+@keyframes page-enter {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.page-enter {
+  animation: page-enter 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* ─── Enhanced liquid glass hover ─────────────────────────────── */
+.liquid-glass {
+  transition: box-shadow 0.4s ease, background 0.4s ease;
+}
+.liquid-glass:hover {
+  box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.14),
+              0 0 30px rgba(230, 48, 70, 0.04);
+}
+
+/* ─── Credential grid cell hover ──────────────────────────────── */
+.cred-cell {
+  transition: background 0.35s ease, transform 0.35s ease;
+}
+.cred-cell:hover {
+  background: rgba(230, 48, 70, 0.04);
+}
+
+/* ─── Horizontal line animation ───────────────────────────────── */
+@keyframes draw-line {
+  from { width: 0; }
+  to   { width: 100%; }
+}
+.draw-line {
+  width: 0;
+  animation: draw-line 1.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* ─── Vital sign pulse indicator ──────────────────────────────── */
+@keyframes vital-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(230, 48, 70, 0.5); }
+  50%      { box-shadow: 0 0 0 6px rgba(230, 48, 70, 0); }
+}
+.vital-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #e63046;
+  animation: vital-pulse 2s ease-in-out infinite;
 }

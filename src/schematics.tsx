@@ -119,23 +119,46 @@ export function HeroSchematic() {
 
         {/* Heart anatomy */}
         <g className="animate-pulse-slow" style={{ transformOrigin: '0 0' }}>
+          {/* Heart outer wall — glowing fill */}
           <path
             d="M 0 120 C -130 80, -175 -30, -100 -80 C -55 -108, -18 -90, 0 -48 C 18 -90, 55 -108, 100 -80 C 175 -30, 130 80, 0 120 Z"
             className="schematic-accent"
             strokeWidth="1.8"
             fill="rgba(230,48,70,0.05)"
-          />
+          >
+            <animate attributeName="fill" values="rgba(230,48,70,0.03);rgba(230,48,70,0.10);rgba(230,48,70,0.03)" dur="1.4s" repeatCount="indefinite" />
+          </path>
+          {/* Inner septa */}
           <line x1="0" y1="-48" x2="0" y2="110" className="schematic-stroke-faint" strokeDasharray="3 4" />
           <path d="M -90 -10 Q 0 -30 90 -10" className="schematic-stroke-faint" strokeDasharray="2 3" />
           <path d="M -80 -10 Q -110 30 -95 70 Q -60 100 -8 110" className="schematic-stroke-faint" />
           <path d="M 80 -10 Q 110 30 95 70 Q 60 100 8 110" className="schematic-stroke-faint" />
+          {/* Great vessels */}
           <path d="M -22 -75 Q -22 -145 -65 -175 Q -115 -195 -135 -165" className="schematic-stroke" strokeWidth="1.3" />
           <path d="M 22 -75 Q 32 -145 72 -165 Q 105 -180 134 -155" className="schematic-stroke" strokeWidth="1.3" />
           <path d="M 0 -48 Q -30 -20 -55 10 Q -80 40 -70 80" className="schematic-stroke-faint" strokeDasharray="2 4" />
-          <circle cx="-30" cy="-12" r="3.5" fill="#E63046" />
-          <circle cx="30" cy="-12" r="3.5" fill="#E63046" />
-          <circle cx="0" cy="50" r="2.5" fill="#E63046" />
+          {/* Valve dots — pulsing */}
+          <circle cx="-30" cy="-12" r="3.5" fill="#E63046">
+            <animate attributeName="r" values="3;5;3" dur="1.4s" repeatCount="indefinite" />
+            <animate attributeName="opacity" values="0.6;1;0.6" dur="1.4s" repeatCount="indefinite" />
+          </circle>
+          <circle cx="30" cy="-12" r="3.5" fill="#E63046">
+            <animate attributeName="r" values="3;5;3" dur="1.4s" begin="0.15s" repeatCount="indefinite" />
+            <animate attributeName="opacity" values="0.6;1;0.6" dur="1.4s" begin="0.15s" repeatCount="indefinite" />
+          </circle>
+          <circle cx="0" cy="50" r="2.5" fill="#E63046">
+            <animate attributeName="r" values="2;4;2" dur="1.4s" begin="0.3s" repeatCount="indefinite" />
+          </circle>
         </g>
+
+        {/* Blood flow particles — circulating through aorta path */}
+        {[0, 0.5, 1.0, 1.5, 2.0].map((delay, i) => (
+          <circle key={`blood-${i}`} r="2.5" fill="#E63046" opacity="0">
+            <animate attributeName="cx" values="-22,-22,-65,-135" dur="2.8s" begin={`${delay}s`} repeatCount="indefinite" />
+            <animate attributeName="cy" values="-75,-145,-175,-165" dur="2.8s" begin={`${delay}s`} repeatCount="indefinite" />
+            <animate attributeName="opacity" values="0;0.8;0.8;0" dur="2.8s" begin={`${delay}s`} repeatCount="indefinite" />
+          </circle>
+        ))}
 
         {/* Callout leaders */}
         <g>
@@ -201,6 +224,8 @@ export function HeroSchematic() {
             dur="4.8s"
             repeatCount="indefinite"
           />
+          {/* Glow trail — faint wider copy behind main line */}
+          <path d={ecgPath} stroke="#E63046" strokeWidth="6" fill="none" opacity="0.08" strokeLinejoin="round" strokeLinecap="round" />
           <path d={ecgPath} stroke="#E63046" strokeWidth="1.4" fill="none" opacity="0.92" strokeLinejoin="round" strokeLinecap="round" />
         </g>
       </g>
@@ -208,6 +233,18 @@ export function HeroSchematic() {
       <g opacity="0.55">
         <text x="80" y="772" className="schematic-label">ECG · LEAD II · 25 MM/S</text>
         <text x="1360" y="772" textAnchor="end" className="schematic-label" fill="#E63046">SINUS · 72 BPM</text>
+      </g>
+
+      {/* Animated scanning crosshair — sweeps slowly across viewport */}
+      <g opacity="0.12">
+        <line x1="0" y1="0" x2="0" y2="900" stroke="#E63046" strokeWidth="0.5">
+          <animate attributeName="x1" values="0;1440;0" dur="18s" repeatCount="indefinite" />
+          <animate attributeName="x2" values="0;1440;0" dur="18s" repeatCount="indefinite" />
+        </line>
+        <line x1="0" y1="0" x2="1440" y2="0" stroke="#E63046" strokeWidth="0.5">
+          <animate attributeName="y1" values="0;900;0" dur="14s" repeatCount="indefinite" />
+          <animate attributeName="y2" values="0;900;0" dur="14s" repeatCount="indefinite" />
+        </line>
       </g>
 
       <rect width="100%" height="100%" fill="url(#hero-vignette)" />
@@ -330,11 +367,26 @@ export function AboutSchematic() {
         <text x="-30" y="106" className="schematic-label">PO₂ · 98 %</text>
       </g>
 
-      {/* Inhale/exhale label */}
+      {/* Inhale/exhale label with animated breathing indicator */}
       <g transform="translate(700 320)" opacity="0.5">
         <text className="schematic-label">RESP · 14 / MIN</text>
         <text y="14" className="schematic-label">VT · 480 ML</text>
+        <circle cx="140" cy="7" r="3" fill="#7AB8E8">
+          <animate attributeName="r" values="2;5;2" dur="4.2s" repeatCount="indefinite" />
+          <animate attributeName="opacity" values="0.3;1;0.3" dur="4.2s" repeatCount="indefinite" />
+        </circle>
+        <text x="150" y="10" className="schematic-label" fill="#7AB8E8">INHALE</text>
       </g>
+
+      {/* O₂ particles flowing down the trachea */}
+      {[0, 0.7, 1.4, 2.1, 2.8].map((delay, i) => (
+        <circle key={`o2-${i}`} r="2" fill="rgba(122,184,232,0.7)" opacity="0">
+          <animate attributeName="cx" values="1060;1060;1060" dur="4.2s" begin={`${delay}s`} repeatCount="indefinite" />
+          <animate attributeName="cy" values="280;420;560" dur="4.2s" begin={`${delay}s`} repeatCount="indefinite" />
+          <animate attributeName="opacity" values="0;0.8;0" dur="4.2s" begin={`${delay}s`} repeatCount="indefinite" />
+          <animate attributeName="r" values="2;3;1" dur="4.2s" begin={`${delay}s`} repeatCount="indefinite" />
+        </circle>
+      ))}
     </svg>
   );
 }
