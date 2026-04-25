@@ -94,7 +94,7 @@ export const RESEARCH_CARDS: Array<{
     titleTwo: 'LUNG',
     subtitle: 'Pulmonary Assist System · 30-day ovine trial',
     metaLabel: 'SYSTEM',
-    metaValue: 'PAS · VV ECMO · ORAL RIVAROXABAN',
+    metaValue: 'PAS · VV ECMO · IV RIVAROXABAN',
     status: 'ACTIVE',
   },
   {
@@ -130,14 +130,14 @@ export const PAS_DETAIL = {
   index: 'R-01',
   category: 'ARTIFICIAL ORGAN ENGINEERING',
   shortTitle: 'PULMONARY ASSIST SYSTEM',
-  fullTitle: '30-DAY EVALUATION OF THE PULMONARY ASSIST SYSTEM WITH ORAL ANTICOAGULATION',
-  subtitle: 'Ovine Model · Chronic Respiratory Support',
+  fullTitle: '30-DAY OVINE EVALUATION OF THE PULMONARY ASSIST SYSTEM · N=6 COHORT',
+  subtitle: 'Ovine Model · Chronic Respiratory Support · 2/6 Reached Primary Endpoint',
   lab: 'Cook Cardiopulmonary Engineering Lab',
   pi: 'Keith Cook, PhD',
   studyLead: ['Ander Dorken Gallastegi, MD', 'Ryuji Nakamura, MD'],
   role: 'Undergraduate Research Assistant · Fall 2025 onward',
   abstract:
-    'Chronic lung disease is a leading cause of death, with end-stage treatment constrained by donor shortages and the short-term confinement of ECMO. The Pulmonary Assist System (PAS) is under development as a compact, mobile, and hemocompatible successor to ECMO — intended to support patients outside the ICU. This study evaluated PAS function, safety, and biocompatibility across 30 days in a large-animal ovine model using oral rivaroxaban in place of continuous IV heparin.',
+    'Chronic lung disease is a leading cause of death, with end-stage treatment constrained by donor shortages and the short-term confinement of ECMO. The Pulmonary Assist System (PAS) is a compact, mobile, and hemocompatible successor to ECMO designed to support patients outside the ICU. Across six ovine studies, PAS function, safety, and biocompatibility were evaluated over a 30-day endpoint using IV rivaroxaban in PEG — replacing continuous IV heparin — as the primary anticoagulation strategy. Two of six animals reached the 30-day primary endpoint. Pump thrombosis and progressive anemia emerged as the primary barriers to completion; hepatic, renal, and inflammatory markers remained within acceptable limits throughout successful studies.',
   objectives: [
     'Verify 30-day device patency, low flow resistance, and stable gas exchange.',
     'Validate oral rivaroxaban as a replacement for continuous IV heparin anticoagulation.',
@@ -154,7 +154,7 @@ export const PAS_DETAIL = {
     { label: 'IMAGING', value: 'C-arm fluoroscopy for intra-operative cannula placement' },
     {
       label: 'ANTICOAGULATION',
-      value: 'Oral rivaroxaban · 0.5–1 mg/kg IV QID · 36-hour heparin bridge post-op',
+      value: 'IV rivaroxaban in PEG · 0.5 mg/kg q4h (dose-optimized from 0.75 mg/kg) · 36-hour heparin bridge post-op',
     },
     {
       label: 'MONITORING',
@@ -183,40 +183,65 @@ export const PAS_DETAIL = {
       name: 'Chiikawa',
       start: 'Oct 23',
       outcome: 'Survived · 30 days',
-      detail: 'Primary endpoint achieved. Patency maintained; device resistance stable.',
+      detail: 'Primary endpoint achieved. Patency maintained; device resistance stable throughout trial.',
       tone: 'ok',
+    },
+    {
+      id: 'Sheep #4',
+      name: 'Ebisu',
+      start: '—',
+      outcome: 'Survived · 30 days',
+      detail: 'Second 30-day completion. Confirmed reproducibility of IV rivaroxaban anticoagulation regimen.',
+      tone: 'ok',
+    },
+    {
+      id: 'Sheep #5',
+      name: 'Daifuku',
+      start: '—',
+      outcome: 'Terminated · Day 18',
+      detail: 'Pump thrombosis requiring circuit termination. Progressive anemia contributing factor.',
+      tone: 'warn',
+    },
+    {
+      id: 'Sheep #6',
+      name: 'Goku',
+      start: '—',
+      outcome: 'Survived · 15 days',
+      detail: 'Partial endpoint. Occult GI bleeding suspected as driver of progressive anemia.',
+      tone: 'warn',
     },
   ],
   findings: [
     {
-      label: 'HEMODYNAMICS',
+      label: 'PRIMARY BARRIER',
       value:
-        'Device resistance in the surviving subject stayed within control limits across all 30 days, confirming that the oral-anticoagulation regimen prevented resistance-generating clot in the fiber bundle.',
+        'Pump thrombosis was the leading cause of circuit failure across the cohort, with progressive anemia — including suspected occult GI bleeding — as a secondary contributor. Both factors necessitate protocol refinement before a powered efficacy study.',
     },
     {
-      label: 'GAS EXCHANGE',
+      label: 'ENDPOINT OUTCOMES',
       value:
-        'Oxygen transfer rates normalized to hemoglobin remained consistent throughout the trial, demonstrating stable primary function over chronic support.',
+        'Two of six animals (Chiikawa, Ebisu) reached the 30-day primary endpoint, establishing feasibility of PAS under IV rivaroxaban anticoagulation. Kaplan-Meier survival curves trended favorably versus historical heparin controls.',
+    },
+    {
+      label: 'ORGAN FUNCTION',
+      value:
+        'Hepatic, renal, and inflammatory markers remained within acceptable limits throughout both completed studies. Plasma-free hemoglobin stayed low, indicating minimal hemolysis attributable to the device.',
     },
     {
       label: 'PHARMACOKINETICS',
       value:
-        'Plasma rivaroxaban concentration correlated linearly with PT and ACT. Sheep required ~4× the human-equivalent daily dose to reach therapeutic AUC — interspecies metabolism is faster.',
-    },
-    {
-      label: 'HEMATOLOGY',
-      value:
-        'Post-op hemoglobin drop was managed with empiric erythropoietin (10,000 U on days 12, 14, 16) + iron + B12 supplementation. Plasma-free hemoglobin stayed low for the first 15 days.',
+        'Plasma rivaroxaban correlated linearly with PT and ACT. Ovine interspecies metabolism is faster than human; dose was optimized downward from 0.75 to 0.5 mg/kg q4h IV in PEG to reduce GI mucosal exposure while maintaining therapeutic anticoagulation.',
     },
   ],
   optimizations: [
-    'Pre-operative EPO loading phase to prevent post-op anemia dip',
+    'Dose reduction from 0.75 to 0.5 mg/kg q4h IV rivaroxaban to limit occult GI mucosal bleeding',
+    'Occult GI bleeding surveillance protocol added (serial fecal guaiac, Hgb trending)',
     'Extension line added to high-wear stopcocks',
     'Silver paste protocol for cannulation-site ulceration',
-    'Refined transition protocol from heparin bridge to oral rivaroxaban',
+    'Refined transition protocol from heparin bridge to IV rivaroxaban in PEG',
   ],
   outcome:
-    'The 30-day survival of Sheep #3 is a proof-of-concept for PAS as a chronic respiratory support device and for oral anticoagulation in place of continuous IV heparin — the critical gating study for any future ambulatory trial.',
+    'Two 30-day completions (Chiikawa, Ebisu) establish proof-of-concept for PAS as a chronic respiratory support device and for IV rivaroxaban in PEG as a viable anticoagulation strategy. Pump thrombosis and anemia remain the critical barriers to resolve before a powered efficacy trial. Kaplan-Meier curves trended favorably against historical heparin controls — providing the evidence base needed to support any future ambulatory device trial.',
 };
 
 export const COAG_DETAIL = {
@@ -225,12 +250,30 @@ export const COAG_DETAIL = {
   category: 'THROMBOSIS + ANTICOAGULATION',
   shortTitle: 'FXIIa INHIBITION FOR BLOOD-CONTACTING DEVICES',
   fullTitle: 'SURFACE-INDUCED COAGULATION AND FXII900-PCB — A PATH BEYOND HEPARIN',
-  subtitle: 'ISTH 2026 abstract · rabbit PK/PD',
+  abstractTitle:
+    'Pharmacokinetic and Pharmacodynamic Profile Evaluation of Polycarboxybetaine-Conjugated FXIIa Inhibitor in Rabbits',
+  subtitle: 'ISTH 2026 abstract · rabbit PK/PD · n=5 per group',
+  authors: [
+    { name: 'Suji Shin', affil: '1' },
+    { name: 'Di Liu', affil: '2' },
+    { name: 'Alexander Potchernikov', affil: '1' },
+    { name: 'Helen Scala', affil: '1' },
+    { name: 'Joshua Bennett', affil: '1' },
+    { name: 'Ryuji Nakamura', affil: '1' },
+    { name: 'McKenna Haggerty', affil: '1' },
+    { name: 'Spencer Kim', affil: '1' },
+    { name: 'Shaoyi Jiang', affil: '2' },
+    { name: 'Keith E. Cook', affil: '1' },
+  ],
+  affiliations: [
+    { id: '1', name: 'Department of Biomedical Engineering, Carnegie Mellon University, Pittsburgh, PA' },
+    { id: '2', name: 'Meinig School of Biomedical Engineering, Cornell University, Ithaca, NY' },
+  ],
   lab: 'Cook Cardiopulmonary Engineering Lab',
   pi: 'Keith Cook, PhD',
   role: 'Co-author · abstract submission for ISTH 2026',
   abstract:
-    'Extracorporeal devices that contact blood — ECMO, dialysis, cardiopulmonary bypass — activate the contact (intrinsic) pathway of coagulation at their polymer and hollow-fiber surfaces. Heparin, the current standard, prevents clot at the cost of bleeding and HIT. Factor XIIa (FXIIa) inhibitors target the pathway that actually initiates surface-induced clot while leaving hemostatic clotting intact. This project characterizes a polymer-conjugated FXIIa inhibitor (FXII900-PCB) for potential use on long-term artificial lungs.',
+    'Extracorporeal devices that contact blood — ECMO, dialysis, cardiopulmonary bypass — activate the contact (intrinsic) pathway of coagulation at their polymer and hollow-fiber surfaces. Heparin, the current standard, prevents clot at the cost of bleeding and HIT. Factor XIIa (FXIIa) inhibitors selectively block surface-induced clot while leaving hemostatic clotting intact. This study evaluated the PK/PD profile of three polycarboxybetaine (PCB) chain-length variants of FXII900 (20, 40, and 60 kDa) in New Zealand white rabbits (n=5 per group). Animals received a bolus IV injection at 0.64 μmol/kg; plasma was sampled at 0.5, 1, 2, 4, 6, 8, and 24 hours post-dose. The 60 kDa conjugate achieved a half-life of 6.60 ± 0.98 hours — a 33-fold improvement over unconjugated FXII900 — without significantly altering prothrombin time, confirming preserved hemostatic safety. ACT and aPTT were prolonged in a chain-length-dependent manner, confirming on-target anticoagulant activity.',
   problem: [
     'Hollow-fiber membranes in oxygenators present ~2 m² of synthetic surface to circulating blood.',
     'Contact with negatively charged surfaces auto-activates Factor XII to FXIIa, triggering the intrinsic cascade.',
@@ -240,8 +283,8 @@ export const COAG_DETAIL = {
   approach: [
     { label: 'MOLECULE', value: 'FXII900 — selective small-molecule inhibitor of Factor XIIa' },
     { label: 'FORMULATION', value: 'Polycarboxybetaine (PCB) conjugate for surface presentation' },
-    { label: 'MODEL', value: 'Rabbit PK/PD — plasma concentration vs aPTT prolongation' },
-    { label: 'ENDPOINT', value: 'Therapeutic aPTT window without systemic bleeding risk' },
+    { label: 'MODEL', value: 'New Zealand white rabbits · n=5 per group · 3 PCB chain lengths (20, 40, 60 kDa) · bolus IV 0.64 μmol/kg · plasma sampled at 0.5/1/2/4/6/8/24 h' },
+    { label: 'ENDPOINT', value: 'Half-life, ACT, aPTT, PT per chain length — 60 kDa: t½ = 6.60 ± 0.98 h (33× unconjugated), PT unchanged' },
     { label: 'APPLICATION', value: 'Hollow-fiber oxygenator coating for chronic respiratory support' },
   ],
   contributions: [
@@ -331,9 +374,9 @@ export const CV = {
       dates: 'Fall 2025 — Present',
       pi: 'Principal Investigator: Keith Cook, PhD',
       bullets: [
-        'Ongoing 30-day ovine evaluation of the Pulmonary Assist System (PAS) under oral rivaroxaban anticoagulation.',
-        'Structured blood sampling, ABG / ACT / PT / CBC / pfHb / LFT / renal analyses; longitudinal device-resistance monitoring.',
-        'FXII900-PCB abstract submitted to International Society on Thrombosis and Haemostasis 2026.',
+        'N=6 ovine evaluation of the Pulmonary Assist System (PAS) under IV rivaroxaban in PEG anticoagulation — 2 of 6 subjects reached the 30-day primary endpoint.',
+        'Structured blood sampling, ABG / ACT / PT / CBC / pfHb / LFT / renal analyses; longitudinal device-resistance and pump-thrombosis surveillance.',
+        'Co-author on FXII900-PCB PK/PD abstract submitted to ISTH 2026 — 60 kDa PCB conjugate achieved 33× half-life extension in New Zealand white rabbits.',
       ],
     },
   ],

@@ -901,7 +901,7 @@ function PASDetailPage() {
 
         {/* Subjects */}
         <div className="md:col-span-12">
-          <SectionTag text="03 · COHORT · N=3" />
+          <SectionTag text="03 · COHORT · N=6" />
           <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
             {d.subjects.map((s, i) => (
               <div
@@ -1011,7 +1011,26 @@ function CoagDetailPage() {
       <div className="grid gap-12 md:grid-cols-12">
         <div className="md:col-span-7">
           <SectionTag text="01 · ABSTRACT" />
-          <p className="mt-6 font-mono text-[14px] md:text-[16px] leading-[1.75] text-bone/90">
+          <p className="mt-6 font-grotesk text-base md:text-lg tracking-wide text-bone uppercase leading-snug max-w-[56ch]">
+            {d.abstractTitle}
+          </p>
+          <p className="mt-3 font-mono text-[12px] leading-[1.75] text-bone/70">
+            {d.authors.map((a, i) => (
+              <span key={i}>
+                {a.name}
+                <sup className="text-vital ml-0.5">{a.affil}</sup>
+                {i < d.authors.length - 1 ? ', ' : ''}
+              </span>
+            ))}
+          </p>
+          <div className="mt-2 space-y-1">
+            {d.affiliations.map((aff) => (
+              <p key={aff.id} className="font-mono text-[11px] text-bone/50">
+                <sup className="text-vital">{aff.id}</sup>{' '}{aff.name}
+              </p>
+            ))}
+          </div>
+          <p className="mt-8 font-mono text-[14px] md:text-[16px] leading-[1.75] text-bone/90">
             {d.abstract}
           </p>
 
