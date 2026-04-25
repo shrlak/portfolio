@@ -477,6 +477,32 @@ function AboutSection() {
           </div>
         </div>
 
+        {/* Key stats bar */}
+        <div className="relative mt-14 md:mt-20 grid grid-cols-2 md:grid-cols-4 gap-4" data-reveal data-reveal-delay="3">
+          {[
+            { value: '30', unit: 'DAY', label: 'OVINE SURVIVAL ENDPOINT' },
+            { value: '1', unit: 'PATENT', label: 'KR 10-2675388 · GRANTED' },
+            { value: '6', unit: 'SHEEP', label: 'COHORT SIZE · VV ECMO' },
+            { value: '1', unit: 'ABSTRACT', label: 'ISTH 2026 · SUBMITTED' },
+          ].map((stat, i) => (
+            <div
+              key={i}
+              className="liquid-glass rounded-2xl p-5 md:p-6 text-center stat-item"
+              style={{ animationDelay: `${0.8 + i * 0.12}s` }}
+            >
+              <p className="relative z-10 font-grotesk text-4xl md:text-5xl tracking-tightest text-vital leading-none">
+                {stat.value}
+              </p>
+              <p className="relative z-10 mt-1 font-grotesk text-xs tracking-[0.22em] text-bone uppercase">
+                {stat.unit}
+              </p>
+              <p className="relative z-10 mt-2 font-mono text-[10px] uppercase tracking-[0.18em] text-bone/50">
+                {stat.label}
+              </p>
+            </div>
+          ))}
+        </div>
+
         <div className="relative mt-14 md:mt-20 overflow-hidden">
           <div className="flex flex-col gap-3 md:gap-5">
             {ABOUT.keywordRows.map((row, i) => (
@@ -970,6 +996,44 @@ function PASDetailPage() {
           </div>
         </div>
 
+        {/* BioRender Circuit Diagram */}
+        <div className="md:col-span-12">
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="relative overflow-hidden rounded-3xl border border-bone/10">
+              <img
+                src="/pas-circuit.png"
+                alt="PAS extracorporeal circuit connected to ovine model"
+                className="w-full h-auto object-cover"
+                loading="lazy"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-graphite/60 via-transparent to-transparent pointer-events-none" />
+              <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between">
+                <span className="font-mono text-[10px] uppercase tracking-[0.22em] text-vital">
+                  VV ECMO · CIRCUIT SCHEMATIC
+                </span>
+                <span className="vital-dot" />
+              </div>
+            </div>
+            <div className="relative overflow-hidden rounded-3xl border border-bone/10">
+              <img
+                src="/sheep-timeline.png"
+                alt="N=6 cohort 30-day survival timeline"
+                className="w-full h-auto object-cover"
+                loading="lazy"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-graphite/60 via-transparent to-transparent pointer-events-none" />
+              <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between">
+                <span className="font-mono text-[10px] uppercase tracking-[0.22em] text-vital">
+                  KAPLAN-MEIER · COHORT OUTCOMES
+                </span>
+                <span className="font-mono text-[10px] uppercase tracking-[0.22em] text-bone/60">
+                  2/6 ENDPOINT
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* Subjects */}
         <div className="md:col-span-12">
           <SectionTag text="03 · COHORT · N=6" />
@@ -977,7 +1041,7 @@ function PASDetailPage() {
             {d.subjects.map((s, i) => (
               <div
                 key={i}
-                className={`liquid-glass rounded-2xl p-5 md:p-6 ${
+                className={`glow-border liquid-glass rounded-2xl p-5 md:p-6 transition-all duration-500 hover:-translate-y-1 ${
                   s.tone === 'ok' ? 'border border-vital/40' : ''
                 }`}
               >
@@ -1001,6 +1065,19 @@ function PASDetailPage() {
                 >
                   {s.outcome}
                 </p>
+                {/* Animated survival progress bar */}
+                <div className="relative z-10 mt-3 h-1.5 w-full rounded-full bg-bone/10 overflow-hidden">
+                  <div
+                    className="h-full rounded-full draw-line"
+                    style={{
+                      background: s.tone === 'ok'
+                        ? 'linear-gradient(90deg, #E63046, #E63046)'
+                        : 'linear-gradient(90deg, rgba(236,230,216,0.3), rgba(236,230,216,0.15))',
+                      maxWidth: `${(parseInt(s.outcome.match(/\d+/)?.[0] || '30') / 30) * 100}%`,
+                      animationDelay: `${i * 0.15}s`,
+                    }}
+                  />
+                </div>
                 <p className="relative z-10 mt-3 font-mono text-[13px] leading-[1.6] text-bone/80">
                   {s.detail}
                 </p>
