@@ -6,6 +6,7 @@ import {
   ArrowUpRight,
   ArrowRight,
   ArrowLeft,
+  ArrowUp,
   FileText,
   Activity,
   ExternalLink,
@@ -14,6 +15,8 @@ import {
   CheckCircle2,
   AlertTriangle,
   Send,
+  Menu,
+  X,
   type LucideIcon,
 } from 'lucide-react';
 import {
@@ -124,6 +127,22 @@ function useActiveSection(ids: string[]): string {
  * Enhanced Visual Primitives
  * -------------------------------------------------------------------------- */
 
+/** Scroll progress bar at top of viewport */
+function ScrollProgress() {
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const update = () => {
+      const scrolled = window.scrollY;
+      const total = document.body.scrollHeight - window.innerHeight;
+      const pct = total > 0 ? (scrolled / total) * 100 : 0;
+      if (ref.current) ref.current.style.width = `${pct}%`;
+    };
+    window.addEventListener('scroll', update, { passive: true });
+    return () => window.removeEventListener('scroll', update);
+  }, []);
+  return <div ref={ref} className="scroll-progress" style={{ width: '0%' }} aria-hidden="true" />;
+}
+
 /** Ambient cursor-following glow orb */
 function CursorGlow() {
   const ref = useRef<HTMLDivElement>(null);
@@ -146,8 +165,8 @@ function FloatingParticles({ count = 18 }: { count?: number }) {
     Array.from({ length: count }, (_, i) => ({
       id: i,
       left: `${Math.random() * 100}%`,
-      delay: `${Math.random() * 12}s`,
-      duration: `${14 + Math.random() * 18}s`,
+      delay: `${Math.random() * 14}s`,
+      duration: `${18 + Math.random() * 22}s`,
     }))
   ).current;
   return (
@@ -167,12 +186,35 @@ function FloatingParticles({ count = 18 }: { count?: number }) {
   );
 }
 
-/** Section divider with animated pulse */
+/** Section divider — full-width line with centered dot */
 function SectionDivider() {
   return (
-    <div className="flex items-center justify-center py-4" aria-hidden="true">
-      <div className="section-separator" />
+    <div className="flex items-center justify-center py-5 px-6 md:px-10 lg:px-14" aria-hidden="true">
+      <div className="section-separator-wrap max-w-container w-full mx-auto">
+        <div className="section-separator-line" />
+        <div className="section-separator-dot mx-4" />
+        <div className="section-separator-line right" />
+      </div>
     </div>
+  );
+}
+
+/** Back to top floating button */
+function BackToTop() {
+  const [visible, setVisible] = useState(false);
+  useEffect(() => {
+    const handler = () => setVisible(window.scrollY > 300);
+    window.addEventListener('scroll', handler, { passive: true });
+    return () => window.removeEventListener('scroll', handler);
+  }, []);
+  return (
+    <button
+      onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+      className={`back-to-top text-bone${visible ? '' : ' hidden'}`}
+      aria-label="Back to top"
+    >
+      <ArrowUp className="h-4 w-4" strokeWidth={2} />
+    </button>
   );
 }
 
@@ -269,73 +311,135 @@ const SECTION_IDS = ['home', 'credentials', 'about', 'research', 'contact'];
 
 function Navbar({ onHome = false }: { onHome?: boolean }) {
   const active = useActiveSection(onHome ? SECTION_IDS : []);
-  return (
-    <header className="relative z-20 pt-6 md:pt-8">
-      <div className="flex items-center justify-between gap-4">
-        <a href="#home" className="font-grotesk tracking-tightest text-bone text-lg md:text-xl leading-none">
-          <span className="inline-flex items-center gap-2">
-            <Activity className="h-5 w-5 text-vital" strokeWidth={1.5} />
-            {PERSON.shortName}
-          </span>
-        </a>
+  const [scrolled, setScrolled] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
 
-        <nav className="liquid-glass hidden md:flex items-center gap-1 rounded-full px-2 py-2">
-          {NAV_ITEMS.map((item) => {
-            const isActive = onHome && active === item.href.replace('#', '');
-            return (
+  useEffect(() => {
+    const handler = () => setScrolled(window.scrollY > 60);
+    window.addEventListener('scroll', handler, { passive: true });
+    return () => window.removeEventListener('scroll', handler);
+  }, []);
+
+  return (
+    <>
+      <header
+        className={`sticky top-0 z-30 transition-all duration-500 ${
+          scrolled
+            ? 'py-3 backdrop-blur-xl bg-graphite/80 border-b border-bone/5 -mx-6 md:-mx-10 lg:-mx-14 px-6 md:px-10 lg:px-14'
+            : 'py-6 md:py-8'
+        }`}
+      >
+        <div className="flex items-center justify-between gap-4">
+          <a href="#home" className="font-grotesk tracking-tightest text-bone text-lg md:text-xl leading-none">
+            <span className="inline-flex items-center gap-2">
+              <Activity className="h-5 w-5 text-vital" strokeWidth={1.5} />
+              {PERSON.shortName}
+            </span>
+          </a>
+
+          <nav className="liquid-glass hidden md:flex items-center gap-1 rounded-full px-2 py-2">
+            {NAV_ITEMS.map((item) => {
+              const isActive = onHome && active === item.href.replace('#', '');
+              return (
+                <a
+                  key={item.label}
+                  href={item.href}
+                  className={`relative z-10 rounded-full px-4 py-2 font-grotesk text-[13px] tracking-wide transition-all duration-200 hover:text-vital ${
+                    isActive ? 'nav-active-link' : 'text-bone/90'
+                  }`}
+                >
+                  {item.label}
+                </a>
+              );
+            })}
+            <a
+              href="#/cv"
+              className="relative z-10 rounded-full bg-vital px-4 py-2 font-grotesk text-[13px] tracking-wide text-bone transition-colors hover:bg-bone hover:text-graphite"
+            >
+              CV
+            </a>
+          </nav>
+
+          <div className="hidden md:flex items-center gap-2">
+            {SOCIAL.map((s) => (
+              <IconButton key={s.label} {...s} />
+            ))}
+          </div>
+
+          {/* Mobile: hamburger */}
+          <div className="flex md:hidden items-center gap-2">
+            <a
+              href="#/cv"
+              className="liquid-glass inline-flex h-10 items-center gap-2 rounded-full px-4 font-grotesk text-[12px] tracking-wide text-bone"
+            >
+              <span className="relative z-10">CV</span>
+            </a>
+            <button
+              onClick={() => setMenuOpen(true)}
+              className="liquid-glass inline-flex h-10 w-10 items-center justify-center rounded-full text-bone"
+              aria-label="Open menu"
+            >
+              <Menu className="relative z-10 h-4 w-4" strokeWidth={1.5} />
+            </button>
+          </div>
+        </div>
+
+        {!onHome && (
+          <div className="mt-6">
+            <a
+              href="#home"
+              className="group inline-flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.24em] text-bone/70 hover:text-vital transition-colors"
+            >
+              <ArrowLeft className="h-4 w-4" strokeWidth={1.5} />
+              RETURN TO DOSSIER
+            </a>
+          </div>
+        )}
+      </header>
+
+      {/* Mobile full-screen overlay menu */}
+      {menuOpen && (
+        <div className="fixed inset-0 z-50 bg-graphite/95 backdrop-blur-xl flex flex-col">
+          <div className="flex items-center justify-between px-6 py-6">
+            <span className="font-grotesk tracking-tightest text-bone text-lg inline-flex items-center gap-2">
+              <Activity className="h-5 w-5 text-vital" strokeWidth={1.5} />
+              {PERSON.shortName}
+            </span>
+            <button
+              onClick={() => setMenuOpen(false)}
+              className="liquid-glass inline-flex h-10 w-10 items-center justify-center rounded-full text-bone"
+              aria-label="Close menu"
+            >
+              <X className="relative z-10 h-4 w-4" strokeWidth={1.5} />
+            </button>
+          </div>
+          <nav className="flex flex-col px-6 pt-8 gap-2 flex-1">
+            {NAV_ITEMS.map((item) => (
               <a
                 key={item.label}
                 href={item.href}
-                className={`relative z-10 rounded-full px-4 py-2 font-grotesk text-[13px] tracking-wide transition-colors hover:text-vital ${
-                  isActive ? 'nav-active-link' : 'text-bone/90'
-                }`}
+                onClick={() => setMenuOpen(false)}
+                className="font-grotesk uppercase text-bone text-4xl tracking-tightest leading-tight hover:text-vital transition-colors py-2 border-b border-bone/10"
               >
                 {item.label}
               </a>
-            );
-          })}
-          <a
-            href="#/cv"
-            className="relative z-10 rounded-full bg-vital px-4 py-2 font-grotesk text-[13px] tracking-wide text-bone transition-colors hover:bg-bone hover:text-graphite"
-          >
-            CV
-          </a>
-        </nav>
-
-        <div className="hidden md:flex items-center gap-2">
-          {SOCIAL.map((s) => (
-            <IconButton key={s.label} {...s} />
-          ))}
-        </div>
-
-        <div className="flex md:hidden items-center gap-2">
-          <a
-            href="#/cv"
-            className="liquid-glass inline-flex h-10 items-center gap-2 rounded-full px-4 font-grotesk text-[12px] tracking-wide text-bone"
-          >
-            <span className="relative z-10">CV</span>
-          </a>
-          <a
-            href={`mailto:${PERSON.email}`}
-            aria-label="Email"
-            className="liquid-glass inline-flex h-10 w-10 items-center justify-center rounded-full text-bone"
-          >
-            <Mail className="relative z-10 h-4 w-4" strokeWidth={1.5} />
-          </a>
-        </div>
-      </div>
-      {!onHome && (
-        <div className="mt-6">
-          <a
-            href="#home"
-            className="group inline-flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.24em] text-bone/70 hover:text-vital transition-colors"
-          >
-            <ArrowLeft className="h-4 w-4" strokeWidth={1.5} />
-            RETURN TO DOSSIER
-          </a>
+            ))}
+            <a
+              href="#/cv"
+              onClick={() => setMenuOpen(false)}
+              className="mt-6 inline-flex w-fit rounded-full bg-vital px-6 py-3 font-grotesk text-sm tracking-[0.22em] text-bone uppercase"
+            >
+              VIEW CV
+            </a>
+          </nav>
+          <div className="flex items-center gap-3 px-6 pb-10">
+            {SOCIAL.map((s) => (
+              <IconButton key={s.label} {...s} />
+            ))}
+          </div>
         </div>
       )}
-    </header>
+    </>
   );
 }
 
@@ -347,11 +451,19 @@ function HeroSection() {
   return (
     <section id="home" className="relative min-h-[100svh] overflow-hidden rounded-b-[28px] md:rounded-b-[44px] bg-graphite">
       <HeroSchematic />
-      <FloatingParticles count={24} />
+      <FloatingParticles count={28} />
       <div className="relative mx-auto flex min-h-[100svh] max-w-container flex-col px-6 md:px-10 lg:px-14">
         <Navbar onHome />
 
         <div className="relative flex flex-1 flex-col justify-end pb-14 md:pb-24">
+          {/* Coordinate label */}
+          <div className="mb-8 hidden md:flex items-center gap-4 boot-in boot-d2">
+            <span className="inline-block h-[1px] w-8 bg-bone/20" />
+            <span className="font-mono text-[10px] uppercase tracking-[0.28em] text-bone/40">
+              40.4432° N · 79.9428° W · CMU · PITTSBURGH
+            </span>
+          </div>
+
           <div className="mb-6 flex gap-2 md:hidden boot-in boot-d2">
             {SOCIAL.map((s) => (
               <IconButton key={s.label} {...s} />
@@ -370,16 +482,35 @@ function HeroSection() {
             ))}
           </h1>
 
-          <div className="mt-8 flex flex-wrap items-center justify-between gap-4 border-t border-bone/10 pt-6 boot-in boot-d6">
+          <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-4 border-t border-bone/10 pt-6 boot-in boot-d6">
             <div className="flex items-center gap-3">
               <span className="vital-dot" />
               <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-bone/75">
                 {HERO.footnote}
               </p>
             </div>
-            <span className="font-mono text-[11px] uppercase tracking-[0.22em] text-bone/60">
-              {HERO.tag}
-            </span>
+            <div className="flex items-center gap-4 sm:justify-end">
+              {[
+                { v: '30', u: 'DAY' },
+                { v: '1', u: 'PATENT' },
+                { v: 'ISTH', u: '2026' },
+              ].map((s) => (
+                <div key={s.u} className="text-center">
+                  <p className="font-grotesk text-base tracking-tightest text-vital leading-none">{s.v}</p>
+                  <p className="font-mono text-[9px] uppercase tracking-[0.2em] text-bone/50 mt-0.5">{s.u}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Scroll indicator */}
+          <div className="absolute bottom-[-3rem] left-1/2 -translate-x-1/2 flex flex-col items-center gap-1 boot-in boot-d6 hidden md:flex">
+            <span className="font-mono text-[9px] uppercase tracking-[0.3em] text-bone/30">SCROLL</span>
+            <div className="scroll-bounce text-bone/30">
+              <svg width="10" height="14" viewBox="0 0 10 14" fill="none">
+                <path d="M5 0v10M1 7l4 4 4-4" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </div>
           </div>
         </div>
       </div>
@@ -418,13 +549,16 @@ function CredentialsSection() {
 
           <div className="md:col-span-7" data-reveal data-reveal-delay="2">
             <div className="liquid-glass relative overflow-hidden rounded-3xl">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-px bg-bone/10">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-px bg-bone/10">
                 {CREDENTIALS.items.map((item, i) => (
-                  <div key={i} className="cred-cell bg-graphite p-5 md:p-6">
+                  <div key={i} className="cred-cell bg-graphite p-5 md:p-6 relative">
+                    <span className="absolute top-3 right-4 font-grotesk text-[11px] tracking-wide text-vital/60">
+                      {String(i + 1).padStart(2, '0')}
+                    </span>
                     <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-vital">
                       {item.label}
                     </p>
-                    <p className="mt-2 font-grotesk text-lg md:text-xl tracking-wide text-bone uppercase leading-tight">
+                    <p className="mt-2 font-grotesk text-base md:text-lg tracking-wide text-bone uppercase leading-tight">
                       {item.value}
                     </p>
                   </div>
@@ -462,7 +596,9 @@ function AboutSection() {
             {ABOUT.body.map((p, i) => (
               <p
                 key={i}
-                className="font-mono text-[13px] md:text-[15px] leading-[1.75] text-bone/90 tracking-[0.02em]"
+                className={`font-mono text-[13px] md:text-[15px] leading-[1.75] text-bone/90 tracking-[0.02em] ${
+                  i === 0 ? 'pl-4 border-l-2 border-vital/60' : ''
+                }`}
               >
                 {p}
               </p>
@@ -480,30 +616,31 @@ function AboutSection() {
         {/* Key stats bar */}
         <div className="relative mt-14 md:mt-20 grid grid-cols-2 md:grid-cols-4 gap-4" data-reveal data-reveal-delay="3">
           {[
-            { value: '30', unit: 'DAY', label: 'OVINE SURVIVAL ENDPOINT' },
-            { value: '1', unit: 'PATENT', label: 'KR 10-2675388 · GRANTED' },
-            { value: '6', unit: 'SHEEP', label: 'COHORT SIZE · VV ECMO' },
-            { value: '1', unit: 'ABSTRACT', label: 'ISTH 2026 · SUBMITTED' },
+            { value: '30', unit: 'DAY', label: 'OVINE SURVIVAL ENDPOINT', color: 'vital' },
+            { value: '1', unit: 'PATENT', label: 'KR 10-2675388 · GRANTED', color: 'oxygen' },
+            { value: '6', unit: 'SHEEP', label: 'COHORT SIZE · VV ECMO', color: 'vital' },
+            { value: '1', unit: 'ABSTRACT', label: 'ISTH 2026 · SUBMITTED', color: 'oxygen' },
           ].map((stat, i) => (
             <div
               key={i}
-              className="liquid-glass rounded-2xl p-5 md:p-6 text-center stat-item"
+              className="liquid-glass rounded-2xl pt-5 md:pt-6 pb-0 px-5 md:px-6 text-center stat-item overflow-hidden"
               style={{ animationDelay: `${0.8 + i * 0.12}s` }}
             >
-              <p className="relative z-10 font-grotesk text-4xl md:text-5xl tracking-tightest text-vital leading-none">
+              <p className={`relative z-10 font-grotesk text-5xl md:text-6xl lg:text-7xl tracking-tightest leading-none ${stat.color === 'vital' ? 'text-vital' : 'text-oxygen'}`}>
                 {stat.value}
               </p>
               <p className="relative z-10 mt-1 font-grotesk text-xs tracking-[0.22em] text-bone uppercase">
                 {stat.unit}
               </p>
-              <p className="relative z-10 mt-2 font-mono text-[10px] uppercase tracking-[0.18em] text-bone/50">
+              <p className="relative z-10 mt-2 mb-5 font-mono text-[10px] uppercase tracking-[0.18em] text-bone/50">
                 {stat.label}
               </p>
+              <div className={`h-[2px] w-full ${stat.color === 'vital' ? 'bg-vital/60' : 'bg-oxygen/50'}`} />
             </div>
           ))}
         </div>
 
-        <div className="relative mt-14 md:mt-20 overflow-hidden">
+        <div className="relative mt-14 md:mt-20 overflow-hidden marquee-outer">
           <div className="flex flex-col gap-3 md:gap-5">
             {ABOUT.keywordRows.map((row, i) => (
               <div
@@ -511,7 +648,7 @@ function AboutSection() {
                 className="overflow-hidden whitespace-nowrap"
               >
                 <div
-                  className="marquee-track inline-block font-grotesk uppercase text-bone/[0.07] leading-none tracking-[0.04em] text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl hover:text-bone/[0.14] transition-colors duration-700"
+                  className="marquee-track inline-block font-grotesk uppercase text-bone/[0.11] leading-none tracking-[0.04em] text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl hover:text-bone/[0.2] transition-colors duration-700"
                   style={{
                     '--marquee-speed': `${35 + i * 8}s`,
                     animationDirection: i % 2 === 0 ? 'normal' : 'reverse',
@@ -551,66 +688,98 @@ function ResearchSection() {
           <PillLink href="#/cv" label={RESEARCH.cta} />
         </div>
 
-        <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
-          {RESEARCH_CARDS.map((card, cardIdx) => (
-            <a
-              key={card.slug}
-              data-reveal
-              data-reveal-delay={String(cardIdx + 1)}
-              href={`#/research/${card.slug}`}
-              className="scan-card glow-border tilt-card liquid-glass group relative aspect-[4/5] overflow-hidden rounded-3xl transition-all duration-500 hover:-translate-y-3 hover:shadow-[0_0_60px_rgba(230,48,70,0.12)]"
-            >
-              {cardBg[card.slug]}
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {RESEARCH_CARDS.map((card, cardIdx) => {
+            const statusColor =
+              card.status === 'ACTIVE'
+                ? 'bg-emerald-500'
+                : card.status === 'SUBMITTED'
+                ? 'bg-amber-400'
+                : 'bg-oxygen';
+            const statusBarColor =
+              card.status === 'ACTIVE'
+                ? 'bg-emerald-500/70'
+                : card.status === 'SUBMITTED'
+                ? 'bg-amber-400/60'
+                : 'bg-oxygen/60';
+            return (
+              <a
+                key={card.slug}
+                data-reveal
+                data-reveal-delay={String(cardIdx + 1)}
+                href={`#/research/${card.slug}`}
+                className="scan-card glow-border tilt-card liquid-glass group relative aspect-[4/5] overflow-hidden rounded-3xl transition-all duration-500 hover:-translate-y-3 hover:shadow-[0_0_60px_rgba(230,48,70,0.12)]"
+              >
+                {cardBg[card.slug]}
 
-              {/* Legibility scrim — darkens backdrop behind card copy */}
-              <div
-                className="pointer-events-none absolute inset-0"
-                style={{
-                  background:
-                    'linear-gradient(180deg, rgba(10,11,16,0.92) 0%, rgba(10,11,16,0.72) 20%, rgba(10,11,16,0.15) 45%, rgba(10,11,16,0.25) 70%, rgba(10,11,16,0.94) 100%)',
-                }}
-              />
+                {/* Legibility scrim */}
+                <div
+                  className="pointer-events-none absolute inset-0"
+                  style={{
+                    background:
+                      'linear-gradient(180deg, rgba(10,11,16,0.92) 0%, rgba(10,11,16,0.72) 20%, rgba(10,11,16,0.15) 45%, rgba(10,11,16,0.25) 70%, rgba(10,11,16,0.94) 100%)',
+                  }}
+                />
 
-              <div className="relative z-10 flex h-full flex-col justify-between p-5 md:p-6">
-                <div className="flex items-start justify-between gap-4">
-                  <div>
-                    <div className="mb-2 flex items-center gap-2">
-                      <span className="inline-block h-[2px] w-4 bg-vital" />
-                      <span className="font-mono text-[10px] uppercase tracking-[0.22em] text-vital">
-                        {card.index} · {card.category}
-                      </span>
-                    </div>
-                    <h4 className="font-grotesk uppercase text-bone leading-[0.9] tracking-tightest text-3xl sm:text-4xl md:text-4xl lg:text-5xl">
-                      <span className="block">{card.title}</span>
-                      <span className="block">{card.titleTwo}</span>
-                    </h4>
-                    <p className="mt-3 font-mono text-[12px] leading-[1.55] text-bone/80 max-w-[28ch]">
-                      {card.subtitle}
-                    </p>
-                  </div>
-                  <span className="liquid-glass inline-flex h-10 w-10 items-center justify-center rounded-full text-bone group-hover:text-vital transition-colors">
-                    <ArrowUpRight className="relative z-10 h-4 w-4" strokeWidth={1.75} />
+                {/* Watermark index number — top right, rotated */}
+                <div className="absolute top-0 right-0 z-10 overflow-hidden h-full w-20 pointer-events-none">
+                  <span
+                    className="absolute -right-6 top-12 font-grotesk text-[5rem] tracking-tightest text-bone/[0.04] leading-none select-none"
+                    style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}
+                  >
+                    {card.index}
                   </span>
                 </div>
 
-                <div className="liquid-glass rounded-2xl px-4 py-3">
-                  <div className="relative z-10 flex items-center justify-between gap-3">
-                    <div className="min-w-0">
-                      <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-bone/60">
-                        {card.metaLabel} · {card.status}
-                      </p>
-                      <p className="truncate font-grotesk text-sm tracking-wide text-bone uppercase">
-                        {card.metaValue}
+                <div className="relative z-10 flex h-full flex-col justify-between p-5 md:p-6">
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <div className="mb-2 flex items-center gap-2">
+                        <span className="inline-block h-[2px] w-4 bg-vital" />
+                        <span className="font-mono text-[10px] uppercase tracking-[0.22em] text-vital">
+                          {card.index} · {card.category}
+                        </span>
+                      </div>
+                      <h4 className="font-grotesk uppercase text-bone leading-[0.9] tracking-tightest text-3xl sm:text-4xl md:text-4xl lg:text-5xl">
+                        <span className="block">{card.title}</span>
+                        <span className="block">{card.titleTwo}</span>
+                      </h4>
+                      <p className="mt-3 font-mono text-[12px] leading-[1.55] text-bone/80 max-w-[28ch]">
+                        {card.subtitle}
                       </p>
                     </div>
-                    <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-vital text-bone">
-                      <ArrowUpRight className="h-4 w-4" strokeWidth={2.25} />
+                    <span className="liquid-glass inline-flex h-10 w-10 items-center justify-center rounded-full text-bone group-hover:text-vital transition-colors">
+                      <ArrowUpRight className="relative z-10 h-4 w-4" strokeWidth={1.75} />
                     </span>
                   </div>
+
+                  <div>
+                    {/* Status activity bar */}
+                    <div className={`w-full h-[2px] rounded-full mb-3 ${statusBarColor}`} />
+                    <div className="liquid-glass rounded-2xl px-4 py-3">
+                      <div className="relative z-10 flex items-center justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-bone/60">
+                            {card.metaLabel}
+                          </p>
+                          <p className="truncate font-grotesk text-sm tracking-wide text-bone uppercase">
+                            {card.metaValue}
+                          </p>
+                        </div>
+                        {/* Status pill */}
+                        <span className="inline-flex items-center gap-1.5 rounded-full border border-bone/15 bg-graphite/70 px-3 py-1 shrink-0">
+                          <span className={`inline-block h-1.5 w-1.5 rounded-full ${statusColor}`} />
+                          <span className="font-mono text-[9px] uppercase tracking-[0.18em] text-bone/80">
+                            {card.status}
+                          </span>
+                        </span>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </a>
-          ))}
+              </a>
+            );
+          })}
         </div>
       </div>
     </section>
@@ -635,7 +804,15 @@ function ContactSection() {
 
   return (
     <section id="contact" className="relative bg-graphite">
-      <div className="mx-auto max-w-container px-6 md:px-10 lg:px-14 py-20 md:py-28">
+      {/* Dot grid background */}
+      <div
+        className="pointer-events-none absolute inset-0"
+        style={{
+          backgroundImage: 'radial-gradient(circle, rgba(236,230,216,0.07) 1px, transparent 1px)',
+          backgroundSize: '28px 28px',
+        }}
+      />
+      <div className="relative mx-auto max-w-container px-6 md:px-10 lg:px-14 py-20 md:py-28">
         {/* Header */}
         <div className="grid gap-8 md:grid-cols-12 mb-12 md:mb-16">
           <div className="md:col-span-7">
@@ -728,16 +905,16 @@ function ContactSection() {
               </label>
             </div>
 
-            <div className="relative z-10 mt-8 flex flex-wrap items-center justify-between gap-4">
+            <div className="relative z-10 mt-8 flex flex-col gap-3">
               <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-bone/50">
                 ENCRYPTED VIA YOUR DEFAULT MAIL CLIENT
               </p>
               <button
                 type="submit"
-                className="group inline-flex items-center gap-3 rounded-full bg-vital px-6 py-3 font-grotesk text-sm tracking-[0.22em] text-bone transition-colors hover:bg-bone hover:text-graphite"
+                className="group flex w-full items-center justify-between gap-3 rounded-full bg-vital px-6 py-4 font-grotesk text-sm tracking-[0.22em] text-bone transition-colors hover:bg-bone hover:text-graphite"
               >
-                SEND DISPATCH
-                <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-bone text-vital group-hover:bg-vital group-hover:text-bone transition-colors">
+                <span>SEND DISPATCH</span>
+                <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-bone text-vital group-hover:bg-vital group-hover:text-bone transition-colors">
                   <Send className="h-3 w-3" strokeWidth={2.25} />
                 </span>
               </button>
@@ -1594,7 +1771,9 @@ export default function App() {
 
   return (
     <>
+      <ScrollProgress />
       <CursorGlow />
+      <BackToTop />
       <ScrollOnRouteChange route={route} />
       {body}
     </>
