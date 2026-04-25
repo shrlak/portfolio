@@ -12,7 +12,7 @@ export const PERSON = {
   personalEmail: 'spencerkim1235@gmail.com',
   linkedin: 'https://www.linkedin.com/in/shrla/',
   linkedinHandle: 'in/shrla',
-  github: 'https://github.com/shrla',
+  github: 'https://github.com/shrlak',
   location: 'Pittsburgh, PA · Seoul, KR',
   institution: 'Carnegie Mellon University',
   college: 'College of Engineering',
