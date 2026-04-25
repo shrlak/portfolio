@@ -47,6 +47,7 @@ import {
   CVSchematic,
   CTASchematic,
 } from './schematics';
+import { PASCircuitDiagram, KaplanMeierDiagram } from './diagrams';
 
 /* ----------------------------------------------------------------------------
  * Router
@@ -1177,14 +1178,8 @@ function PASDetailPage() {
         <div className="md:col-span-12">
           <div className="grid gap-4 md:grid-cols-2">
             <div className="relative overflow-hidden rounded-3xl border border-bone/10">
-              <img
-                src="/pas-circuit.png"
-                alt="PAS extracorporeal circuit connected to ovine model"
-                className="w-full h-auto object-cover"
-                loading="lazy"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-graphite/60 via-transparent to-transparent pointer-events-none" />
-              <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between">
+              <PASCircuitDiagram />
+              <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between pointer-events-none">
                 <span className="font-mono text-[10px] uppercase tracking-[0.22em] text-vital">
                   VV ECMO · CIRCUIT SCHEMATIC
                 </span>
@@ -1192,14 +1187,8 @@ function PASDetailPage() {
               </div>
             </div>
             <div className="relative overflow-hidden rounded-3xl border border-bone/10">
-              <img
-                src="/sheep-timeline.png"
-                alt="N=6 cohort 30-day survival timeline"
-                className="w-full h-auto object-cover"
-                loading="lazy"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-graphite/60 via-transparent to-transparent pointer-events-none" />
-              <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between">
+              <KaplanMeierDiagram />
+              <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between pointer-events-none">
                 <span className="font-mono text-[10px] uppercase tracking-[0.22em] text-vital">
                   KAPLAN-MEIER · COHORT OUTCOMES
                 </span>
