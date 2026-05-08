@@ -92,7 +92,7 @@ export const RESEARCH_CARDS: Array<{
     category: 'ARTIFICIAL ORGAN ENGINEERING',
     title: 'ARTIFICIAL',
     titleTwo: 'LUNG',
-    subtitle: 'Pulmonary Assist System · 30-day ovine trial',
+    subtitle: 'Pulmonary Assist System · 30-day ovine trial · In Progress',
     metaLabel: 'SYSTEM',
     metaValue: 'PAS · VV ECMO · IV RIVAROXABAN',
     status: 'ACTIVE',
@@ -130,19 +130,19 @@ export const PAS_DETAIL = {
   index: 'R-01',
   category: 'ARTIFICIAL ORGAN ENGINEERING',
   shortTitle: 'PULMONARY ASSIST SYSTEM',
-  fullTitle: '30-DAY OVINE EVALUATION OF THE PULMONARY ASSIST SYSTEM · N=6 COHORT',
-  subtitle: 'Ovine Model · Chronic Respiratory Support · 2/6 Reached Primary Endpoint',
+  fullTitle: '30-DAY OVINE EVALUATION OF THE PULMONARY ASSIST SYSTEM',
+  subtitle: 'Ovine Model · Chronic Respiratory Support · In Progress',
   lab: 'Cook Cardiopulmonary Engineering Lab',
   pi: 'Keith Cook, PhD',
   studyLead: ['Ander Dorken Gallastegi, MD', 'Ryuji Nakamura, MD'],
   role: 'Undergraduate Research Assistant · Fall 2025 onward',
   abstract:
-    'Chronic lung disease is a leading cause of death, with end-stage treatment constrained by donor shortages and the short-term confinement of ECMO. The Pulmonary Assist System (PAS) is a compact, mobile, and hemocompatible successor to ECMO designed to support patients outside the ICU. Across six ovine studies, PAS function, safety, and biocompatibility were evaluated over a 30-day endpoint using IV rivaroxaban in PEG — replacing continuous IV heparin — as the primary anticoagulation strategy. Two of six animals reached the 30-day primary endpoint. Pump thrombosis and progressive anemia emerged as the primary barriers to completion; hepatic, renal, and inflammatory markers remained within acceptable limits throughout successful studies.',
+    'Chronic lung disease is a leading cause of death, with end-stage treatment constrained by donor shortages and the short-term confinement of conventional ECMO. The Pulmonary Assist System (PAS) is a compact, mobile, and hemocompatible device designed to provide long-term pulmonary support outside the ICU setting. This ongoing study evaluates PAS function, safety, and biocompatibility in a 30-day ovine (sheep) model using IV rivaroxaban in PEG as the primary anticoagulation strategy — replacing the standard continuous IV heparin drip. Results are ongoing and will be published upon study completion.',
   objectives: [
-    'Verify 30-day device patency, low flow resistance, and stable gas exchange.',
-    'Validate oral rivaroxaban as a replacement for continuous IV heparin anticoagulation.',
-    'Characterize ovine rivaroxaban pharmacokinetics against human AUC targets.',
-    'Quantify device-induced hemolysis, inflammation, and organ function over chronic use.',
+    'Evaluate 30-day device patency, flow resistance, and stable gas exchange in an ovine model.',
+    'Assess IV rivaroxaban in PEG as a viable anticoagulation strategy for long-term ECMO.',
+    'Characterize ovine pharmacokinetics and biocompatibility over chronic device use.',
+    'Inform protocol refinements to support a future powered efficacy trial.',
   ],
   methods: [
     {
@@ -162,86 +162,20 @@ export const PAS_DETAIL = {
     },
   ],
   subjects: [
-    {
-      id: 'Sheep #1',
-      name: 'Akio',
-      start: 'Aug 28',
-      outcome: 'Terminated · Day 15',
-      detail: 'Profound anemia with Pseudomonas sepsis. Clot observed in device outlet.',
-      tone: 'warn',
-    },
-    {
-      id: 'Sheep #2',
-      name: 'Bento',
-      start: 'Oct 9',
-      outcome: 'Terminated · Day 4',
-      detail: 'Welfare cutoff — electrolyte abnormalities and inability to stand.',
-      tone: 'warn',
-    },
-    {
-      id: 'Sheep #3',
-      name: 'Chiikawa',
-      start: 'Oct 23',
-      outcome: 'Survived · 30 days',
-      detail: 'Primary endpoint achieved. Patency maintained; device resistance stable throughout trial.',
-      tone: 'ok',
-    },
-    {
-      id: 'Sheep #4',
-      name: 'Ebisu',
-      start: '—',
-      outcome: 'Survived · 30 days',
-      detail: 'Second 30-day completion. Confirmed reproducibility of IV rivaroxaban anticoagulation regimen.',
-      tone: 'ok',
-    },
-    {
-      id: 'Sheep #5',
-      name: 'Daifuku',
-      start: '—',
-      outcome: 'Terminated · Day 18',
-      detail: 'Pump thrombosis requiring circuit termination. Progressive anemia contributing factor.',
-      tone: 'warn',
-    },
-    {
-      id: 'Sheep #6',
-      name: 'Goku',
-      start: '—',
-      outcome: 'Survived · 15 days',
-      detail: 'Partial endpoint. Occult GI bleeding suspected as driver of progressive anemia.',
-      tone: 'warn',
-    },
+    { id: 'Sheep #1', name: 'Akio',     tone: 'neutral' },
+    { id: 'Sheep #2', name: 'Bento',    tone: 'neutral' },
+    { id: 'Sheep #3', name: 'Chiikawa', tone: 'neutral' },
+    { id: 'Sheep #4', name: 'Ebisu',    tone: 'neutral' },
+    { id: 'Sheep #5', name: 'Daifuku',  tone: 'neutral' },
+    { id: 'Sheep #6', name: 'Goku',     tone: 'neutral' },
   ],
-  findings: [
-    {
-      label: 'PRIMARY BARRIER',
-      value:
-        'Pump thrombosis was the leading cause of circuit failure across the cohort, with progressive anemia — including suspected occult GI bleeding — as a secondary contributor. Both factors necessitate protocol refinement before a powered efficacy study.',
-    },
-    {
-      label: 'ENDPOINT OUTCOMES',
-      value:
-        'Two of six animals (Chiikawa, Ebisu) reached the 30-day primary endpoint, establishing feasibility of PAS under IV rivaroxaban anticoagulation. Kaplan-Meier survival curves trended favorably versus historical heparin controls.',
-    },
-    {
-      label: 'ORGAN FUNCTION',
-      value:
-        'Hepatic, renal, and inflammatory markers remained within acceptable limits throughout both completed studies. Plasma-free hemoglobin stayed low, indicating minimal hemolysis attributable to the device.',
-    },
-    {
-      label: 'PHARMACOKINETICS',
-      value:
-        'Plasma rivaroxaban correlated linearly with PT and ACT. Ovine interspecies metabolism is faster than human; dose was optimized downward from 0.75 to 0.5 mg/kg q4h IV in PEG to reduce GI mucosal exposure while maintaining therapeutic anticoagulation.',
-    },
+  monitoringParams: [
+    { label: 'HEMODYNAMICS', value: 'Device resistance · flow · blood pressure · heart rate' },
+    { label: 'HEMATOLOGY', value: 'CBC · plasma-free hemoglobin · activated clotting time' },
+    { label: 'COAGULATION', value: 'PT/INR · rivaroxaban plasma levels · q4h dosing' },
+    { label: 'ORGAN FUNCTION', value: 'Liver enzymes · renal panel · blood gases · electrolytes' },
   ],
-  optimizations: [
-    'Dose reduction from 0.75 to 0.5 mg/kg q4h IV rivaroxaban to limit occult GI mucosal bleeding',
-    'Occult GI bleeding surveillance protocol added (serial fecal guaiac, Hgb trending)',
-    'Extension line added to high-wear stopcocks',
-    'Silver paste protocol for cannulation-site ulceration',
-    'Refined transition protocol from heparin bridge to IV rivaroxaban in PEG',
-  ],
-  outcome:
-    'Two 30-day completions (Chiikawa, Ebisu) establish proof-of-concept for PAS as a chronic respiratory support device and for IV rivaroxaban in PEG as a viable anticoagulation strategy. Pump thrombosis and anemia remain the critical barriers to resolve before a powered efficacy trial. Kaplan-Meier curves trended favorably against historical heparin controls — providing the evidence base needed to support any future ambulatory device trial.',
+  status: 'ONGOING — RESULTS PENDING PUBLICATION' as const,
 };
 
 export const COAG_DETAIL = {

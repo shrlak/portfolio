@@ -794,157 +794,241 @@ export function CaneCardSchematic() {
 /*  PAS DETAIL — full circuit loop with animated particles + N=6 panel        */
 /* ────────────────────────────────────────────────────────────────────────── */
 export function PASDetailSchematic() {
-  // Closed circuit loop in 1600×700 viewBox
-  const circuit =
-    'M 240 400 ' +
-    'C 380 360, 530 330, 690 300 ' +
-    'C 720 295, 800 295, 870 295 ' +
-    'C 940 295, 1010 295, 1080 300 ' +
-    'C 1170 300, 1260 300, 1340 308 ' +
-    'C 1390 314, 1420 340, 1420 400 ' +
-    'L 1420 540 ' +
-    'C 1420 560, 1380 570, 1320 570 ' +
-    'L 320 570 ' +
-    'C 240 570, 210 540, 210 480 ' +
-    'L 210 420 ' +
-    'C 210 405, 220 398, 240 400';
+  // Two circuit tube paths following the sheep's dorsal line (top of back)
+  // Red = deoxygenated blood OUT from sheep jugular → pump → oxygenator
+  // Blue = oxygenated blood IN returning to sheep jugular
+  const tubeDrainPath =
+    'M 310 290 L 360 270 L 480 258 L 620 252 L 740 252 L 860 255 L 960 262 L 1060 272 L 1100 278';
+  const tubeReturnPath =
+    'M 1100 300 L 1060 294 L 960 286 L 860 278 L 740 276 L 620 276 L 480 282 L 360 296 L 310 314';
 
   return (
     <svg
       className="block h-auto w-full"
-      viewBox="0 0 1600 700"
+      viewBox="0 0 1500 640"
       preserveAspectRatio="xMidYMid meet"
       aria-hidden="true"
     >
       <defs>
-        <pattern id="pas-det-grid" width="40" height="40" patternUnits="userSpaceOnUse">
-          <path d="M 40 0 L 0 0 0 40" fill="none" stroke="rgba(236,230,216,0.06)" strokeWidth="0.5" />
+        <pattern id="pas-grid" width="40" height="40" patternUnits="userSpaceOnUse">
+          <path d="M 40 0 L 0 0 0 40" fill="none" stroke="rgba(236,230,216,0.05)" strokeWidth="0.5" />
         </pattern>
-        <radialGradient id="pas-det-glow" cx="50%" cy="50%" r="55%">
-          <stop offset="0%" stopColor="rgba(230,48,70,0.15)" />
+        <radialGradient id="pas-sheep-glow" cx="40%" cy="55%" r="50%">
+          <stop offset="0%" stopColor="rgba(230,48,70,0.12)" />
           <stop offset="100%" stopColor="rgba(10,11,16,0)" />
         </radialGradient>
-        <path id="pas-det-circuit" d={circuit} />
+        <filter id="pas-glow-red">
+          <feGaussianBlur stdDeviation="3" result="blur" />
+          <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
+        </filter>
+        <filter id="pas-glow-blue">
+          <feGaussianBlur stdDeviation="2.5" result="blur" />
+          <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
+        </filter>
+        {/* Tube paths for animateMotion */}
+        <path id="pas-drain-path" d={tubeDrainPath} />
+        <path id="pas-return-path" d={tubeReturnPath} />
       </defs>
+
       <rect width="100%" height="100%" fill="#0A0B10" />
-      <rect width="100%" height="100%" fill="url(#pas-det-grid)" />
-      <rect width="100%" height="100%" fill="url(#pas-det-glow)" />
+      <rect width="100%" height="100%" fill="url(#pas-grid)" />
+      <rect width="100%" height="100%" fill="url(#pas-sheep-glow)" />
 
-      {/* Faint reference loop */}
-      <use href="#pas-det-circuit" fill="none" stroke="rgba(230,48,70,0.18)" strokeWidth="1.2" strokeDasharray="3 6" />
-
-      {/* Sheep */}
-      <g transform="translate(160 360)">
+      {/* ── SHEEP BODY (based on Cook Lab diagram) ── */}
+      <g transform="translate(80 120)">
+        {/* Main body */}
         <path
-          d="M 0 50 Q -10 30 8 18 Q 22 10 44 18 L 66 14 Q 96 -4 132 10 L 184 4 Q 238 6 282 30 Q 322 40 338 62 L 338 96 Q 320 126 290 134 Q 260 142 200 140 Q 100 146 48 134 Q 18 128 0 106 Z"
-          className="schematic-stroke"
-          strokeWidth="1.4"
-          fill="rgba(10,11,16,0.5)"
+          d="M 60 260 Q 40 220 50 180 Q 55 155 80 140 Q 100 128 130 130 L 160 118 Q 200 105 260 112 L 320 106 Q 400 98 480 112 Q 550 120 600 140 Q 650 156 670 180 Q 695 210 695 250 Q 695 295 665 328 Q 635 360 590 372 Q 520 386 430 384 Q 300 386 200 376 Q 130 368 90 344 Q 58 322 60 290 Z"
+          fill="rgba(236,230,216,0.08)"
+          stroke="rgba(236,230,216,0.45)"
+          strokeWidth="1.5"
         />
-        {[60, 100, 240, 290].map((x, i) => (
-          <line key={i} x1={x} y1="138" x2={x} y2="190" className="schematic-stroke" strokeWidth="1.1" />
+        {/* Woolly texture bumps */}
+        {[120,180,240,300,380,460,540,600].map((x, i) => (
+          <ellipse key={i} cx={x} cy={120 + (i%2)*8} rx="22" ry="12"
+            fill="rgba(236,230,216,0.04)" stroke="rgba(236,230,216,0.18)" strokeWidth="0.8" />
         ))}
-        <circle cx="24" cy="28" r="2" fill="#ECE6D8" />
-        <path d="M 6 16 Q -6 0 10 -6" className="schematic-stroke" strokeWidth="1" />
-        <text x="160" y="208" className="schematic-label">OVINE · 60 KG · VV CONFIG</text>
-
-        <line x1="44" y1="40" x2="-80" y2="-80" className="schematic-accent" strokeWidth="1.6" />
-        <line x1="64" y1="42" x2="-30" y2="-80" className="schematic-accent" strokeWidth="1.6" />
-        <text x="-110" y="-90" className="schematic-label" fill="#E63046">R-EJ · 20 Fr</text>
-        <text x="-52" y="-90" className="schematic-label" fill="#E63046">L-EJ · 20 Fr</text>
-      </g>
-
-      {/* Centrifugal pump */}
-      <g transform="translate(760 300)">
-        <circle r="74" className="schematic-stroke-faint" />
-        <circle r="62" className="schematic-stroke" strokeWidth="1.3" />
-        <circle r="48" className="schematic-accent" strokeWidth="1.5" />
-
-        {/* Rotating impeller */}
-        <g>
-          <animateTransform attributeName="transform" type="rotate" from="0" to="360" dur="1.6s" repeatCount="indefinite" />
-          {[0, 45, 90, 135, 180, 225, 270, 315].map((d) => (
-            <path
-              key={d}
-              d="M 0 0 Q 6 -20 0 -46 Q -6 -20 0 0 Z"
-              transform={`rotate(${d})`}
-              className="schematic-accent"
-              strokeWidth="1"
-              fill="rgba(230,48,70,0.18)"
-            />
-          ))}
-        </g>
-        <circle r="14" className="schematic-stroke" strokeWidth="1" fill="#0A0B10" />
-        <circle r="4" fill="#E63046" />
-        <text x="0" y="100" textAnchor="middle" className="schematic-label">CDX PUMP · 3–5 L/MIN</text>
-      </g>
-
-      {/* Hollow fiber oxygenator */}
-      <g transform="translate(1180 300)">
-        <rect x="-100" y="-80" width="200" height="160" rx="6" className="schematic-stroke" strokeWidth="1.3" />
-        {[...Array(14)].map((_, i) => (
-          <line key={i} x1={-90 + i * 14} y1="-70" x2={-90 + i * 14} y2="70" className="schematic-stroke" strokeWidth="0.8" />
+        {/* Head */}
+        <ellipse cx="88" cy="178" rx="52" ry="42"
+          fill="rgba(236,230,216,0.07)" stroke="rgba(236,230,216,0.4)" strokeWidth="1.4" />
+        {/* Snout */}
+        <ellipse cx="48" cy="196" rx="28" ry="20"
+          fill="rgba(236,230,216,0.05)" stroke="rgba(236,230,216,0.3)" strokeWidth="1" />
+        {/* Eye */}
+        <circle cx="96" cy="165" r="5" fill="rgba(236,230,216,0.5)" />
+        <circle cx="96" cy="165" r="2.5" fill="#0A0B10" />
+        {/* Ear */}
+        <path d="M 128 142 Q 148 108 136 98 Q 124 108 120 138"
+          fill="rgba(236,230,216,0.1)" stroke="rgba(236,230,216,0.4)" strokeWidth="1.2" />
+        {/* Legs × 4 */}
+        {[160, 280, 420, 560].map((x, i) => (
+          <g key={i}>
+            <rect x={x-10} y={374} width={20} height={90} rx={8}
+              fill="rgba(236,230,216,0.06)" stroke="rgba(236,230,216,0.3)" strokeWidth="1.1" />
+            {/* Hoof */}
+            <ellipse cx={x} cy={468} rx={14} ry={7}
+              fill="rgba(236,230,216,0.15)" stroke="rgba(236,230,216,0.35)" strokeWidth="0.8" />
+          </g>
         ))}
-        <line x1="-100" y1="-30" x2="100" y2="-30" className="schematic-accent" strokeWidth="1" strokeDasharray="3 3" />
-        <line x1="-100" y1="30" x2="100" y2="30" className="schematic-accent" strokeWidth="1" strokeDasharray="3 3" />
-        {/* O₂ in / out chevrons */}
-        <path d="M -100 -50 L -88 -56 L -100 -62" stroke="rgba(122,184,232,0.6)" strokeWidth="1" fill="none" />
-        <path d="M  100  50 L  112  56 L  100  62" stroke="rgba(230,48,70,0.6)" strokeWidth="1" fill="none" />
-        <text x="-90" y="-86" className="schematic-label" fill="rgba(122,184,232,0.7)">O₂ IN</text>
-        <text x="78" y="86" className="schematic-label" fill="rgba(230,48,70,0.7)">CO₂ OUT</text>
-        <text x="0" y="100" textAnchor="middle" className="schematic-label">HOLLOW-FIBER OXYGENATOR</text>
+        {/* Tail */}
+        <path d="M 680 248 Q 720 230 715 210 Q 710 198 700 205"
+          fill="none" stroke="rgba(236,230,216,0.35)" strokeWidth="1.2" />
+
+        {/* Jugular cannulation site — right EJ */}
+        <circle cx="132" cy="152" r="5" fill="none" stroke="#E63046" strokeWidth="1.5">
+          <animate attributeName="r" values="4;7;4" dur="1.4s" repeatCount="indefinite" />
+          <animate attributeName="opacity" values="0.6;1;0.6" dur="1.4s" repeatCount="indefinite" />
+        </circle>
+        <circle cx="132" cy="152" r="2.5" fill="#E63046" />
+        {/* Left EJ */}
+        <circle cx="106" cy="160" r="4" fill="none" stroke="#E63046" strokeWidth="1.2">
+          <animate attributeName="r" values="3;6;3" dur="1.4s" begin="0.3s" repeatCount="indefinite" />
+          <animate attributeName="opacity" values="0.5;1;0.5" dur="1.4s" begin="0.3s" repeatCount="indefinite" />
+        </circle>
+        <circle cx="106" cy="160" r="2" fill="#E63046" />
+
+        {/* Cannula lines going up/left toward device — exit body at neck */}
+        <line x1="132" y1="150" x2="230" y2="170" stroke="#E63046" strokeWidth="3.5" strokeLinecap="round" opacity="0.85" />
+        <line x1="132" y1="155" x2="230" y2="180" stroke="rgba(122,184,232,0.8)" strokeWidth="3" strokeLinecap="round" />
+        <text x="150" y="508" className="schematic-label" textAnchor="middle">OVINE MODEL · ~60 KG · VV ECMO</text>
       </g>
 
-      {/* Animated blood particles around full circuit */}
-      {[0, 1, 2, 3, 4].map((i) => (
-        <circle key={i} r="4.5" fill="#E63046">
-          <animateMotion dur="5s" begin={`${i}s`} repeatCount="indefinite">
-            <mpath href="#pas-det-circuit" />
+      {/* ── DRAIN TUBE (red — blood leaving sheep) ── */}
+      <path d={tubeDrainPath} fill="none" stroke="rgba(230,48,70,0.6)" strokeWidth="7" strokeLinecap="round" />
+      <path d={tubeDrainPath} fill="none" stroke="#E63046" strokeWidth="3.5" strokeLinecap="round" opacity="0.85" />
+
+      {/* ── RETURN TUBE (blue — oxygenated returning) ── */}
+      <path d={tubeReturnPath} fill="none" stroke="rgba(122,184,232,0.5)" strokeWidth="7" strokeLinecap="round" />
+      <path d={tubeReturnPath} fill="none" stroke="rgba(122,184,232,0.9)" strokeWidth="3" strokeLinecap="round" />
+
+      {/* ── BLOOD FLOW PARTICLES — drain (red, sheep → pump) ── */}
+      {[0, 1.1, 2.2, 3.3].map((delay, i) => (
+        <circle key={`dr-${i}`} r="5" fill="#E63046" filter="url(#pas-glow-red)">
+          <animateMotion dur="4.5s" begin={`${delay}s`} repeatCount="indefinite" rotate="auto">
+            <mpath href="#pas-drain-path" />
           </animateMotion>
+          <animate attributeName="opacity" values="0;1;1;0.7;0" dur="4.5s" begin={`${delay}s`} repeatCount="indefinite" />
         </circle>
       ))}
 
-      {/* N=6 cohort outcome panel — bottom-right */}
-      <g transform="translate(80 612)">
-        <text x="0" y="0" className="schematic-label">N=6 · D0 → D30 · 2/6 PRIMARY ENDPOINT</text>
-        <line x1="0" y1="10" x2="1440" y2="10" className="schematic-stroke-faint" />
-        {/* 6 subject markers along the timeline */}
-        {[
-          { name: 'AKIO', day: 15, ok: false },
-          { name: 'BENTO', day: 4, ok: false },
-          { name: 'CHIIKAWA', day: 30, ok: true },
-          { name: 'EBISU', day: 30, ok: true },
-          { name: 'DAIFUKU', day: 18, ok: false },
-          { name: 'GOKU', day: 15, ok: false },
-        ].map((s, i) => {
-          const x = 80 + i * 220;
-          return (
-            <g key={i} transform={`translate(${x} 10)`}>
-              {/* Survival bar */}
-              <rect
-                x="0" y="6" width={(s.day / 30) * 200} height="6" rx="1"
-                fill={s.ok ? 'rgba(230,48,70,0.55)' : 'rgba(236,230,216,0.18)'}
-                stroke={s.ok ? '#E63046' : 'rgba(236,230,216,0.4)'}
-                strokeWidth="0.6"
-              />
-              <text x="0" y="-6" className="schematic-label" fill={s.ok ? '#E63046' : 'rgba(236,230,216,0.55)'}>
-                {s.name}
-              </text>
-              <text x="200" y="22" textAnchor="end" className="schematic-label" opacity="0.6">{`D${s.day}`}</text>
-            </g>
-          );
-        })}
+      {/* ── BLOOD FLOW PARTICLES — return (blue, oxygenator → sheep) ── */}
+      {[0.5, 1.6, 2.7, 3.8].map((delay, i) => (
+        <circle key={`rt-${i}`} r="4.5" fill="#7AB8E8" filter="url(#pas-glow-blue)">
+          <animateMotion dur="4.5s" begin={`${delay}s`} repeatCount="indefinite" rotate="auto">
+            <mpath href="#pas-return-path" />
+          </animateMotion>
+          <animate attributeName="opacity" values="0;1;1;0.7;0" dur="4.5s" begin={`${delay}s`} repeatCount="indefinite" />
+        </circle>
+      ))}
 
-        {/* Day axis */}
-        {[0, 5, 10, 15, 20, 25, 30].map((d) => (
-          <g key={d} transform={`translate(${(d / 30) * 1440} 32)`}>
-            <line x1="0" y1="0" x2="0" y2="6" className="schematic-stroke" strokeWidth="0.6" />
+      {/* ── CDX CENTRIFUGAL PUMP ── */}
+      <g transform="translate(760 268)">
+        {/* Housing */}
+        <rect x="-82" y="-62" width="164" height="124" rx="14"
+          fill="rgba(10,11,16,0.85)" stroke="rgba(236,230,216,0.35)" strokeWidth="1.3" />
+        {/* Impeller circle */}
+        <circle r="46" fill="rgba(230,48,70,0.06)" stroke="rgba(230,48,70,0.5)" strokeWidth="1.3" />
+        {/* Spinning impeller blades */}
+        <g>
+          <animateTransform attributeName="transform" type="rotate" from="0" to="360" dur="1.4s" repeatCount="indefinite" />
+          {[0,45,90,135,180,225,270,315].map((d) => (
+            <path key={d} d="M 0 0 Q 5 -16 0 -42 Q -5 -16 0 0 Z"
+              transform={`rotate(${d})`}
+              fill="rgba(230,48,70,0.3)" stroke="#E63046" strokeWidth="0.8" />
+          ))}
+        </g>
+        <circle r="10" fill="#0A0B10" stroke="rgba(230,48,70,0.6)" strokeWidth="1" />
+        <circle r="3.5" fill="#E63046" />
+        <text x="0" y="82" textAnchor="middle" className="schematic-label">CDX PUMP</text>
+        <text x="0" y="96" textAnchor="middle" className="schematic-label" fill="rgba(236,230,216,0.4)">2–3 L/MIN</text>
+      </g>
+
+      {/* ── HOLLOW-FIBER OXYGENATOR ── */}
+      <g transform="translate(1120 268)">
+        <rect x="-90" y="-70" width="180" height="140" rx="10"
+          fill="rgba(10,11,16,0.85)" stroke="rgba(236,230,216,0.35)" strokeWidth="1.3" />
+        {/* Fiber lines */}
+        {[...Array(12)].map((_, i) => (
+          <line key={i} x1={-78 + i*14} y1="-56" x2={-78 + i*14} y2="56"
+            stroke="rgba(236,230,216,0.25)" strokeWidth="0.9" />
+        ))}
+        {/* Gas exchange zones */}
+        <rect x="-90" y="-28" width="180" height="16" rx="2"
+          fill="rgba(122,184,232,0.08)" stroke="rgba(122,184,232,0.3)" strokeWidth="0.8" />
+        <rect x="-90" y="12" width="180" height="16" rx="2"
+          fill="rgba(230,48,70,0.06)" stroke="rgba(230,48,70,0.25)" strokeWidth="0.8" />
+
+        {/* O₂ bubble animation — entering top */}
+        {[0, 0.6, 1.2, 1.8, 2.4].map((delay, i) => (
+          <circle key={`o2-${i}`} cx={-60 + i*30} cy="-70" r="3" fill="rgba(122,184,232,0.8)">
+            <animate attributeName="cy" values="-70;-20;-70" dur="2.8s" begin={`${delay}s`} repeatCount="indefinite" />
+            <animate attributeName="opacity" values="0;0.9;0" dur="2.8s" begin={`${delay}s`} repeatCount="indefinite" />
+          </circle>
+        ))}
+        {/* CO₂ bubble animation — exiting bottom */}
+        {[0.3, 0.9, 1.5, 2.1].map((delay, i) => (
+          <circle key={`co2-${i}`} cx={-50 + i*34} cy="56" r="2.5" fill="rgba(230,48,70,0.7)">
+            <animate attributeName="cy" values="56;70;56" dur="3.2s" begin={`${delay}s`} repeatCount="indefinite" />
+            <animate attributeName="opacity" values="0;0.8;0" dur="3.2s" begin={`${delay}s`} repeatCount="indefinite" />
+          </circle>
+        ))}
+
+        <text x="-60" y="-80" className="schematic-label" fill="rgba(122,184,232,0.8)">O₂ IN</text>
+        <text x="40" y="90" className="schematic-label" fill="rgba(230,48,70,0.7)">CO₂ OUT</text>
+        <text x="0" y="105" textAnchor="middle" className="schematic-label">HOLLOW-FIBER OXYGENATOR</text>
+      </g>
+
+      {/* ── MONITORING PANEL — bottom left ── */}
+      <g transform="translate(88 560)">
+        <rect x="-8" y="-16" width="340" height="56" rx="6"
+          fill="rgba(10,11,16,0.7)" stroke="rgba(236,230,216,0.12)" strokeWidth="0.8" />
+        {[
+          { label: 'FLOW', value: '— L/MIN', x: 0 },
+          { label: 'RESIST', value: '— mmHg', x: 110 },
+          { label: 'STATUS', value: 'ONGOING', x: 220, accent: true },
+        ].map((m) => (
+          <g key={m.label} transform={`translate(${m.x} 0)`}>
+            <text x="0" y="0" className="schematic-label" fill="rgba(236,230,216,0.4)">{m.label}</text>
+            <text x="0" y="18" className="schematic-label" fill={m.accent ? '#E63046' : 'rgba(236,230,216,0.8)'}>{m.value}</text>
+          </g>
+        ))}
+        {/* Blinking active dot */}
+        <circle cx="322" cy="4" r="3.5" fill="#E63046">
+          <animate attributeName="opacity" values="0.2;1;0.2" dur="1.4s" repeatCount="indefinite" />
+        </circle>
+      </g>
+
+      {/* ── LABEL LEADERS ── */}
+      <line x1="390" y1="230" x2="390" y2="196" stroke="rgba(236,230,216,0.2)" strokeWidth="0.8" strokeDasharray="3 4" />
+      <text x="390" y="190" textAnchor="middle" className="schematic-label">R-EJ / L-EJ CANNULAS</text>
+
+      <line x1="760" y1="210" x2="760" y2="178" stroke="rgba(236,230,216,0.2)" strokeWidth="0.8" strokeDasharray="3 4" />
+      <text x="760" y="172" textAnchor="middle" className="schematic-label">CDX CENTRIFUGAL PUMP</text>
+
+      <line x1="1120" y1="200" x2="1120" y2="172" stroke="rgba(236,230,216,0.2)" strokeWidth="0.8" strokeDasharray="3 4" />
+      <text x="1120" y="166" textAnchor="middle" className="schematic-label">MEMBRANE OXYGENATOR</text>
+
+      {/* ── FLOW DIRECTION ARROWS on tubes ── */}
+      <text x="590" y="240" className="schematic-label" fill="rgba(230,48,70,0.7)">→ DRAIN</text>
+      <text x="590" y="300" className="schematic-label" fill="rgba(122,184,232,0.7)">← RETURN</text>
+
+      {/* ── N=6 COHORT — names only, no results ── */}
+      <g transform="translate(88 510)">
+        <text x="0" y="0" className="schematic-label">N=6 COHORT · ONGOING</text>
+        <line x1="0" y1="8" x2="700" y2="8" stroke="rgba(236,230,216,0.1)" strokeWidth="0.7" />
+        {['AKIO', 'BENTO', 'CHIIKAWA', 'EBISU', 'DAIFUKU', 'GOKU'].map((name, i) => (
+          <g key={name} transform={`translate(${i * 118} 14)`}>
+            <circle cx="0" cy="0" r="3" fill="rgba(236,230,216,0.25)" stroke="rgba(236,230,216,0.4)" strokeWidth="0.8">
+              <animate attributeName="opacity" values="0.4;1;0.4" dur={`${2 + i * 0.3}s`} repeatCount="indefinite" />
+            </circle>
+            <text x="8" y="4" className="schematic-label" fill="rgba(236,230,216,0.5)">{name}</text>
           </g>
         ))}
       </g>
     </svg>
   );
 }
+
 
 /* ────────────────────────────────────────────────────────────────────────── */
 /*  COAGULATION DETAIL — cascade + PCB chain comparison + half-life bars      */
