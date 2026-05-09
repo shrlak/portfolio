@@ -185,7 +185,9 @@ function SectionTag({ text }: { text: string }) {
   return (
     <div className="inline-flex items-center gap-2.5">
       <span className="vital-dot shrink-0" />
-      <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted">{text}</span>
+      <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted">
+        <span className="text-vital/40">[ </span>{text}<span className="text-vital/40"> ]</span>
+      </span>
     </div>
   );
 }
@@ -333,6 +335,10 @@ function Navbar({ onHome = false }: { onHome?: boolean }) {
             <span className="inline-flex items-center gap-2">
               <Activity className="h-4 w-4 text-vital" strokeWidth={1.75} />
               {PERSON.shortName}
+              <span className="hidden sm:inline-flex items-center gap-1 rounded-full border border-vital/20 px-1.5 py-0.5 font-mono text-[7px] uppercase tracking-[0.14em] text-vital/60">
+                <span className="inline-block h-1 w-1 rounded-full bg-vital/70 animate-pulse" />
+                Live
+              </span>
             </span>
           </a>
 
@@ -452,6 +458,7 @@ function Navbar({ onHome = false }: { onHome?: boolean }) {
 function HeroSection() {
   return (
     <section id="home" className="relative min-h-[100svh] overflow-hidden bg-graphite flex flex-col">
+      <div className="scan-sweep" aria-hidden="true" />
       <HeroSchematic />
 
       {/* Navbar row — constrained to max-w-container */}
@@ -481,16 +488,18 @@ function HeroSection() {
           </div>
 
           {/* Accent phrase */}
-          <span className="font-serif-italic block text-vital mb-3 text-3xl sm:text-4xl md:text-4xl lg:text-5xl boot-in boot-d3">
+          <span className="font-serif-italic block text-vital mb-3 text-3xl sm:text-4xl md:text-4xl lg:text-5xl boot-in boot-d3 cursor-blink">
             {HERO.accent}
           </span>
 
           {/* Main heading */}
+          <div className="hud-corners">
           <h1 className="font-grotesk uppercase text-bone leading-[0.88] tracking-tightest text-[14.5vw] md:text-[6.5vw] lg:text-[6vw] xl:text-[6.5rem] 2xl:text-[7.5rem] boot-in boot-d4">
             {HERO.heading.map((line, i) => (
               <span key={i} className="block">{line}</span>
             ))}
           </h1>
+          </div>
 
           {/* Bottom info bar */}
           <div className="mt-8 border-t border-bone/8 pt-6 boot-in boot-d6">
@@ -541,8 +550,20 @@ function HeroSection() {
             <div className="relative z-10 h-px w-full bg-bone/[0.06] overflow-hidden rounded-full">
               <div className="h-full w-1/3 bg-gradient-to-r from-vital to-vital/40 rounded-full" />
             </div>
-            <p className="relative z-10 font-mono text-[8px] uppercase tracking-[0.14em] text-steel">
-              IV Rivaroxaban in PEG · Cook Cardiopulmonary Engineering Lab
+            <div className="relative z-10 grid grid-cols-3 gap-2 pt-3 border-t border-bone/[0.06]">
+              {[
+                { k: 'CIRCUIT', v: 'VV ECMO' },
+                { k: 'ANTICOAG', v: 'IV RIVO' },
+                { k: 'DURATION', v: '30 DAY' },
+              ].map(({ k, v }) => (
+                <div key={k}>
+                  <p className="font-mono text-[7px] uppercase tracking-[0.12em] text-steel/55">{k}</p>
+                  <p className="font-mono text-[8.5px] uppercase tracking-[0.08em] text-bone/70 mt-0.5">{v}</p>
+                </div>
+              ))}
+            </div>
+            <p className="relative z-10 font-mono text-[7.5px] uppercase tracking-[0.12em] text-steel/50">
+              Cook Cardiopulmonary Engineering Lab · CMU
             </p>
           </div>
 
@@ -756,7 +777,7 @@ function AboutSection() {
 
 function SkillsSection() {
   return (
-    <section className="relative bg-graphite">
+    <section className="relative bg-graphite eng-grid">
       <div className="mx-auto max-w-container px-6 md:px-10 lg:px-14 xl:px-16 py-16 md:py-20">
         <div className="mb-10" data-reveal>
           <SectionTag text="004 · TOOLS + METHODS" />
@@ -777,6 +798,7 @@ function SkillsSection() {
                   <div key={ii}>
                     <div className="flex items-center justify-between mb-2">
                       <span className="font-mono text-[11px] text-bone/80">{item.name}</span>
+                      <span className="font-mono text-[8.5px] text-vital/55">{item.pct}%</span>
                     </div>
                     <div className="skill-bar">
                       <div className="skill-fill" style={{ width: `${item.pct}%` }} />
@@ -801,7 +823,7 @@ function ResearchSection() {
     cane: <CaneCardSchematic />,
   };
   return (
-    <section id="research" className="relative bg-surface">
+    <section id="research" className="relative bg-surface eng-grid">
       <div className="mx-auto max-w-container px-6 md:px-10 lg:px-14 xl:px-16 py-20 md:py-28 lg:py-32">
         {/* Header */}
         <div className="mb-14 md:mb-20 flex flex-col gap-8 md:flex-row md:items-end md:justify-between">
@@ -905,7 +927,7 @@ function ResearchSection() {
 
 function PublicationsSection() {
   return (
-    <section className="relative bg-graphite">
+    <section className="relative bg-graphite eng-grid">
       <div className="mx-auto max-w-container px-6 md:px-10 lg:px-14 xl:px-16 py-16 md:py-20">
         <div className="mb-10" data-reveal>
           <SectionTag text="006 · PUBLICATIONS + ABSTRACTS" />
