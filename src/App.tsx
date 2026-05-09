@@ -1190,7 +1190,13 @@ function HomePage() {
       <SectionDivider />
       <AboutSection />
       <SectionDivider />
+      <SkillsSection />
+      <SectionDivider />
       <ResearchSection />
+      <SectionDivider />
+      <PublicationsSection />
+      <SectionDivider />
+      <TimelineStrip />
       <SectionDivider />
       <ContactSection />
     </>

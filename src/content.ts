@@ -67,7 +67,7 @@ export const ABOUT = {
 };
 
 export const RESEARCH = {
-  tag: '004 · INSTRUMENTATION INDEX',
+  tag: '005 · INSTRUMENTATION INDEX',
   headingTop: 'SELECTED',
   headingAccent: 'instruments',
   cta: 'VIEW FULL CV',
@@ -374,7 +374,7 @@ export const CV = {
  * -------------------------------------------------------------------------- */
 
 export const CONTACT = {
-  tag: '006 · ESTABLISH LINE',
+  tag: '008 · ESTABLISH LINE',
   accent: "Let's build.",
   heading: ['FROM BLUEPRINT', 'TO IMPLANT.'],
   body: 'Collaborating on artificial organ support, assistive devices, or anything at the boundary between a living system and an engineered one — whether you want to sponsor an undergrad, recruit for a summer 2026 role, or just compare notes on oxygenator hemocompatibility. The form below drops straight into my inbox.',
