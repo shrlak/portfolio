@@ -32,7 +32,11 @@ import {
   CV,
   CONTACT,
   NAV_ITEMS,
+  PUBLICATIONS,
+  SKILLS,
+  TIMELINE,
   type CardSlug,
+  type TimelineState,
 } from './content';
 import {
   HeroSchematic,
@@ -254,6 +258,41 @@ function PillLink({
           )}
         </span>
       </span>
+    </a>
+  );
+}
+
+function StatusDot({ status }: { status: string }) {
+  const dotClass =
+    status === 'ACTIVE'
+      ? 'status-dot-active'
+      : status === 'SUBMITTED'
+      ? 'status-dot-submitted'
+      : 'status-dot-registered';
+  const textColor =
+    status === 'ACTIVE'
+      ? 'text-emerald-400'
+      : status === 'SUBMITTED'
+      ? 'text-amber-400'
+      : 'text-blue-400';
+  return (
+    <span className="inline-flex items-center gap-1.5">
+      <span className={`inline-block h-1.5 w-1.5 rounded-full ${dotClass}`} />
+      <span className={`font-mono text-[8.5px] uppercase tracking-[0.16em] ${textColor}`}>
+        {status}
+      </span>
+    </span>
+  );
+}
+
+function OpenToCollab() {
+  return (
+    <a
+      href="#contact"
+      className="liquid-glass inline-flex w-fit items-center gap-2 rounded-full px-4 py-2 font-mono text-[9px] uppercase tracking-[0.14em] text-bone/70 hover:text-vital transition-colors"
+    >
+      <span className="relative z-10 inline-block h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+      <span className="relative z-10">Open to collaboration · Summer 2026</span>
     </a>
   );
 }
