@@ -752,6 +752,46 @@ function AboutSection() {
   );
 }
 
+/* ── Skills ─────────────────────────────────────────────────────────── */
+
+function SkillsSection() {
+  return (
+    <section className="relative bg-graphite">
+      <div className="mx-auto max-w-container px-6 md:px-10 lg:px-14 xl:px-16 py-16 md:py-20">
+        <div className="mb-10" data-reveal>
+          <SectionTag text="004 · TOOLS + METHODS" />
+        </div>
+        <div className="grid gap-4 md:grid-cols-2">
+          {SKILLS.map((group, gi) => (
+            <div
+              key={gi}
+              data-reveal
+              data-reveal-delay={String(gi + 1)}
+              className="liquid-glass rounded-2xl p-6 md:p-8"
+            >
+              <p className="relative z-10 font-mono text-[9px] uppercase tracking-[0.2em] text-vital/75 mb-6">
+                {group.group}
+              </p>
+              <div className="relative z-10 flex flex-col gap-5">
+                {group.items.map((item, ii) => (
+                  <div key={ii}>
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="font-mono text-[11px] text-bone/80">{item.name}</span>
+                    </div>
+                    <div className="skill-bar">
+                      <div className="skill-fill" style={{ width: `${item.pct}%` }} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 /* ── Research ───────────────────────────────────────────────────────── */
 
 function ResearchSection() {
@@ -855,6 +895,104 @@ function ResearchSection() {
               </a>
             );
           })}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ── Publications ───────────────────────────────────────────────────── */
+
+function PublicationsSection() {
+  return (
+    <section className="relative bg-graphite">
+      <div className="mx-auto max-w-container px-6 md:px-10 lg:px-14 xl:px-16 py-16 md:py-20">
+        <div className="mb-10" data-reveal>
+          <SectionTag text="006 · PUBLICATIONS + ABSTRACTS" />
+        </div>
+        <div className="flex flex-col gap-4">
+          {PUBLICATIONS.map((pub, i) => (
+            <div
+              key={i}
+              data-reveal
+              data-reveal-delay={String(i + 1)}
+              className="liquid-glass rounded-2xl p-6 md:p-8 flex flex-col sm:flex-row gap-6 items-start"
+            >
+              {/* Year badge */}
+              <div className="liquid-glass rounded-xl p-4 text-center shrink-0 min-w-[64px]">
+                <p className="relative z-10 font-grotesk text-3xl tracking-tightest text-vital leading-none">{pub.year}</p>
+                <p className="relative z-10 font-mono text-[8px] uppercase tracking-[0.18em] text-muted mt-1">{pub.conference}</p>
+              </div>
+              {/* Content */}
+              <div className="flex-1 min-w-0">
+                <div className="relative z-10 flex items-center gap-2 mb-3">
+                  <StatusDot status={pub.status} />
+                  <span className="font-mono text-[9px] uppercase tracking-[0.14em] text-steel">{pub.venue}</span>
+                </div>
+                <p className="relative z-10 font-sans text-sm font-semibold tracking-ui text-bone uppercase leading-snug mb-3">
+                  {pub.title}
+                </p>
+                <p className="relative z-10 font-mono text-[11px] leading-[1.75] text-muted">
+                  {pub.authors}
+                </p>
+                <p className="relative z-10 font-mono text-[9px] text-steel mt-1">* Spencer Kim</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ── Timeline ───────────────────────────────────────────────────────── */
+
+function TimelineStrip() {
+  const doneCount = TIMELINE.filter((n) => n.state === 'done').length;
+  const fillPct = Math.round((doneCount / (TIMELINE.length - 1)) * 100);
+
+  return (
+    <section className="relative bg-surface">
+      <div className="mx-auto max-w-container px-6 md:px-10 lg:px-14 xl:px-16 py-16 md:py-20">
+        <div className="mb-10" data-reveal>
+          <SectionTag text="PAS STUDY TIMELINE · N=6 OVINE COHORT" />
+        </div>
+        <div className="liquid-glass rounded-2xl px-8 md:px-14 py-8 md:py-10" data-reveal>
+          {/* Track */}
+          <div className="relative px-4 mb-0">
+            <div className="timeline-track">
+              <div className="timeline-fill" style={{ width: `${fillPct}%` }} />
+            </div>
+          </div>
+          {/* Nodes */}
+          <div
+            className="grid mt-0"
+            style={{ gridTemplateColumns: `repeat(${TIMELINE.length}, 1fr)` }}
+          >
+            {TIMELINE.map((node, i) => (
+              <div key={i} className="flex flex-col items-center gap-3 -mt-[5px]">
+                <div
+                  className={`tnode-dot${node.state !== 'pending' ? ` ${node.state}` : ''}`}
+                />
+                <div className="text-center">
+                  <p
+                    className={`font-mono text-[8px] md:text-[9px] uppercase tracking-[0.14em] leading-[1.4] ${
+                      node.state === 'done'
+                        ? 'text-vital'
+                        : node.state === 'active'
+                        ? 'text-bone'
+                        : 'text-steel'
+                    }`}
+                  >
+                    {node.label}
+                  </p>
+                  <p className="font-mono text-[7.5px] uppercase tracking-[0.12em] text-steel/60 mt-0.5">
+                    {node.sub}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     </section>
