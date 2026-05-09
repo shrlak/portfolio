@@ -780,16 +780,8 @@ function ResearchSection() {
         </div>
 
         {/* Cards */}
-        <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-[1.4fr_1fr_1fr]">
           {RESEARCH_CARDS.map((card, cardIdx) => {
-            const statusColor =
-              card.status === 'ACTIVE' ? 'bg-emerald-500'
-              : card.status === 'SUBMITTED' ? 'bg-amber-400'
-              : 'bg-oxygen';
-            const accentColor =
-              card.status === 'ACTIVE' ? 'bg-emerald-500/60'
-              : card.status === 'SUBMITTED' ? 'bg-amber-400/50'
-              : 'bg-oxygen/50';
             return (
               <a
                 key={card.slug}
@@ -844,7 +836,7 @@ function ResearchSection() {
 
                   {/* Card footer */}
                   <div>
-                    <div className={`w-full h-px rounded-full mb-3 ${accentColor}`} />
+                    <div className="w-full h-px rounded-full mb-3 bg-vital/30" />
                     <div className="liquid-glass rounded-xl px-4 py-3">
                       <div className="relative z-10 flex items-center justify-between gap-3">
                         <div className="min-w-0">
@@ -855,12 +847,7 @@ function ResearchSection() {
                             {card.metaValue}
                           </p>
                         </div>
-                        <span className="inline-flex items-center gap-1.5 rounded-full border border-bone/10 bg-graphite/60 px-2.5 py-1 shrink-0">
-                          <span className={`inline-block h-1.5 w-1.5 rounded-full ${statusColor}`} />
-                          <span className="font-mono text-[8.5px] uppercase tracking-[0.16em] text-muted">
-                            {card.status}
-                          </span>
-                        </span>
+                        <StatusDot status={card.status} />
                       </div>
                     </div>
                   </div>
