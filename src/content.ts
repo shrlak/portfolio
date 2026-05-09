@@ -398,3 +398,71 @@ export const NAV_ITEMS = [
   { label: 'RESEARCH', href: '#research' },
   { label: 'CONTACT', href: '#contact' },
 ];
+
+/* ----------------------------------------------------------------------------
+ * PUBLICATIONS
+ * -------------------------------------------------------------------------- */
+
+export const PUBLICATIONS: Array<{
+  year: string;
+  conference: string;
+  title: string;
+  authors: string;
+  venue: string;
+  status: 'SUBMITTED' | 'PUBLISHED';
+}> = [
+  {
+    year: '2026',
+    conference: 'ISTH',
+    title:
+      'Pharmacokinetic and Pharmacodynamic Profile Evaluation of Polycarboxybetaine-Conjugated FXIIa Inhibitor in Rabbits',
+    authors:
+      'Shin S, Liu D, Potchernikov A, Scala H, Bennett J, Nakamura R, Haggerty M, Kim S*, Jiang S, Cook KE',
+    venue:
+      'International Society on Thrombosis and Haemostasis · Abstract',
+    status: 'SUBMITTED',
+  },
+];
+
+/* ----------------------------------------------------------------------------
+ * SKILLS
+ * -------------------------------------------------------------------------- */
+
+export const SKILLS: Array<{
+  group: string;
+  items: Array<{ name: string; pct: number }>;
+}> = [
+  {
+    group: 'MEDICAL DEVICE R&D',
+    items: [
+      { name: 'Extracorporeal circuits', pct: 90 },
+      { name: 'In-vivo large-animal studies', pct: 80 },
+      { name: 'Blood sampling protocols', pct: 85 },
+      { name: 'Hollow-fiber oxygenators', pct: 75 },
+    ],
+  },
+  {
+    group: 'ENGINEERING + COMPUTATION',
+    items: [
+      { name: 'SolidWorks / Fusion 360', pct: 85 },
+      { name: 'Python · NumPy / Pandas', pct: 80 },
+      { name: 'MATLAB', pct: 75 },
+      { name: 'FEA / CFD', pct: 65 },
+    ],
+  },
+];
+
+/* ----------------------------------------------------------------------------
+ * TIMELINE
+ * -------------------------------------------------------------------------- */
+
+export type TimelineState = 'done' | 'active' | 'pending';
+
+export const TIMELINE: Array<{ label: string; sub: string; state: TimelineState }> = [
+  { label: 'Protocol Design', sub: 'Complete', state: 'done' },
+  { label: 'IACUC Approval', sub: 'Complete', state: 'done' },
+  { label: 'Cohort 1', sub: '2/6 endpoint', state: 'done' },
+  { label: 'Protocol Refinement', sub: 'In progress', state: 'active' },
+  { label: 'Powered Trial', sub: 'n=10 planned', state: 'pending' },
+  { label: 'Publication', sub: 'Pending', state: 'pending' },
+];
