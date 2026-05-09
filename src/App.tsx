@@ -451,14 +451,21 @@ function Navbar({ onHome = false }: { onHome?: boolean }) {
 
 function HeroSection() {
   return (
-    <section id="home" className="relative min-h-[100svh] overflow-hidden bg-graphite">
+    <section id="home" className="relative min-h-[100svh] overflow-hidden bg-graphite flex flex-col">
       <HeroSchematic />
-      <div className="relative mx-auto flex min-h-[100svh] max-w-container flex-col px-6 md:px-10 lg:px-14 xl:px-16">
+
+      {/* Navbar row — constrained to max-w-container */}
+      <div className="relative mx-auto w-full max-w-container px-6 md:px-10 lg:px-14 xl:px-16">
         <Navbar onHome />
+      </div>
 
-        <div className="relative flex flex-1 flex-col justify-end pb-14 md:pb-24 lg:pb-28">
+      {/* Split layout — fills remaining height */}
+      <div className="relative flex-1 mx-auto w-full max-w-container px-6 md:px-10 lg:px-14 xl:px-16 grid md:grid-cols-[55%_45%] min-h-0">
 
-          {/* Coordinate label */}
+        {/* ── Left: big type (cinematic) ── */}
+        <div className="flex flex-col justify-end pb-14 md:pb-20 pr-0 md:pr-10 pt-6">
+
+          {/* Coordinate label — desktop only */}
           <div className="mb-10 hidden md:flex items-center gap-3 boot-in boot-d2">
             <span className="inline-block h-px w-10 bg-bone/15" />
             <span className="font-mono text-[10px] uppercase tracking-[0.26em] text-muted">
@@ -466,7 +473,7 @@ function HeroSection() {
             </span>
           </div>
 
-          {/* Mobile social */}
+          {/* Mobile social icons */}
           <div className="mb-6 flex gap-2 md:hidden boot-in boot-d2">
             {SOCIAL.map((s) => (
               <IconButton key={s.label} {...s} />
@@ -474,12 +481,12 @@ function HeroSection() {
           </div>
 
           {/* Accent phrase */}
-          <span className="font-serif-italic block text-vital mb-3 text-3xl sm:text-4xl md:text-5xl lg:text-6xl boot-in boot-d3">
+          <span className="font-serif-italic block text-vital mb-3 text-3xl sm:text-4xl md:text-4xl lg:text-5xl boot-in boot-d3">
             {HERO.accent}
           </span>
 
           {/* Main heading */}
-          <h1 className="font-grotesk uppercase text-bone leading-[0.88] tracking-tightest text-[14.5vw] md:text-[10.5vw] lg:text-[10vw] xl:text-[10.5rem] 2xl:text-[12rem] boot-in boot-d4">
+          <h1 className="font-grotesk uppercase text-bone leading-[0.88] tracking-tightest text-[14.5vw] md:text-[6.5vw] lg:text-[6vw] xl:text-[6.5rem] 2xl:text-[7.5rem] boot-in boot-d4">
             {HERO.heading.map((line, i) => (
               <span key={i} className="block">{line}</span>
             ))}
@@ -488,15 +495,12 @@ function HeroSection() {
           {/* Bottom info bar */}
           <div className="mt-8 border-t border-bone/8 pt-6 boot-in boot-d6">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-5">
-              {/* Footnote */}
               <div className="flex items-start gap-2.5">
                 <span className="vital-dot mt-1.5 shrink-0" />
                 <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted leading-[1.8] max-w-[46ch]">
                   {HERO.footnote}
                 </p>
               </div>
-
-              {/* Key stats */}
               <div className="flex items-center gap-8 sm:gap-10">
                 {[
                   { v: '30', u: 'Day', sub: 'Ovine endpoint' },
@@ -511,17 +515,89 @@ function HeroSection() {
               </div>
             </div>
           </div>
+        </div>
 
-          {/* Scroll indicator */}
-          <div className="absolute bottom-[-2.5rem] left-1/2 -translate-x-1/2 hidden md:flex flex-col items-center gap-1.5 boot-in boot-d6">
-            <span className="font-mono text-[8px] uppercase tracking-[0.32em] text-steel">Scroll</span>
-            <div className="scroll-bounce text-steel">
-              <svg width="9" height="13" viewBox="0 0 10 14" fill="none">
-                <path d="M5 0v10M1 7l4 4 4-4" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
+        {/* ── Right: live bento data — desktop only ── */}
+        <div className="hidden md:flex flex-col gap-3 py-8 pl-10 border-l border-bone/[0.05] boot-in boot-d3">
+
+          {/* Live study tile */}
+          <div className="liquid-glass rounded-2xl p-5 flex flex-col gap-3">
+            <div className="relative z-10 flex items-center justify-between">
+              <span className="inline-flex items-center gap-2 font-mono text-[9px] uppercase tracking-[0.18em] text-vital">
+                <span className="inline-block h-1.5 w-1.5 rounded-full status-dot-active" />
+                Active Study
+              </span>
+              <span className="font-mono text-[8px] uppercase tracking-[0.12em] text-steel border border-bone/10 rounded-full px-2.5 py-0.5">
+                PAS · VV ECMO
+              </span>
+            </div>
+            <div className="relative z-10 flex items-baseline gap-3">
+              <p className="font-grotesk text-5xl tracking-tightest text-vital leading-none">2/6</p>
+              <div>
+                <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-bone">Endpoint</p>
+                <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-muted">30-day ovine survival</p>
+              </div>
+            </div>
+            <div className="relative z-10 h-px w-full bg-bone/[0.06] overflow-hidden rounded-full">
+              <div className="h-full w-1/3 bg-gradient-to-r from-vital to-vital/40 rounded-full" />
+            </div>
+            <p className="relative z-10 font-mono text-[8px] uppercase tracking-[0.14em] text-steel">
+              IV Rivaroxaban in PEG · Cook Cardiopulmonary Engineering Lab
+            </p>
+          </div>
+
+          {/* Credential row */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="liquid-glass rounded-xl p-4">
+              <p className="relative z-10 font-mono text-[8px] uppercase tracking-[0.16em] text-vital/75">Institution</p>
+              <p className="relative z-10 font-sans text-xs font-semibold tracking-ui text-bone uppercase mt-1 leading-snug">Carnegie Mellon University</p>
+              <p className="relative z-10 font-mono text-[9px] text-muted mt-0.5">College of Engineering</p>
+            </div>
+            <div className="liquid-glass rounded-xl p-4">
+              <p className="relative z-10 font-mono text-[8px] uppercase tracking-[0.16em] text-vital/75">Patent Granted</p>
+              <p className="relative z-10 font-sans text-xs font-semibold tracking-ui text-bone uppercase mt-1 leading-snug">KR 10-2675388</p>
+              <p className="relative z-10 font-mono text-[9px] text-muted mt-0.5">KIPO · Jun 2024</p>
             </div>
           </div>
+
+          {/* Research mini-cards */}
+          <div className="flex flex-col gap-2">
+            {RESEARCH_CARDS.map((card) => (
+              <a
+                key={card.slug}
+                href={`#/research/${card.slug}`}
+                className="liquid-glass group rounded-xl px-4 py-3 flex items-center justify-between gap-3 hover:border-vital/30 transition-colors"
+              >
+                <div className="relative z-10 flex items-center gap-3 min-w-0">
+                  <span className="font-mono text-[9px] uppercase tracking-[0.16em] text-vital shrink-0">{card.index}</span>
+                  <div className="min-w-0">
+                    <p className="font-sans text-xs font-semibold tracking-ui text-bone uppercase truncate">
+                      {card.title} {card.titleTwo}
+                    </p>
+                    <p className="font-mono text-[9px] text-muted truncate">
+                      {card.subtitle.split('·')[0].trim()}
+                    </p>
+                  </div>
+                </div>
+                <div className="relative z-10 flex items-center gap-2 shrink-0">
+                  <StatusDot status={card.status} />
+                  <ArrowUpRight className="h-3 w-3 text-steel group-hover:text-vital transition-colors" strokeWidth={2} />
+                </div>
+              </a>
+            ))}
+          </div>
+
+          {/* Social + collab strip */}
+          <div className="mt-auto flex items-center justify-between gap-3 pt-2">
+            <div className="flex items-center gap-2">
+              {SOCIAL.map((s) => (
+                <IconButton key={s.label} {...s} size="sm" />
+              ))}
+            </div>
+            <OpenToCollab />
+          </div>
         </div>
+
       </div>
     </section>
   );
