@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hero Layout Options</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #06070d; color: #ece6d8; font-family: 'Inter', system-ui, sans-serif; padding: 28px; }
+
+  h2 { font-size: 13px; font-weight: 600; letter-spacing: 0.12em; color: #888; text-transform: uppercase; margin-bottom: 6px; }
+  .subtitle { font-size: 11px; color: #555; font-family: monospace; letter-spacing: 0.08em; margin-bottom: 28px; }
+
+  .split { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+
+  .option-wrap { display: flex; flex-direction: column; gap: 12px; cursor: pointer; }
+  .option-label { font-size: 10px; font-family: monospace; letter-spacing: 0.16em; color: #555; text-transform: uppercase; display: flex; align-items: center; gap: 8px; }
+  .option-label span { font-size: 14px; font-weight: 900; color: #ece6d8; }
+
+  .preview-box {
+    border: 1.5px solid rgba(255,255,255,0.07);
+    border-radius: 14px;
+    overflow: hidden;
+    transition: border-color 0.2s, transform 0.2s;
+    cursor: pointer;
+  }
+  .preview-box:hover { border-color: rgba(230,48,70,0.4); transform: translateY(-3px); }
+  .preview-box.selected { border-color: #E63046; box-shadow: 0 0 0 1px #E63046, 0 8px 32px rgba(230,48,70,0.15); }
+
+  /* OPTION A: DRAMATIC SINGLE COLUMN */
+  .hero-a {
+    background: #0a0b10;
+    min-height: 380px;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    padding: 20px;
+  }
+  .hero-a-bg {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at 60% 40%, rgba(230,48,70,0.07) 0%, transparent 65%);
+    pointer-events: none;
+  }
+  /* Animated circuit lines in bg */
+  .circuit-lines {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    pointer-events: none;
+    opacity: 0.15;
+  }
+  .circuit-lines svg { width: 100%; height: 100%; }
+
+  .hero-a-nav {
+    position: absolute;
+    top: 16px;
+    left: 20px;
+    right: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .mini-logo { font-size: 10px; font-weight: 700; letter-spacing: 0.12em; color: #ece6d8; display: flex; align-items: center; gap: 6px; }
+  .mini-dot { width: 5px; height: 5px; background: #E63046; border-radius: 50%; }
+  .mini-nav { display: flex; gap: 10px; }
+  .mini-nav-item { font-size: 8px; font-family: monospace; letter-spacing: 0.14em; color: #555; }
+
+  .hero-a-coord { font-size: 7.5px; font-family: monospace; letter-spacing: 0.2em; color: #444; text-transform: uppercase; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+  .hero-a-coord::before { content: ''; width: 24px; height: 1px; background: rgba(255,255,255,0.12); display: inline-block; }
+  .hero-a-accent { font-style: italic; color: #E63046; font-size: 20px; letter-spacing: -0.02em; margin-bottom: 4px; display: block; font-weight: 400; }
+  .hero-a-heading { font-size: 52px; font-weight: 900; letter-spacing: -0.05em; line-height: 0.86; color: #ece6d8; text-transform: uppercase; }
+  .hero-a-bar { border-top: 1px solid rgba(255,255,255,0.06); margin-top: 14px; padding-top: 12px; display: flex; justify-content: space-between; align-items: center; }
+  .hero-a-note { font-size: 7px; font-family: monospace; letter-spacing: 0.16em; color: #555; text-transform: uppercase; line-height: 1.7; }
+  .hero-a-stats { display: flex; gap: 16px; }
+  .hero-a-stat { text-align: right; }
+  .hero-a-stat-v { font-size: 18px; font-weight: 900; color: #E63046; letter-spacing: -0.03em; line-height: 1; }
+  .hero-a-stat-l { font-size: 6.5px; font-family: monospace; color: #555; letter-spacing: 0.1em; text-transform: uppercase; margin-top: 1px; }
+  .scroll-hint { text-align: center; position: absolute; bottom: -22px; left: 50%; transform: translateX(-50%); font-size: 7px; font-family: monospace; letter-spacing: 0.2em; color: #444; }
+
+  /* Below hero: mini bento preview */
+  .after-hero {
+    background: #0d0e16;
+    border-top: 1px solid rgba(255,255,255,0.04);
+    padding: 12px 16px;
+    display: flex;
+    gap: 8px;
+  }
+  .mini-tile { background: #13141f; border: 1px solid rgba(255,255,255,0.05); border-radius: 8px; padding: 8px 10px; flex: 1; }
+  .mini-tile-label { font-size: 6.5px; font-family: monospace; color: #E63046; letter-spacing: 0.14em; text-transform: uppercase; margin-bottom: 4px; }
+  .mini-tile-val { font-size: 11px; font-weight: 800; color: #ece6d8; letter-spacing: -0.02em; line-height: 1; }
+  .mini-tile-sub { font-size: 6px; font-family: monospace; color: #444; margin-top: 3px; }
+
+  /* OPTION B: FULL BENTO FROM THE START */
+  .hero-b {
+    background: #0a0b10;
+    min-height: 380px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .bento-nav-b {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 10px;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.05);
+    border-radius: 10px;
+    margin-bottom: 4px;
+  }
+  .bento-logo { font-size: 9px; font-weight: 700; letter-spacing: 0.1em; color: #ece6d8; display: flex; align-items: center; gap: 5px; }
+  .bento-dot { width: 5px; height: 5px; background: #E63046; border-radius: 50%; animation: p 2s infinite; }
+  @keyframes p { 0%,100%{opacity:1}50%{opacity:0.4} }
+  .bento-nav-links { display: flex; gap: 6px; }
+  .bento-navl { font-size: 7px; font-family: monospace; letter-spacing: 0.1em; color: #555; padding: 3px 7px; border-radius: 100px; }
+  .bento-navl.a { background: rgba(230,48,70,0.12); color: #E63046; }
+  .bento-cv { background: #E63046; color: #fff; font-size: 7px; font-weight: 700; padding: 4px 9px; border-radius: 100px; letter-spacing: 0.1em; }
+
+  .bento-grid-b {
+    display: grid;
+    grid-template-columns: 1.8fr 1fr 1fr;
+    gap: 8px;
+    flex: 1;
+  }
+  .bt { background: #13141f; border: 1px solid rgba(255,255,255,0.05); border-radius: 10px; padding: 14px; position: relative; overflow: hidden; }
+  .bt::before { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse at 20% 0%, rgba(230,48,70,0.05) 0%, transparent 70%); pointer-events: none; }
+
+  .bt-main { grid-row: 1 / 3; display: flex; flex-direction: column; justify-content: flex-end; min-height: 200px; }
+  .bt-tag { font-size: 6.5px; font-family: monospace; letter-spacing: 0.18em; color: #555; text-transform: uppercase; margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }
+  .bt-tag::before { content: ''; width: 12px; height: 1px; background: #E63046; display: inline-block; }
+  .bt-accent { font-style: italic; color: #E63046; font-size: 15px; display: block; margin-bottom: 3px; font-weight: 400; letter-spacing: -0.01em; }
+  .bt-head { font-size: 34px; font-weight: 900; letter-spacing: -0.05em; line-height: 0.87; color: #ece6d8; text-transform: uppercase; }
+  .bt-foot { margin-top: 10px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 8px; font-size: 6.5px; font-family: monospace; color: #555; letter-spacing: 0.12em; line-height: 1.7; }
+
+  .bt-live { display: flex; flex-direction: column; justify-content: space-between; }
+  .bt-live-label { font-size: 6.5px; font-family: monospace; letter-spacing: 0.16em; color: #E63046; text-transform: uppercase; display: flex; align-items: center; gap: 4px; }
+  .live-d { width: 4px; height: 4px; background: #E63046; border-radius: 50%; animation: p 1.5s infinite; }
+  .bt-live-val { font-size: 38px; font-weight: 900; color: #E63046; letter-spacing: -0.04em; line-height: 1; text-align: center; padding: 8px 0; }
+  .bt-live-sub { font-size: 7px; font-family: monospace; color: #555; text-align: center; letter-spacing: 0.1em; text-transform: uppercase; }
+  .bt-bar { height: 2px; background: rgba(230,48,70,0.15); border-radius: 1px; overflow: hidden; margin-top: 8px; }
+  .bt-bar-fill { height: 100%; width: 33%; background: linear-gradient(90deg, #E63046, rgba(230,48,70,0.5)); }
+
+  .bt-cred { display: flex; flex-direction: column; gap: 6px; }
+  .bt-badge { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); border-radius: 6px; padding: 6px 8px; }
+  .bt-badge-l { font-size: 6px; font-family: monospace; letter-spacing: 0.14em; color: #E63046; text-transform: uppercase; margin-bottom: 2px; }
+  .bt-badge-v { font-size: 8.5px; font-weight: 700; color: #ece6d8; }
+
+  .bento-second-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .bt2 { background: #13141f; border: 1px solid rgba(255,255,255,0.05); border-radius: 10px; padding: 12px; }
+  .bt2-label { font-size: 6px; font-family: monospace; letter-spacing: 0.15em; color: #E63046; text-transform: uppercase; margin-bottom: 3px; display: flex; align-items: center; justify-content: space-between; }
+  .bt2-val { font-size: 12px; font-weight: 800; color: #ece6d8; letter-spacing: -0.03em; line-height: 1; }
+  .bt2-sub { font-size: 6px; font-family: monospace; color: #555; margin-top: 3px; }
+  .sdot { display: inline-block; width: 4px; height: 4px; border-radius: 50%; vertical-align: middle; }
+
+  /* Pros/cons */
+  .pros-cons-area { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 20px; }
+  .pros, .cons { background: #111420; border: 1px solid rgba(255,255,255,0.06); border-radius: 10px; padding: 14px 16px; }
+  .pros h4, .cons h4 { font-size: 9px; font-family: monospace; letter-spacing: 0.16em; text-transform: uppercase; margin-bottom: 10px; }
+  .pros h4 { color: #22c55e; }
+  .cons h4 { color: #E63046; }
+  .pros li, .cons li { font-size: 10px; font-family: monospace; color: #888; margin-bottom: 5px; list-style: none; display: flex; gap: 6px; line-height: 1.4; }
+  .pros li::before { content: '+'; color: #22c55e; flex-shrink: 0; }
+  .cons li::before { content: '−'; color: #E63046; flex-shrink: 0; }
+</style>
+</head>
+<body>
+
+<h2>Hero Layout</h2>
+<p class="subtitle">How should the page open? Click your preferred option.</p>
+
+<div class="split">
+
+  <!-- OPTION A -->
+  <div class="option-wrap">
+    <div class="option-label"><span>A</span> Dramatic full-bleed hero → bento below</div>
+    <div class="preview-box" onclick="this.classList.toggle('selected');document.querySelectorAll('.preview-box').forEach(b=>b!==this&&b.classList.remove('selected'))">
+      <div class="hero-a">
+        <div class="hero-a-bg"></div>
+        <div class="circuit-lines">
+          <svg viewBox="0 0 400 380" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M40 80 L120 80 L120 40 L280 40" stroke="#E63046" stroke-width="0.6" stroke-dasharray="4 6"/>
+            <path d="M360 120 L300 120 L300 200 L200 200" stroke="#ece6d8" stroke-width="0.5" stroke-dasharray="3 8"/>
+            <path d="M80 300 L80 200 L180 200 L180 160" stroke="#E63046" stroke-width="0.4" stroke-dasharray="2 10"/>
+            <circle cx="120" cy="80" r="2.5" fill="#E63046"/>
+            <circle cx="300" cy="120" r="2" fill="#ece6d8" fill-opacity="0.5"/>
+            <circle cx="80" cy="300" r="2" fill="#E63046" fill-opacity="0.4"/>
+          </svg>
+        </div>
+        <div class="hero-a-nav">
+          <div class="mini-logo"><div class="mini-dot"></div>SPENCER KIM</div>
+          <div class="mini-nav">
+            <div class="mini-nav-item">RESEARCH</div>
+            <div class="mini-nav-item">PROFILE</div>
+            <div class="mini-nav-item">CV</div>
+          </div>
+        </div>
+        <div class="hero-a-coord">40.4432° N · 79.9428° W · Pittsburgh, PA · CMU</div>
+        <span class="hero-a-accent">Engineering at the body-device interface.</span>
+        <div class="hero-a-heading">ARTIFICIAL<br/>ORGANS.<br/>ASSISTIVE<br/>INSTRUMENTS.</div>
+        <div class="hero-a-bar">
+          <div class="hero-a-note">
+            CARNEGIE MELLON · UNDERGRADUATE<br/>
+            B.S. MECHANICAL + BIOMEDICAL ENGINEERING · CLASS OF 2027
+          </div>
+          <div class="hero-a-stats">
+            <div class="hero-a-stat">
+              <div class="hero-a-stat-v">30</div>
+              <div class="hero-a-stat-l">Day · Ovine</div>
+            </div>
+            <div class="hero-a-stat">
+              <div class="hero-a-stat-v">01</div>
+              <div class="hero-a-stat-l">Patent · KR</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="after-hero">
+        <div class="mini-tile">
+          <div class="mini-tile-label">Active Study</div>
+          <div class="mini-tile-val">PAS</div>
+          <div class="mini-tile-sub">VV ECMO · N=6</div>
+        </div>
+        <div class="mini-tile">
+          <div class="mini-tile-label">Endpoint</div>
+          <div class="mini-tile-val">2/6</div>
+          <div class="mini-tile-sub">30-day survival</div>
+        </div>
+        <div class="mini-tile">
+          <div class="mini-tile-label">Abstract</div>
+          <div class="mini-tile-val">ISTH</div>
+          <div class="mini-tile-sub">2026 submitted</div>
+        </div>
+        <div class="mini-tile">
+          <div class="mini-tile-label">Patent</div>
+          <div class="mini-tile-val">KR</div>
+          <div class="mini-tile-sub">10-2675388</div>
+        </div>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+      <div style="background:#111420;border:1px solid rgba(255,255,255,0.06);border-radius:8px;padding:12px 14px;">
+        <div style="font-size:8.5px;font-family:monospace;color:#22c55e;margin-bottom:6px;letter-spacing:0.1em;">PROS</div>
+        <div style="font-size:9px;font-family:monospace;color:#888;line-height:1.6;">+ Maximum first impression<br/>+ Familiar pattern — feels premium<br/>+ Type fills the screen dramatically<br/>+ Bento below catches scanners</div>
+      </div>
+      <div style="background:#111420;border:1px solid rgba(255,255,255,0.06);border-radius:8px;padding:12px 14px;">
+        <div style="font-size:8.5px;font-family:monospace;color:#E63046;margin-bottom:6px;letter-spacing:0.1em;">CONS</div>
+        <div style="font-size:9px;font-family:monospace;color:#888;line-height:1.6;">− Scroll required to see any data<br/>− Similar to current layout<br/>− Less differentiated from peers</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- OPTION B -->
+  <div class="option-wrap">
+    <div class="option-label"><span>B</span> Full bento grid — everything above the fold</div>
+    <div class="preview-box" onclick="this.classList.toggle('selected');document.querySelectorAll('.preview-box').forEach(b=>b!==this&&b.classList.remove('selected'))">
+      <div class="hero-b">
+        <div class="bento-nav-b">
+          <div class="bento-logo"><div class="bento-dot"></div>SPENCER KIM</div>
+          <div class="bento-nav-links">
+            <div class="bento-navl a">HOME</div>
+            <div class="bento-navl">RESEARCH</div>
+            <div class="bento-navl">PROFILE</div>
+            <div class="bento-navl">CONTACT</div>
+          </div>
+          <div class="bento-cv">CV</div>
+        </div>
+
+        <div class="bento-grid-b">
+          <div class="bt bt-main">
+            <div class="bt-tag">A-001 · Research Dossier</div>
+            <span class="bt-accent">Engineering at the body-device interface.</span>
+            <div class="bt-head">ARTIFICIAL<br/>ORGANS.<br/>ASSISTIVE<br/>INSTRUMENTS.</div>
+            <div class="bt-foot">
+              CARNEGIE MELLON · B.S. MECHANICAL + BIOMEDICAL ENGINEERING · CLASS OF 2027
+            </div>
+          </div>
+          <div class="bt bt-live">
+            <div class="bt-live-label"><span class="live-d"></span>ACTIVE STUDY</div>
+            <div>
+              <div class="bt-live-val">2/6</div>
+              <div class="bt-live-sub">30-day endpoint<br/>ovine cohort</div>
+            </div>
+            <div>
+              <div class="bt-bar"><div class="bt-bar-fill"></div></div>
+              <div style="font-size:6px;font-family:monospace;color:#444;margin-top:4px;letter-spacing:0.1em;">PAS · VV ECMO · IV RIVAROXABAN</div>
+            </div>
+          </div>
+          <div class="bt bt-cred">
+            <div style="font-size:7px;font-family:monospace;letter-spacing:0.14em;color:#555;text-transform:uppercase;margin-bottom:8px;">Academic home</div>
+            <div class="bt-badge"><div class="bt-badge-l">Institution</div><div class="bt-badge-v">Carnegie Mellon</div></div>
+            <div class="bt-badge"><div class="bt-badge-l">Lab</div><div class="bt-badge-v">Cook Cardiopulmonary</div></div>
+            <div class="bt-badge"><div class="bt-badge-l">Patent</div><div class="bt-badge-v">KR 10-2675388 ✓</div></div>
+          </div>
+        </div>
+
+        <div class="bento-second-row">
+          <div class="bt2">
+            <div class="bt2-label">R-01 Artificial Lung<span><span class="sdot" style="background:#22c55e;margin-right:2px;"></span>ACTIVE</span></div>
+            <div class="bt2-val">PULMONARY ASSIST</div>
+            <div class="bt2-sub">PAS · VV ECMO · 30-day ovine trial</div>
+          </div>
+          <div class="bt2">
+            <div class="bt2-label">R-02 Anti-coagulation<span><span class="sdot" style="background:#eab308;margin-right:2px;"></span>SUBMITTED</span></div>
+            <div class="bt2-val">FXII900-PCB</div>
+            <div class="bt2-sub">ISTH 2026 · rabbit PK/PD · n=5</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+      <div style="background:#111420;border:1px solid rgba(255,255,255,0.06);border-radius:8px;padding:12px 14px;">
+        <div style="font-size:8.5px;font-family:monospace;color:#22c55e;margin-bottom:6px;letter-spacing:0.1em;">PROS</div>
+        <div style="font-size:9px;font-family:monospace;color:#888;line-height:1.6;">+ Nothing hidden below fold<br/>+ Instantly differentiates from peers<br/>+ Research data front and center<br/>+ Modern / SaaS product feel</div>
+      </div>
+      <div style="background:#111420;border:1px solid rgba(255,255,255,0.06);border-radius:8px;padding:12px 14px;">
+        <div style="font-size:8.5px;font-family:monospace;color:#E63046;margin-bottom:6px;letter-spacing:0.1em;">CONS</div>
+        <div style="font-size:9px;font-family:monospace;color:#888;line-height:1.6;">− Heading not as massive/dramatic<br/>− More complex to implement<br/>− Mobile requires careful adaptation</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div style="margin-top:20px;padding:12px 16px;background:rgba(230,48,70,0.06);border:1px solid rgba(230,48,70,0.15);border-radius:10px;font-size:10px;font-family:monospace;color:#888;letter-spacing:0.06em;">
+  My recommendation: <span style="color:#ece6d8;">Option B (full bento)</span> — it immediately sets you apart from every other student portfolio. The research data hits first, which is exactly the impression you want for lab PIs, recruiters, and collaborators. Option A is safer and more cinematic but closer to what you already have.
+</div>
+
+</body>
+</html>

@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Proposed Design Mix</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #080a10; color: #ece6d8; font-family: 'Inter', system-ui, sans-serif; min-height: 100vh; padding: 0; }
+
+  /* Header */
+  .page-header {
+    background: #0e101a;
+    border-bottom: 1px solid rgba(236,230,216,0.06);
+    padding: 16px 28px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+  .logo { font-size: 13px; font-weight: 700; letter-spacing: 0.12em; color: #ece6d8; display: flex; align-items: center; gap: 8px; }
+  .logo-dot { width: 6px; height: 6px; background: #E63046; border-radius: 50%; animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.6;transform:scale(1.3)} }
+  .nav-pills { display: flex; gap: 2px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.06); border-radius: 100px; padding: 4px; }
+  .nav-pill { font-size: 11px; letter-spacing: 0.1em; padding: 5px 12px; border-radius: 100px; color: #888; cursor: pointer; transition: all 0.2s; }
+  .nav-pill.active { background: rgba(230,48,70,0.15); color: #E63046; }
+  .nav-cv { background: #E63046; color: #fff; font-size: 11px; letter-spacing: 0.1em; padding: 6px 14px; border-radius: 100px; font-weight: 600; }
+
+  /* Main content area */
+  .content { padding: 28px; max-width: 1200px; margin: 0 auto; }
+
+  /* HERO BENTO GRID */
+  .hero-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr;
+    grid-template-rows: auto auto;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+
+  .tile {
+    background: #111420;
+    border: 1px solid rgba(236,230,216,0.06);
+    border-radius: 14px;
+    padding: 22px;
+    position: relative;
+    overflow: hidden;
+  }
+  .tile::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at 30% 0%, rgba(230,48,70,0.04) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  /* Hero main tile */
+  .tile-hero { grid-column: 1; grid-row: 1; min-height: 280px; display: flex; flex-direction: column; justify-content: flex-end; }
+  .hero-tag { font-size: 9px; font-family: monospace; letter-spacing: 0.2em; color: #555; text-transform: uppercase; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+  .hero-tag::before { content: ''; display: inline-block; width: 16px; height: 1px; background: #E63046; }
+  .hero-heading { font-size: 52px; font-weight: 900; letter-spacing: -0.05em; line-height: 0.88; color: #ece6d8; text-transform: uppercase; }
+  .hero-accent { font-style: italic; color: #E63046; font-weight: 400; font-size: 28px; display: block; margin-bottom: 6px; letter-spacing: -0.02em; }
+  .hero-sub { margin-top: 14px; font-family: monospace; font-size: 9px; letter-spacing: 0.16em; color: #555; text-transform: uppercase; line-height: 1.8; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 12px; }
+
+  /* Status tile */
+  .tile-status { grid-column: 2; grid-row: 1; display: flex; flex-direction: column; justify-content: space-between; }
+  .status-label { font-size: 8px; font-family: monospace; letter-spacing: 0.18em; color: #E63046; text-transform: uppercase; display: flex; align-items: center; gap: 5px; }
+  .live-dot { width: 5px; height: 5px; background: #E63046; border-radius: 50%; animation: pulse 1.5s infinite; }
+  .status-metric { text-align: center; padding: 12px 0; }
+  .metric-val { font-size: 48px; font-weight: 900; color: #E63046; letter-spacing: -0.04em; line-height: 1; }
+  .metric-unit { font-size: 10px; font-family: monospace; letter-spacing: 0.14em; color: #ece6d8; text-transform: uppercase; margin-top: 2px; }
+  .metric-sub { font-size: 8px; font-family: monospace; letter-spacing: 0.12em; color: #555; margin-top: 2px; text-transform: uppercase; }
+  .status-bar { height: 2px; background: rgba(230,48,70,0.15); border-radius: 1px; overflow: hidden; }
+  .status-bar-fill { height: 100%; background: linear-gradient(90deg, #E63046, #ff6b7a); border-radius: 1px; width: 33%; }
+
+  /* Institution tile */
+  .tile-inst { grid-column: 3; grid-row: 1; display: flex; flex-direction: column; justify-content: space-between; }
+  .inst-logo-area { display: flex; flex-direction: column; gap: 10px; }
+  .inst-badge { background: rgba(236,230,216,0.04); border: 1px solid rgba(236,230,216,0.08); border-radius: 8px; padding: 10px 12px; }
+  .inst-badge-label { font-size: 7px; font-family: monospace; letter-spacing: 0.16em; color: #E63046; text-transform: uppercase; margin-bottom: 4px; }
+  .inst-badge-val { font-size: 11px; font-weight: 700; color: #ece6d8; letter-spacing: 0.04em; }
+  .inst-badge-sub { font-size: 8px; font-family: monospace; color: #666; margin-top: 2px; }
+
+  /* Stats row */
+  .stats-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+  .stat-tile { background: #111420; border: 1px solid rgba(236,230,216,0.06); border-radius: 14px; padding: 16px 18px; display: flex; align-items: center; gap: 12px; }
+  .stat-icon { width: 32px; height: 32px; background: rgba(230,48,70,0.12); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0; }
+  .stat-info {}
+  .stat-val { font-size: 22px; font-weight: 900; color: #ece6d8; letter-spacing: -0.03em; line-height: 1; }
+  .stat-desc { font-size: 8px; font-family: monospace; letter-spacing: 0.12em; color: #555; text-transform: uppercase; margin-top: 3px; }
+
+  /* Research cards */
+  .section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+  .section-tag { font-size: 9px; font-family: monospace; letter-spacing: 0.2em; color: #555; text-transform: uppercase; display: flex; align-items: center; gap: 8px; }
+  .section-tag::before { content: ''; width: 4px; height: 4px; background: #E63046; border-radius: 50%; display: inline-block; }
+  .view-all { font-size: 9px; font-family: monospace; letter-spacing: 0.16em; color: #E63046; text-transform: uppercase; text-decoration: none; display: flex; align-items: center; gap: 4px; }
+
+  .research-grid {
+    display: grid;
+    grid-template-columns: 1.4fr 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+
+  .research-card { background: #111420; border: 1px solid rgba(236,230,216,0.06); border-radius: 14px; padding: 20px; position: relative; overflow: hidden; cursor: pointer; transition: border-color 0.25s, transform 0.25s; }
+  .research-card:hover { border-color: rgba(230,48,70,0.3); transform: translateY(-2px); }
+  .research-card.featured { background: linear-gradient(135deg, #1a0f12 0%, #111420 100%); border-color: rgba(230,48,70,0.2); }
+  .card-idx { font-size: 8px; font-family: monospace; letter-spacing: 0.18em; color: #E63046; text-transform: uppercase; margin-bottom: 8px; display: flex; align-items: center; gap: 6px; justify-content: space-between; }
+  .card-status { display: flex; align-items: center; gap: 4px; font-size: 7.5px; font-family: monospace; letter-spacing: 0.12em; color: #555; }
+  .status-dot { width: 5px; height: 5px; border-radius: 50%; }
+  .status-dot.active { background: #22c55e; box-shadow: 0 0 6px rgba(34,197,94,0.5); }
+  .status-dot.submitted { background: #eab308; }
+  .status-dot.registered { background: #60a5fa; }
+  .card-title { font-size: 26px; font-weight: 900; letter-spacing: -0.04em; line-height: 0.9; color: #ece6d8; text-transform: uppercase; margin-bottom: 8px; }
+  .card-title.sm { font-size: 20px; }
+  .card-sub { font-size: 9px; font-family: monospace; color: #666; line-height: 1.6; margin-bottom: 14px; }
+  .card-meta { border-top: 1px solid rgba(255,255,255,0.05); padding-top: 10px; }
+  .meta-label { font-size: 7.5px; font-family: monospace; letter-spacing: 0.14em; color: #555; text-transform: uppercase; }
+  .meta-val { font-size: 10px; font-weight: 600; color: #ece6d8; letter-spacing: 0.06em; margin-top: 2px; text-transform: uppercase; }
+
+  /* NEW: Progress timeline strip */
+  .timeline-strip { background: #111420; border: 1px solid rgba(236,230,216,0.06); border-radius: 14px; padding: 18px 22px; margin-bottom: 10px; }
+  .timeline-label { font-size: 9px; font-family: monospace; letter-spacing: 0.2em; color: #555; text-transform: uppercase; margin-bottom: 14px; display: flex; align-items: center; gap: 6px; }
+  .timeline-label::before { content: ''; width: 4px; height: 4px; background: #E63046; border-radius: 50%; display: inline-block; }
+  .timeline-track { position: relative; height: 2px; background: rgba(255,255,255,0.05); border-radius: 1px; margin: 0 12px; }
+  .timeline-fill { height: 100%; background: linear-gradient(90deg, #E63046, rgba(230,48,70,0.4)); border-radius: 1px; width: 55%; }
+  .timeline-nodes { display: flex; justify-content: space-between; margin-top: -5px; margin-bottom: 8px; }
+  .tnode { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+  .tnode-dot { width: 8px; height: 8px; border-radius: 50%; border: 1.5px solid #333; background: #111420; }
+  .tnode-dot.done { background: #E63046; border-color: #E63046; }
+  .tnode-dot.active { background: #111420; border-color: #E63046; box-shadow: 0 0 8px rgba(230,48,70,0.5); }
+  .tnode-label { font-size: 7px; font-family: monospace; color: #555; text-align: center; white-space: nowrap; }
+  .tnode-label.done { color: #E63046; }
+  .tnode-label.active { color: #ece6d8; }
+
+  /* NEW: Tools / skills strip */
+  .skills-strip { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+  .skill-tile { background: #111420; border: 1px solid rgba(236,230,216,0.06); border-radius: 14px; padding: 18px; }
+  .skill-group { font-size: 8px; font-family: monospace; letter-spacing: 0.18em; color: #E63046; text-transform: uppercase; margin-bottom: 12px; }
+  .skill-bars { display: flex; flex-direction: column; gap: 8px; }
+  .skill-row { display: flex; align-items: center; gap: 10px; }
+  .skill-name { font-size: 9px; font-family: monospace; color: #888; width: 110px; flex-shrink: 0; }
+  .skill-track { flex: 1; height: 2px; background: rgba(255,255,255,0.05); border-radius: 1px; overflow: hidden; }
+  .skill-fill { height: 100%; background: linear-gradient(90deg, #E63046, rgba(230,48,70,0.4)); border-radius: 1px; }
+
+  /* NEW: Publication / abstract card */
+  .pub-card { background: #111420; border: 1px solid rgba(230,48,70,0.15); border-radius: 14px; padding: 20px; margin-bottom: 10px; display: flex; gap: 20px; align-items: flex-start; }
+  .pub-badge { background: rgba(230,48,70,0.1); border: 1px solid rgba(230,48,70,0.2); border-radius: 8px; padding: 8px 12px; font-size: 9px; font-family: monospace; color: #E63046; letter-spacing: 0.1em; flex-shrink: 0; text-align: center; }
+  .pub-year { font-size: 18px; font-weight: 900; color: #E63046; letter-spacing: -0.03em; display: block; }
+  .pub-conf { font-size: 8px; letter-spacing: 0.1em; display: block; margin-top: 2px; }
+  .pub-content {}
+  .pub-title { font-size: 13px; font-weight: 700; color: #ece6d8; letter-spacing: -0.01em; line-height: 1.3; margin-bottom: 6px; }
+  .pub-authors { font-size: 9px; font-family: monospace; color: #666; line-height: 1.6; }
+  .pub-authors strong { color: #ece6d8; }
+
+  /* Footer strip */
+  .footer-strip { border-top: 1px solid rgba(255,255,255,0.05); padding-top: 16px; display: flex; justify-content: space-between; align-items: center; }
+  .footer-copy { font-size: 8.5px; font-family: monospace; letter-spacing: 0.14em; color: #444; text-transform: uppercase; }
+  .footer-socials { display: flex; gap: 8px; }
+  .social-btn { width: 28px; height: 28px; border: 1px solid rgba(255,255,255,0.08); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; color: #666; }
+
+  /* Annotation banner */
+  .annotation { background: rgba(230,48,70,0.06); border: 1px solid rgba(230,48,70,0.15); border-radius: 10px; padding: 10px 14px; margin-bottom: 10px; font-size: 10px; font-family: monospace; color: #E63046; letter-spacing: 0.08em; display: flex; align-items: center; gap: 8px; }
+  .annotation::before { content: '★'; font-size: 10px; }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<div class="page-header">
+  <div class="logo">
+    <div class="logo-dot"></div>
+    SPENCER KIM
+  </div>
+  <div class="nav-pills">
+    <div class="nav-pill active">HOME</div>
+    <div class="nav-pill">CREDENTIALS</div>
+    <div class="nav-pill">PROFILE</div>
+    <div class="nav-pill">RESEARCH</div>
+    <div class="nav-pill">CONTACT</div>
+  </div>
+  <div class="nav-cv">CV</div>
+</div>
+
+<div class="content">
+
+  <div class="annotation">NEW LAYOUT — Bento grid structure · Dashboard-style live indicators · Journal-grade type hierarchy · Red accent preserved</div>
+
+  <!-- HERO BENTO GRID -->
+  <div class="hero-grid">
+
+    <!-- Main hero tile -->
+    <div class="tile tile-hero">
+      <div class="hero-tag">A-001 · Research Dossier · CMU Engineering</div>
+      <span class="hero-accent">Engineering at the body-device interface.</span>
+      <div class="hero-heading">ARTIFICIAL<br/>ORGANS.<br/>ASSISTIVE<br/>INSTRUMENTS.</div>
+      <div class="hero-sub">CARNEGIE MELLON · B.S. MECHANICAL + BIOMEDICAL ENGINEERING · CLASS OF 2027</div>
+    </div>
+
+    <!-- Live status tile (C's dashboard feel) -->
+    <div class="tile tile-status">
+      <div class="status-label"><span class="live-dot"></span> ACTIVE STUDY</div>
+      <div class="status-metric">
+        <div class="metric-val">2/6</div>
+        <div class="metric-unit">Endpoint</div>
+        <div class="metric-sub">30-day ovine survival</div>
+      </div>
+      <div>
+        <div class="status-bar"><div class="status-bar-fill"></div></div>
+        <div style="font-size:7.5px;font-family:monospace;color:#555;margin-top:5px;letter-spacing:0.1em;">PAS · VV ECMO · IV RIVAROXABAN</div>
+      </div>
+    </div>
+
+    <!-- Institution tile (B's journal credibility) -->
+    <div class="tile tile-inst">
+      <div style="font-size:8.5px;font-family:monospace;letter-spacing:0.16em;color:#555;text-transform:uppercase;margin-bottom:12px;">Academic home</div>
+      <div class="inst-logo-area">
+        <div class="inst-badge">
+          <div class="inst-badge-label">Institution</div>
+          <div class="inst-badge-val">Carnegie Mellon</div>
+          <div class="inst-badge-sub">Pittsburgh, PA</div>
+        </div>
+        <div class="inst-badge">
+          <div class="inst-badge-label">Research Lab</div>
+          <div class="inst-badge-val">Cook Cardiopulmonary</div>
+          <div class="inst-badge-sub">PI: Keith Cook, PhD</div>
+        </div>
+        <div class="inst-badge">
+          <div class="inst-badge-label">Patent</div>
+          <div class="inst-badge-val">KR 10-2675388</div>
+          <div class="inst-badge-sub">Granted 2024 · KIPO</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STATS ROW (dashboard data tiles) -->
+  <div class="stats-row">
+    <div class="stat-tile">
+      <div class="stat-icon">🫁</div>
+      <div class="stat-info">
+        <div class="stat-val">30</div>
+        <div class="stat-desc">Day ovine endpoint · PAS trial</div>
+      </div>
+    </div>
+    <div class="stat-tile">
+      <div class="stat-icon">📜</div>
+      <div class="stat-info">
+        <div class="stat-val">01</div>
+        <div class="stat-desc">Patent granted · KR</div>
+      </div>
+    </div>
+    <div class="stat-tile">
+      <div class="stat-icon">🐑</div>
+      <div class="stat-info">
+        <div class="stat-val">N=6</div>
+        <div class="stat-desc">Ovine cohort · VV ECMO</div>
+      </div>
+    </div>
+    <div class="stat-tile">
+      <div class="stat-icon">📄</div>
+      <div class="stat-info">
+        <div class="stat-val">ISTH</div>
+        <div class="stat-desc">2026 abstract submitted</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RESEARCH CARDS (bento style with journal credibility) -->
+  <div class="section-header">
+    <div class="section-tag">004 · Instrumentation Index</div>
+    <a class="view-all">VIEW FULL CV →</a>
+  </div>
+  <div class="research-grid">
+    <div class="research-card featured">
+      <div class="card-idx">R-01 · ARTIFICIAL ORGAN ENGINEERING <span class="card-status"><span class="status-dot active"></span> ACTIVE</span></div>
+      <div class="card-title">ARTIFICIAL<br/>LUNG.</div>
+      <div class="card-sub">Pulmonary Assist System · 30-day ovine trial<br/>IV rivaroxaban anticoagulation · In Progress</div>
+      <div class="card-meta">
+        <div class="meta-label">System</div>
+        <div class="meta-val">PAS · VV ECMO · IV RIVAROXABAN</div>
+      </div>
+    </div>
+    <div class="research-card">
+      <div class="card-idx">R-02 · THROMBOSIS + ANTICOAG <span class="card-status"><span class="status-dot submitted"></span> SUBMITTED</span></div>
+      <div class="card-title sm">ANTI-<br/>COAGULATION.</div>
+      <div class="card-sub">FXIIa inhibitor · hollow fiber surfaces<br/>ISTH 2026 abstract</div>
+      <div class="card-meta">
+        <div class="meta-label">Abstract</div>
+        <div class="meta-val">FXII900-PCB · ISTH 2026</div>
+      </div>
+    </div>
+    <div class="research-card">
+      <div class="card-idx">R-03 · ASSISTIVE DEVICES <span class="card-status"><span class="status-dot registered"></span> REGISTERED</span></div>
+      <div class="card-title sm">SENSING<br/>CANE.</div>
+      <div class="card-sub">Obstacle-sensing mobility aid<br/>KR Patent · Granted 2024</div>
+      <div class="card-meta">
+        <div class="meta-label">Patent</div>
+        <div class="meta-val">KR · 10-2675388 · GRANTED</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- NEW: STUDY TIMELINE STRIP -->
+  <div class="annotation" style="margin-top:0;">★ NEW FEATURE — Research progress timeline (not in current site)</div>
+  <div class="timeline-strip">
+    <div class="timeline-label">PAS Study Timeline · N=6 Ovine Cohort</div>
+    <div style="position:relative;padding:0 12px;">
+      <div class="timeline-track"><div class="timeline-fill"></div></div>
+      <div class="timeline-nodes">
+        <div class="tnode"><div class="tnode-dot done"></div><div class="tnode-label done">Protocol<br/>Design</div></div>
+        <div class="tnode"><div class="tnode-dot done"></div><div class="tnode-label done">IACUC<br/>Approval</div></div>
+        <div class="tnode"><div class="tnode-dot done"></div><div class="tnode-label done">Cohort 1<br/>2/6 endpoint</div></div>
+        <div class="tnode"><div class="tnode-dot active"></div><div class="tnode-label active">Protocol<br/>Refinement</div></div>
+        <div class="tnode"><div class="tnode-dot"></div><div class="tnode-label">Powered<br/>Trial n=10</div></div>
+        <div class="tnode"><div class="tnode-dot"></div><div class="tnode-label">Publication<br/>Pending</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- NEW: PUBLICATION CARD -->
+  <div class="annotation">★ NEW FEATURE — Publications / abstracts section with citation format</div>
+  <div class="pub-card">
+    <div class="pub-badge">
+      <span class="pub-year">2026</span>
+      <span class="pub-conf">ISTH</span>
+    </div>
+    <div class="pub-content">
+      <div class="pub-title">Pharmacokinetic and Pharmacodynamic Profile Evaluation of Polycarboxybetaine-Conjugated FXIIa Inhibitor in Rabbits</div>
+      <div class="pub-authors">Shin S, Liu D, Potchernikov A, Scala H, Bennett J, Nakamura R, Haggerty M, <strong>Kim S</strong>, Jiang S, Cook KE — International Society on Thrombosis and Haemostasis · Abstract submitted</div>
+    </div>
+  </div>
+
+  <!-- NEW: SKILLS STRIP -->
+  <div class="annotation">★ NEW FEATURE — Skills visualization (not in current site)</div>
+  <div class="skills-strip">
+    <div class="skill-tile">
+      <div class="skill-group">Medical Device R&D</div>
+      <div class="skill-bars">
+        <div class="skill-row"><div class="skill-name">Extracorporeal circuits</div><div class="skill-track"><div class="skill-fill" style="width:90%"></div></div></div>
+        <div class="skill-row"><div class="skill-name">In-vivo large-animal</div><div class="skill-track"><div class="skill-fill" style="width:80%"></div></div></div>
+        <div class="skill-row"><div class="skill-name">Blood sampling protocols</div><div class="skill-track"><div class="skill-fill" style="width:85%"></div></div></div>
+        <div class="skill-row"><div class="skill-name">Hollow-fiber oxygenators</div><div class="skill-track"><div class="skill-fill" style="width:75%"></div></div></div>
+      </div>
+    </div>
+    <div class="skill-tile">
+      <div class="skill-group">Engineering + Computation</div>
+      <div class="skill-bars">
+        <div class="skill-row"><div class="skill-name">SolidWorks / Fusion 360</div><div class="skill-track"><div class="skill-fill" style="width:85%"></div></div></div>
+        <div class="skill-row"><div class="skill-name">Python · NumPy/Pandas</div><div class="skill-track"><div class="skill-fill" style="width:80%"></div></div></div>
+        <div class="skill-row"><div class="skill-name">MATLAB</div><div class="skill-track"><div class="skill-fill" style="width:75%"></div></div></div>
+        <div class="skill-row"><div class="skill-name">FEA / CFD</div><div class="skill-track"><div class="skill-fill" style="width:65%"></div></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <div class="footer-strip">
+    <div class="footer-copy">© 2026 · Spencer Hoyun Kim · Research Dossier · Pittsburgh, PA · Seoul, KR</div>
+    <div class="footer-socials">
+      <div class="social-btn">✉</div>
+      <div class="social-btn">in</div>
+      <div class="social-btn">gh</div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

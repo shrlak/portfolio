@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Combined Hero — Final Direction</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #080a10; color: #ece6d8; font-family: 'Inter', system-ui, sans-serif; min-height: 100vh; }
+
+  /* ── NAV ── */
+  .nav {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 28px;
+    border-bottom: 1px solid rgba(236,230,216,0.05);
+    background: rgba(8,10,16,0.9);
+    backdrop-filter: blur(12px);
+    position: sticky; top: 0; z-index: 20;
+  }
+  .nav-logo { display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 700; letter-spacing: 0.14em; color: #ece6d8; }
+  .live-dot { width: 6px; height: 6px; background: #E63046; border-radius: 50%; animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.5;transform:scale(1.4)} }
+  .nav-pills { display: flex; gap: 2px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.06); border-radius: 100px; padding: 4px; }
+  .pill { font-size: 10px; font-family: monospace; letter-spacing: 0.1em; padding: 5px 12px; border-radius: 100px; color: #555; cursor: pointer; transition: all 0.2s; }
+  .pill.on { background: rgba(230,48,70,0.14); color: #E63046; }
+  .nav-cv { background: #E63046; color: #fff; font-size: 10px; font-weight: 700; letter-spacing: 0.12em; padding: 7px 16px; border-radius: 100px; }
+
+  /* ── HERO WRAPPER ── */
+  .hero {
+    display: grid;
+    grid-template-columns: 1.15fr 1fr;
+    gap: 0;
+    min-height: calc(100vh - 53px);
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* subtle radial glow */
+  .hero::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 60% 55% at 30% 60%, rgba(230,48,70,0.06) 0%, transparent 70%),
+      radial-gradient(ellipse 40% 40% at 80% 20%, rgba(236,230,216,0.025) 0%, transparent 60%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* faint circuit/grid lines */
+  .hero-bg {
+    position: absolute; inset: 0; pointer-events: none; z-index: 0; opacity: 0.12;
+  }
+  .hero-bg svg { width: 100%; height: 100%; }
+
+  /* ── LEFT: BIG TYPE ── */
+  .hero-left {
+    position: relative; z-index: 1;
+    display: flex; flex-direction: column; justify-content: flex-end;
+    padding: 32px 28px 32px 32px;
+    border-right: 1px solid rgba(255,255,255,0.05);
+  }
+  .coord-tag {
+    font-size: 8px; font-family: monospace; letter-spacing: 0.22em;
+    color: #444; text-transform: uppercase; margin-bottom: 18px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .coord-tag::before { content: ''; width: 28px; height: 1px; background: rgba(255,255,255,0.1); }
+  .hero-accent {
+    font-style: italic; color: #E63046;
+    font-size: 22px; font-weight: 400; letter-spacing: -0.02em;
+    display: block; margin-bottom: 6px; line-height: 1.15;
+  }
+  .hero-heading {
+    font-size: clamp(46px, 5.5vw, 72px);
+    font-weight: 900; letter-spacing: -0.055em; line-height: 0.86;
+    color: #ece6d8; text-transform: uppercase;
+  }
+
+  /* bottom bar inside left col */
+  .hero-bottom-bar {
+    margin-top: 20px;
+    border-top: 1px solid rgba(255,255,255,0.06);
+    padding-top: 16px;
+    display: flex; align-items: flex-start; justify-content: space-between; gap: 16px;
+  }
+  .hero-footnote {
+    font-size: 7.5px; font-family: monospace; letter-spacing: 0.16em;
+    color: #444; text-transform: uppercase; line-height: 1.9;
+    display: flex; align-items: flex-start; gap: 7px;
+  }
+  .hero-footnote-dot { width: 4px; height: 4px; background: #E63046; border-radius: 50%; margin-top: 4px; flex-shrink: 0; }
+  .hero-stats { display: flex; gap: 20px; flex-shrink: 0; }
+  .h-stat { text-align: right; }
+  .h-stat-v { font-size: 26px; font-weight: 900; color: #E63046; letter-spacing: -0.04em; line-height: 1; }
+  .h-stat-l { font-size: 6.5px; font-family: monospace; color: #555; letter-spacing: 0.12em; text-transform: uppercase; margin-top: 2px; }
+
+  /* ── RIGHT: BENTO STACK ── */
+  .hero-right {
+    position: relative; z-index: 1;
+    display: flex; flex-direction: column;
+    padding: 20px 24px 24px 20px;
+    gap: 10px;
+  }
+
+  .tile {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 14px;
+    padding: 16px 18px;
+    position: relative; overflow: hidden;
+  }
+  .tile::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: radial-gradient(ellipse at 10% 0%, rgba(230,48,70,0.04) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  /* Live study tile */
+  .tile-live { display: flex; flex-direction: column; gap: 10px; }
+  .tile-live-header { display: flex; align-items: center; justify-content: space-between; }
+  .live-label {
+    font-size: 8px; font-family: monospace; letter-spacing: 0.18em;
+    color: #E63046; text-transform: uppercase;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .live-label-dot { width: 5px; height: 5px; background: #E63046; border-radius: 50%; animation: pulse 1.5s infinite; }
+  .live-badge {
+    font-size: 7px; font-family: monospace; letter-spacing: 0.1em;
+    background: rgba(230,48,70,0.1); border: 1px solid rgba(230,48,70,0.2);
+    color: #E63046; padding: 3px 8px; border-radius: 100px;
+  }
+  .live-metric { display: flex; align-items: baseline; gap: 8px; }
+  .live-val { font-size: 52px; font-weight: 900; color: #E63046; letter-spacing: -0.05em; line-height: 1; }
+  .live-unit { font-size: 11px; font-family: monospace; color: #ece6d8; letter-spacing: 0.1em; text-transform: uppercase; }
+  .live-sub { font-size: 7.5px; font-family: monospace; color: #555; letter-spacing: 0.12em; text-transform: uppercase; margin-top: 1px; }
+  .live-track { height: 2px; background: rgba(230,48,70,0.12); border-radius: 1px; overflow: hidden; }
+  .live-fill { height: 100%; width: 33%; background: linear-gradient(90deg, #E63046, rgba(230,48,70,0.4)); border-radius: 1px; }
+  .live-detail { font-size: 7px; font-family: monospace; color: #444; letter-spacing: 0.1em; margin-top: 4px; }
+
+  /* Credential tiles row */
+  .cred-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .cred-tile { background: rgba(255,255,255,0.025); border: 1px solid rgba(255,255,255,0.06); border-radius: 10px; padding: 12px 14px; }
+  .cred-label { font-size: 7px; font-family: monospace; letter-spacing: 0.16em; color: #E63046; text-transform: uppercase; margin-bottom: 4px; }
+  .cred-val { font-size: 11px; font-weight: 700; color: #ece6d8; letter-spacing: 0.02em; line-height: 1.25; }
+  .cred-sub { font-size: 7.5px; font-family: monospace; color: #555; margin-top: 2px; }
+
+  /* Research mini-cards */
+  .mini-cards { display: flex; flex-direction: column; gap: 6px; }
+  .mc {
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    background: rgba(255,255,255,0.025); border: 1px solid rgba(255,255,255,0.05);
+    border-radius: 10px; padding: 10px 14px;
+    cursor: pointer; transition: border-color 0.2s;
+  }
+  .mc:hover { border-color: rgba(230,48,70,0.3); }
+  .mc-left { display: flex; align-items: center; gap: 10px; }
+  .mc-idx { font-size: 8px; font-family: monospace; color: #E63046; letter-spacing: 0.14em; }
+  .mc-title { font-size: 11px; font-weight: 700; color: #ece6d8; letter-spacing: -0.01em; }
+  .mc-sub { font-size: 7.5px; font-family: monospace; color: #555; margin-top: 1px; }
+  .mc-status { display: flex; align-items: center; gap: 5px; font-size: 7.5px; font-family: monospace; color: #555; flex-shrink: 0; }
+  .sdot { width: 5px; height: 5px; border-radius: 50%; }
+  .sdot.g { background: #22c55e; box-shadow: 0 0 6px rgba(34,197,94,0.5); }
+  .sdot.y { background: #eab308; }
+  .sdot.b { background: #60a5fa; }
+  .mc-arrow { font-size: 10px; color: #333; transition: color 0.2s; }
+  .mc:hover .mc-arrow { color: #E63046; }
+
+  /* Social strip at bottom of right col */
+  .social-strip {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-top: auto; padding-top: 6px;
+  }
+  .socials { display: flex; gap: 7px; }
+  .social-btn {
+    width: 30px; height: 30px;
+    border: 1px solid rgba(255,255,255,0.08); border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 10px; color: #555; cursor: pointer; transition: all 0.2s;
+  }
+  .social-btn:hover { border-color: rgba(230,48,70,0.4); color: #E63046; }
+  .open-collab {
+    display: flex; align-items: center; gap: 6px;
+    background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 100px; padding: 6px 12px 6px 10px;
+    font-size: 8px; font-family: monospace; letter-spacing: 0.1em; color: #888;
+    cursor: pointer; transition: border-color 0.2s;
+  }
+  .open-collab:hover { border-color: rgba(230,48,70,0.3); color: #ece6d8; }
+  .collab-dot { width: 5px; height: 5px; background: #22c55e; border-radius: 50%; animation: pulse 2s infinite; }
+
+  /* annotation */
+  .note { font-size: 9px; font-family: monospace; color: #666; letter-spacing: 0.08em; margin-top: 6px; padding: 8px 12px; background: rgba(230,48,70,0.05); border-left: 2px solid #E63046; border-radius: 0 6px 6px 0; }
+
+  /* scroll indicator */
+  .scroll-ind {
+    position: absolute; bottom: 24px; left: 50%; transform: translateX(-50%);
+    display: flex; flex-direction: column; align-items: center; gap: 5px;
+    z-index: 5;
+  }
+  .scroll-txt { font-size: 7px; font-family: monospace; letter-spacing: 0.28em; color: #333; text-transform: uppercase; }
+  .scroll-arrow { color: #333; font-size: 11px; animation: bounce 2s infinite; }
+  @keyframes bounce { 0%,100%{transform:translateY(0)} 50%{transform:translateY(4px)} }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<div class="nav">
+  <div class="nav-logo"><div class="live-dot"></div>SPENCER KIM</div>
+  <div class="nav-pills">
+    <div class="pill on">HOME</div>
+    <div class="pill">CREDENTIALS</div>
+    <div class="pill">PROFILE</div>
+    <div class="pill">RESEARCH</div>
+    <div class="pill">CONTACT</div>
+  </div>
+  <div class="nav-cv">CV</div>
+</div>
+
+<!-- HERO -->
+<div class="hero">
+
+  <!-- background circuit lines -->
+  <div class="hero-bg">
+    <svg viewBox="0 0 1000 700" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M80 120 L200 120 L200 60 L480 60" stroke="#E63046" stroke-width="0.8" stroke-dasharray="5 10"/>
+      <path d="M700 80 L620 80 L620 200 L520 200" stroke="#ece6d8" stroke-width="0.5" stroke-dasharray="3 12"/>
+      <path d="M100 500 L100 350 L300 350 L300 260" stroke="#E63046" stroke-width="0.6" stroke-dasharray="4 9"/>
+      <path d="M900 400 L820 400 L820 550 L640 550" stroke="#ece6d8" stroke-width="0.4" stroke-dasharray="2 14"/>
+      <path d="M400 680 L400 580 L560 580 L560 480 L700 480" stroke="#E63046" stroke-width="0.5" stroke-dasharray="6 8"/>
+      <circle cx="200" cy="120" r="3" fill="#E63046" fill-opacity="0.6"/>
+      <circle cx="620" cy="200" r="2.5" fill="#ece6d8" fill-opacity="0.3"/>
+      <circle cx="300" cy="350" r="3" fill="#E63046" fill-opacity="0.5"/>
+      <circle cx="820" cy="400" r="2" fill="#ece6d8" fill-opacity="0.2"/>
+      <circle cx="560" cy="480" r="2.5" fill="#E63046" fill-opacity="0.4"/>
+    </svg>
+  </div>
+
+  <!-- LEFT: BIG TYPE (from A) -->
+  <div class="hero-left">
+    <div class="coord-tag">40.4432° N · 79.9428° W · Pittsburgh, PA · CMU</div>
+    <span class="hero-accent">Engineering at the body-device interface.</span>
+    <div class="hero-heading">ARTIFICIAL<br/>ORGANS.<br/>ASSISTIVE<br/>INSTRUMENTS.</div>
+    <div class="hero-bottom-bar">
+      <div class="hero-footnote">
+        <div class="hero-footnote-dot"></div>
+        CARNEGIE MELLON · UNDERGRADUATE<br/>
+        B.S. MECHANICAL ENGINEERING<br/>
+        + ADDITIONAL MAJOR IN BME · CLASS OF 2027
+      </div>
+      <div class="hero-stats">
+        <div class="h-stat">
+          <div class="h-stat-v">30</div>
+          <div class="h-stat-l">Day · Ovine</div>
+        </div>
+        <div class="h-stat">
+          <div class="h-stat-v">01</div>
+          <div class="h-stat-l">Patent · KR</div>
+        </div>
+        <div class="h-stat">
+          <div class="h-stat-v">ISTH</div>
+          <div class="h-stat-l">2026 · Abstract</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT: BENTO DATA (from B) -->
+  <div class="hero-right">
+
+    <!-- Live study tile -->
+    <div class="tile tile-live">
+      <div class="tile-live-header">
+        <div class="live-label"><div class="live-label-dot"></div>ACTIVE STUDY</div>
+        <div class="live-badge">PAS · VV ECMO</div>
+      </div>
+      <div class="live-metric">
+        <div class="live-val">2/6</div>
+        <div>
+          <div class="live-unit">Endpoint</div>
+          <div class="live-sub">30-day ovine survival</div>
+        </div>
+      </div>
+      <div class="live-track"><div class="live-fill"></div></div>
+      <div class="live-detail">IV RIVAROXABAN IN PEG · COOK CARDIOPULMONARY ENGINEERING LAB</div>
+    </div>
+
+    <!-- Credential tiles -->
+    <div class="cred-row">
+      <div class="cred-tile">
+        <div class="cred-label">Institution</div>
+        <div class="cred-val">Carnegie Mellon University</div>
+        <div class="cred-sub">College of Engineering</div>
+      </div>
+      <div class="cred-tile">
+        <div class="cred-label">Patent Granted</div>
+        <div class="cred-val">KR 10-2675388</div>
+        <div class="cred-sub">KIPO · Jun 2024</div>
+      </div>
+    </div>
+
+    <!-- Research mini-cards -->
+    <div class="mini-cards">
+      <div class="mc">
+        <div class="mc-left">
+          <div class="mc-idx">R-01</div>
+          <div>
+            <div class="mc-title">Artificial Lung</div>
+            <div class="mc-sub">Pulmonary Assist System · ovine model</div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <div class="mc-status"><span class="sdot g"></span>ACTIVE</div>
+          <div class="mc-arrow">→</div>
+        </div>
+      </div>
+      <div class="mc">
+        <div class="mc-left">
+          <div class="mc-idx">R-02</div>
+          <div>
+            <div class="mc-title">Anti-Coagulation</div>
+            <div class="mc-sub">FXIIa inhibitor · ISTH 2026</div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <div class="mc-status"><span class="sdot y"></span>SUBMITTED</div>
+          <div class="mc-arrow">→</div>
+        </div>
+      </div>
+      <div class="mc">
+        <div class="mc-left">
+          <div class="mc-idx">R-03</div>
+          <div>
+            <div class="mc-title">Sensing Cane</div>
+            <div class="mc-sub">KR Patent · obstacle-sensing mobility aid</div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <div class="mc-status"><span class="sdot b"></span>REGISTERED</div>
+          <div class="mc-arrow">→</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Social + open to collab -->
+    <div class="social-strip">
+      <div class="socials">
+        <div class="social-btn">✉</div>
+        <div class="social-btn" style="font-size:8px;font-weight:700;">in</div>
+        <div class="social-btn" style="font-size:8px;font-weight:700;">gh</div>
+      </div>
+      <div class="open-collab">
+        <div class="collab-dot"></div>
+        Open to collaboration · Summer 2026
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Scroll hint (visible at bottom of left col) -->
+  <div class="scroll-ind">
+    <div class="scroll-txt">Scroll</div>
+    <div class="scroll-arrow">↓</div>
+  </div>
+
+</div>
+
+<div style="padding: 16px 32px; background: #060810;">
+  <div class="note">
+    ★ COMBINED APPROACH: Left column = dramatic full-bleed type from Option A. Right column = live data bento from Option B. Both visible above the fold simultaneously — no scroll sacrifice. The split layout reads left→right: WHO I AM → WHAT I'M DOING NOW.
+  </div>
+</div>
+
+</body>
+</html>

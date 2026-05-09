@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #050710; color: #ece6d8; font-family: 'JetBrains Mono', 'Courier New', monospace; padding: 32px; font-size: 11px; }
+  h2 { font-size: 13px; letter-spacing: 0.2em; color: rgba(236,230,216,0.5); text-transform: uppercase; margin-bottom: 6px; }
+  .subtitle { font-size: 11px; color: rgba(236,230,216,0.3); margin-bottom: 32px; letter-spacing: 0.1em; }
+  .diagram-row { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 40px; }
+  .diagram-card { border: 1px solid rgba(96,165,250,0.12); border-radius: 8px; overflow: hidden; }
+  .diagram-label { padding: 10px 16px; background: rgba(96,165,250,0.04); border-bottom: 1px solid rgba(96,165,250,0.1); color: rgba(96,165,250,0.7); font-size: 9px; letter-spacing: 0.2em; display: flex; justify-content: space-between; align-items: center; }
+  .diagram-label .badge { background: rgba(230,48,70,0.15); border: 1px solid rgba(230,48,70,0.3); border-radius: 3px; padding: 2px 6px; color: #e63046; font-size: 8px; }
+  svg { display: block; }
+
+  /* ── Global tokens ── */
+  :root {
+    --blue: #60a5fa;
+    --violet: #a78bfa;
+    --red: #e63046;
+    --bone: #ece6d8;
+    --void: #050710;
+    --surface: #0a0b18;
+  }
+</style>
+</head>
+<body>
+
+<h2>Diagram Redesign — Mixed Aesthetic</h2>
+<p class="subtitle">Biopunk noir base · Electric blue accent · White numerics · Holographic elements</p>
+
+<div class="diagram-row">
+
+  <!-- ── PAS CIRCUIT DIAGRAM ── -->
+  <div class="diagram-card">
+    <div class="diagram-label">
+      <span>PAS CIRCUIT · VV-ECMO SCHEMATIC</span>
+      <span class="badge">LIVE · SIM</span>
+    </div>
+    <svg viewBox="0 0 560 340" width="100%" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <!-- Holographic glow filter -->
+        <filter id="holo-glow">
+          <feGaussianBlur stdDeviation="3" result="blur"/>
+          <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+        </filter>
+        <filter id="blue-glow">
+          <feGaussianBlur stdDeviation="4" result="blur"/>
+          <feFlood flood-color="#60a5fa" flood-opacity="0.6" result="color"/>
+          <feComposite in="color" in2="blur" operator="in" result="glow"/>
+          <feComposite in="SourceGraphic" in2="glow" operator="over"/>
+        </filter>
+        <filter id="red-glow">
+          <feGaussianBlur stdDeviation="3" result="blur"/>
+          <feFlood flood-color="#e63046" flood-opacity="0.8" result="color"/>
+          <feComposite in="color" in2="blur" operator="in" result="glow"/>
+          <feComposite in="SourceGraphic" in2="glow" operator="over"/>
+        </filter>
+        <!-- Dot grid pattern -->
+        <pattern id="dot-grid" x="0" y="0" width="20" height="20" patternUnits="userSpaceOnUse">
+          <circle cx="10" cy="10" r="0.7" fill="rgba(96,165,250,0.08)"/>
+        </pattern>
+        <!-- Blood cell gradient -->
+        <radialGradient id="cell-grad" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stop-color="#e63046" stop-opacity="0.9"/>
+          <stop offset="100%" stop-color="#7b0018" stop-opacity="0.6"/>
+        </radialGradient>
+        <!-- Blue tube gradient -->
+        <linearGradient id="blue-tube" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#60a5fa" stop-opacity="0.6"/>
+          <stop offset="100%" stop-color="#1e40af" stop-opacity="0.4"/>
+        </linearGradient>
+        <!-- Red tube gradient -->
+        <linearGradient id="red-tube" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#e63046" stop-opacity="0.7"/>
+          <stop offset="100%" stop-color="#7b0018" stop-opacity="0.5"/>
+        </linearGradient>
+        <!-- Membrane gradient -->
+        <linearGradient id="membrane-grad" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stop-color="#1e3a5f"/>
+          <stop offset="50%" stop-color="#1e4080"/>
+          <stop offset="100%" stop-color="#1e3a5f"/>
+        </linearGradient>
+        <!-- Holographic panel gradient -->
+        <linearGradient id="holo-panel" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stop-color="rgba(96,165,250,0.08)"/>
+          <stop offset="100%" stop-color="rgba(167,139,250,0.04)"/>
+        </linearGradient>
+
+        <!-- Blood cell path — venous (drainage) -->
+        <path id="venous-path" d="M 120 200 C 120 160, 160 130, 200 130 L 240 130" fill="none"/>
+        <!-- Blood cell path — through pump + membrane -->
+        <path id="pump-out-path" d="M 295 130 L 330 130 C 340 130, 345 125, 350 120 L 350 90" fill="none"/>
+        <path id="membrane-path" d="M 350 90 L 350 55 C 360 45, 400 45, 420 55 L 420 90" fill="none"/>
+        <!-- Arterial return -->
+        <path id="arterial-path" d="M 420 90 L 420 130 C 425 145, 440 160, 440 200 C 440 230, 410 250, 380 255" fill="none"/>
+
+        <!-- Full flow circuit for sweep animation -->
+        <path id="full-circuit" d="M 120 200 C 120 160, 160 130, 200 130 L 240 130 L 295 130 L 330 130 C 340 130, 345 125, 350 120 L 350 55 C 360 45, 400 45, 420 55 L 420 130 C 425 145, 440 160, 440 200 C 440 230, 410 250, 380 255" fill="none"/>
+      </defs>
+
+      <!-- Background -->
+      <rect width="560" height="340" fill="#050710"/>
+      <rect width="560" height="340" fill="url(#dot-grid)"/>
+
+      <!-- Subtle grid lines -->
+      <line x1="0" y1="170" x2="560" y2="170" stroke="rgba(96,165,250,0.04)" stroke-width="1"/>
+      <line x1="280" y1="0" x2="280" y2="340" stroke="rgba(96,165,250,0.04)" stroke-width="1"/>
+
+      <!-- Holographic scan sweep -->
+      <rect x="0" y="0" width="560" height="2" fill="rgba(96,165,250,0.35)" opacity="0.5">
+        <animate attributeName="y" from="-2" to="342" dur="5s" repeatCount="indefinite" begin="0.5s"/>
+        <animate attributeName="opacity" values="0;0.6;0.5;0" dur="5s" repeatCount="indefinite" begin="0.5s"/>
+      </rect>
+
+      <!-- ── SHEEP SILHOUETTE (stylized, biopunk) ── -->
+      <!-- Body -->
+      <ellipse cx="100" cy="218" rx="55" ry="30" fill="rgba(236,230,216,0.04)" stroke="rgba(236,230,216,0.12)" stroke-width="0.8"/>
+      <!-- Wool texture dots -->
+      <circle cx="80" cy="210" r="6" fill="rgba(236,230,216,0.06)" stroke="rgba(236,230,216,0.1)" stroke-width="0.5"/>
+      <circle cx="95" cy="205" r="7" fill="rgba(236,230,216,0.06)" stroke="rgba(236,230,216,0.1)" stroke-width="0.5"/>
+      <circle cx="112" cy="207" r="6" fill="rgba(236,230,216,0.06)" stroke="rgba(236,230,216,0.1)" stroke-width="0.5"/>
+      <circle cx="125" cy="213" r="5" fill="rgba(236,230,216,0.06)" stroke="rgba(236,230,216,0.1)" stroke-width="0.5"/>
+      <!-- Head -->
+      <ellipse cx="67" cy="208" rx="12" ry="9" fill="rgba(236,230,216,0.05)" stroke="rgba(236,230,216,0.15)" stroke-width="0.8"/>
+      <!-- Ear -->
+      <ellipse cx="60" cy="201" rx="5" ry="3" fill="rgba(236,230,216,0.06)" stroke="rgba(236,230,216,0.12)" stroke-width="0.6" transform="rotate(-20, 60, 201)"/>
+      <!-- Legs -->
+      <line x1="85" y1="244" x2="83" y2="262" stroke="rgba(236,230,216,0.12)" stroke-width="1.5"/>
+      <line x1="100" y1="246" x2="99" y2="264" stroke="rgba(236,230,216,0.12)" stroke-width="1.5"/>
+      <line x1="114" y1="244" x2="114" y2="262" stroke="rgba(236,230,216,0.12)" stroke-width="1.5"/>
+      <line x1="127" y1="242" x2="128" y2="260" stroke="rgba(236,230,216,0.12)" stroke-width="1.5"/>
+      <!-- ANIMAL label -->
+      <text x="100" y="276" text-anchor="middle" font-family="monospace" font-size="7" fill="rgba(236,230,216,0.2)" letter-spacing="0.2em">OVINE · SUBJECT</text>
+      <!-- Catheter line from sheep to circuit -->
+      <path d="M 125 210 L 145 210 L 155 200" stroke="rgba(230,48,70,0.4)" stroke-width="1" fill="none" stroke-dasharray="3,2"/>
+      <path d="M 125 225 L 145 225 L 155 230" stroke="rgba(96,165,250,0.35)" stroke-width="1" fill="none" stroke-dasharray="3,2"/>
+      <!-- Catheter connector dots -->
+      <circle cx="155" cy="200" r="2.5" fill="#e63046" opacity="0.7"/>
+      <circle cx="155" cy="230" r="2.5" fill="#60a5fa" opacity="0.7"/>
+
+      <!-- ── VENOUS DRAINAGE TUBE ── -->
+      <!-- From sheep (drain) → pump inlet -->
+      <path d="M 160 200 L 200 200 L 200 130 L 240 130" fill="none" stroke="rgba(96,165,250,0.25)" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M 160 200 L 200 200 L 200 130 L 240 130" fill="none" stroke="#60a5fa" stroke-width="1.5" stroke-dasharray="6,4" opacity="0.8">
+        <animate attributeName="stroke-dashoffset" from="0" to="-40" dur="1.5s" repeatCount="indefinite"/>
+      </path>
+      <!-- Venous label -->
+      <text x="185" y="175" font-family="monospace" font-size="7" fill="rgba(96,165,250,0.5)" letter-spacing="0.1em" transform="rotate(-90, 185, 175)">VENOUS · DRAIN</text>
+
+      <!-- ── CENTRIFUGAL PUMP ── -->
+      <circle cx="268" cy="130" r="28" fill="rgba(10,12,24,0.9)" stroke="rgba(96,165,250,0.3)" stroke-width="1.5"/>
+      <circle cx="268" cy="130" r="24" fill="rgba(96,165,250,0.04)" stroke="rgba(96,165,250,0.15)" stroke-width="0.8"/>
+      <!-- Impeller blades (rotating) -->
+      <g transform-origin="268 130">
+        <animateTransform attributeName="transform" type="rotate" from="0 268 130" to="360 268 130" dur="2s" repeatCount="indefinite"/>
+        <line x1="268" y1="110" x2="268" y2="122" stroke="#60a5fa" stroke-width="2" opacity="0.7"/>
+        <line x1="268" y1="138" x2="268" y2="150" stroke="#60a5fa" stroke-width="2" opacity="0.7"/>
+        <line x1="248" y1="130" x2="260" y2="130" stroke="#60a5fa" stroke-width="2" opacity="0.7"/>
+        <line x1="276" y1="130" x2="288" y2="130" stroke="#60a5fa" stroke-width="2" opacity="0.7"/>
+        <line x1="254" y1="116" x2="262" y2="124" stroke="#60a5fa" stroke-width="1.5" opacity="0.5"/>
+        <line x1="274" y1="136" x2="282" y2="144" stroke="#60a5fa" stroke-width="1.5" opacity="0.5"/>
+      </g>
+      <!-- Center hub -->
+      <circle cx="268" cy="130" r="5" fill="#60a5fa" opacity="0.6"/>
+      <circle cx="268" cy="130" r="2" fill="#ffffff"/>
+      <!-- Pump glow -->
+      <circle cx="268" cy="130" r="28" fill="none" stroke="#60a5fa" stroke-width="6" opacity="0.05" filter="url(#blue-glow)"/>
+      <!-- Pump label -->
+      <text x="268" y="168" text-anchor="middle" font-family="monospace" font-size="7.5" fill="rgba(96,165,250,0.6)" letter-spacing="0.15em">CENTRIF · PUMP</text>
+      <text x="268" y="178" text-anchor="middle" font-family="monospace" font-size="6.5" fill="rgba(96,165,250,0.35)">3.5 L/MIN</text>
+
+      <!-- ── PUMP OUTLET → MEMBRANE ── -->
+      <path d="M 296 130 L 350 130 L 350 55" fill="none" stroke="rgba(230,48,70,0.2)" stroke-width="5" stroke-linecap="round"/>
+      <path d="M 296 130 L 350 130 L 350 55" fill="none" stroke="#e63046" stroke-width="1.5" stroke-dasharray="6,4" opacity="0.75">
+        <animate attributeName="stroke-dashoffset" from="0" to="-40" dur="1.2s" repeatCount="indefinite"/>
+      </path>
+
+      <!-- ── MEMBRANE OXYGENATOR ── -->
+      <rect x="320" y="30" width="100" height="50" rx="6" fill="url(#membrane-grad)" stroke="rgba(96,165,250,0.35)" stroke-width="1.5"/>
+      <!-- Hollow fibers -->
+      <line x1="335" y1="38" x2="335" y2="72" stroke="rgba(96,165,250,0.2)" stroke-width="1"/>
+      <line x1="345" y1="38" x2="345" y2="72" stroke="rgba(96,165,250,0.2)" stroke-width="1"/>
+      <line x1="355" y1="38" x2="355" y2="72" stroke="rgba(96,165,250,0.2)" stroke-width="1"/>
+      <line x1="365" y1="38" x2="365" y2="72" stroke="rgba(96,165,250,0.2)" stroke-width="1"/>
+      <line x1="375" y1="38" x2="375" y2="72" stroke="rgba(96,165,250,0.2)" stroke-width="1"/>
+      <line x1="385" y1="38" x2="385" y2="72" stroke="rgba(96,165,250,0.2)" stroke-width="1"/>
+      <line x1="395" y1="38" x2="395" y2="72" stroke="rgba(96,165,250,0.2)" stroke-width="1"/>
+      <!-- Oxygenation glow -->
+      <rect x="320" y="30" width="100" height="50" rx="6" fill="none" stroke="#60a5fa" stroke-width="4" opacity="0.06" filter="url(#blue-glow)"/>
+      <!-- Gas inlet/outlet ports -->
+      <rect x="330" y="20" width="16" height="12" rx="2" fill="rgba(96,165,250,0.15)" stroke="rgba(96,165,250,0.4)" stroke-width="1"/>
+      <text x="338" y="29" text-anchor="middle" font-family="monospace" font-size="6" fill="#60a5fa">O₂</text>
+      <rect x="394" y="20" width="16" height="12" rx="2" fill="rgba(100,100,100,0.1)" stroke="rgba(255,255,255,0.15)" stroke-width="1"/>
+      <text x="402" y="29" text-anchor="middle" font-family="monospace" font-size="6" fill="rgba(255,255,255,0.4)">CO₂</text>
+      <!-- Membrane label -->
+      <text x="370" y="95" text-anchor="middle" font-family="monospace" font-size="7.5" fill="rgba(96,165,250,0.6)" letter-spacing="0.1em">MEMBRANE OXY</text>
+      <text x="370" y="105" text-anchor="middle" font-family="monospace" font-size="6.5" fill="rgba(96,165,250,0.35)">FiO₂ 100%</text>
+
+      <!-- ── MEMBRANE → ARTERIAL RETURN ── -->
+      <path d="M 420 55 L 420 200 C 420 240, 390 260, 360 260" fill="none" stroke="rgba(230,48,70,0.2)" stroke-width="5" stroke-linecap="round"/>
+      <path d="M 420 55 L 420 200 C 420 240, 390 260, 360 260" fill="none" stroke="#e63046" stroke-width="1.5" stroke-dasharray="6,4" opacity="0.75">
+        <animate attributeName="stroke-dashoffset" from="0" to="-40" dur="1.4s" repeatCount="indefinite"/>
+      </path>
+      <!-- Arterial label -->
+      <text x="440" y="175" font-family="monospace" font-size="7" fill="rgba(230,48,70,0.5)" letter-spacing="0.1em" transform="rotate(90, 440, 175)">ARTERIAL · RETURN</text>
+
+      <!-- ── ANIMATED BLOOD CELLS ── -->
+      <!-- Cell 1: Venous path -->
+      <circle r="3.5" fill="url(#cell-grad)" opacity="0.9" filter="url(#red-glow)">
+        <animateMotion dur="3.5s" repeatCount="indefinite" begin="0s">
+          <mpath href="#full-circuit"/>
+        </animateMotion>
+      </circle>
+      <!-- Cell 2: offset -->
+      <circle r="3" fill="url(#cell-grad)" opacity="0.75">
+        <animateMotion dur="3.5s" repeatCount="indefinite" begin="1.2s">
+          <mpath href="#full-circuit"/>
+        </animateMotion>
+      </circle>
+      <!-- Cell 3: offset -->
+      <circle r="2.5" fill="#e63046" opacity="0.6">
+        <animateMotion dur="3.5s" repeatCount="indefinite" begin="2.4s">
+          <mpath href="#full-circuit"/>
+        </animateMotion>
+      </circle>
+
+      <!-- ── VITALS READOUT PANEL ── -->
+      <rect x="455" y="120" width="92" height="140" rx="4" fill="rgba(5,7,16,0.9)" stroke="rgba(96,165,250,0.15)" stroke-width="1"/>
+      <!-- Panel corner brackets -->
+      <path d="M 455 127 L 455 120 L 462 120" stroke="rgba(96,165,250,0.5)" stroke-width="1" fill="none"/>
+      <path d="M 540 127 L 540 120 L 533 120" stroke="rgba(96,165,250,0.5)" stroke-width="1" fill="none"/>
+      <path d="M 455 253 L 455 260 L 462 260" stroke="rgba(96,165,250,0.5)" stroke-width="1" fill="none"/>
+      <path d="M 540 253 L 540 260 L 533 260" stroke="rgba(96,165,250,0.5)" stroke-width="1" fill="none"/>
+      <!-- Panel header -->
+      <text x="501" y="135" text-anchor="middle" font-family="monospace" font-size="7" fill="rgba(96,165,250,0.6)" letter-spacing="0.2em">VITALS</text>
+      <line x1="463" y1="140" x2="539" y2="140" stroke="rgba(96,165,250,0.12)" stroke-width="1"/>
+      <!-- Readings -->
+      <text x="463" y="155" font-family="monospace" font-size="7" fill="rgba(96,165,250,0.4)" letter-spacing="0.1em">FLOW</text>
+      <text x="539" y="155" text-anchor="end" font-family="monospace" font-size="9" fill="#ffffff">3.5</text>
+      <text x="539" y="163" text-anchor="end" font-family="monospace" font-size="6" fill="rgba(255,255,255,0.3)">L/MIN</text>
+      <line x1="463" y1="168" x2="539" y2="168" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>
+
+      <text x="463" y="182" font-family="monospace" font-size="7" fill="rgba(96,165,250,0.4)" letter-spacing="0.1em">SpO₂</text>
+      <text x="539" y="182" text-anchor="end" font-family="monospace" font-size="9" fill="#ffffff">98</text>
+      <text x="539" y="190" text-anchor="end" font-family="monospace" font-size="6" fill="rgba(255,255,255,0.3)">%</text>
+      <line x1="463" y1="195" x2="539" y2="195" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>
+
+      <text x="463" y="209" font-family="monospace" font-size="7" fill="rgba(96,165,250,0.4)" letter-spacing="0.1em">SWEEP</text>
+      <text x="539" y="209" text-anchor="end" font-family="monospace" font-size="9" fill="#ffffff">5.0</text>
+      <text x="539" y="217" text-anchor="end" font-family="monospace" font-size="6" fill="rgba(255,255,255,0.3)">L/MIN</text>
+      <line x1="463" y1="222" x2="539" y2="222" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>
+
+      <text x="463" y="236" font-family="monospace" font-size="7" fill="rgba(96,165,250,0.4)" letter-spacing="0.1em">pO₂</text>
+      <text x="539" y="236" text-anchor="end" font-family="monospace" font-size="9" fill="#60a5fa">420</text>
+      <text x="539" y="244" text-anchor="end" font-family="monospace" font-size="6" fill="rgba(96,165,250,0.4)">mmHg</text>
+
+      <!-- Pulsing status dot -->
+      <circle cx="467" cy="255" r="3" fill="#4ade80">
+        <animate attributeName="opacity" values="1;0.3;1" dur="1.4s" repeatCount="indefinite"/>
+      </circle>
+      <text x="474" y="258" font-family="monospace" font-size="7" fill="rgba(74,222,128,0.7)">NOMINAL</text>
+
+      <!-- ── RETURN TO SHEEP (arterial cannula) ── -->
+      <circle cx="360" cy="260" r="4" fill="#e63046" opacity="0.8" filter="url(#red-glow)">
+        <animate attributeName="opacity" values="0.8;0.4;0.8" dur="0.9s" repeatCount="indefinite"/>
+      </circle>
+      <path d="M 360 260 L 155 240 L 145 235" stroke="rgba(230,48,70,0.25)" stroke-width="1.5" fill="none" stroke-dasharray="4,3"/>
+
+      <!-- ── ANTICOAGULANT INFUSION PUMP ── -->
+      <rect x="260" y="270" width="80" height="28" rx="4" fill="rgba(10,12,24,0.9)" stroke="rgba(167,139,250,0.3)" stroke-width="1"/>
+      <text x="300" y="282" text-anchor="middle" font-family="monospace" font-size="7" fill="rgba(167,139,250,0.6)" letter-spacing="0.1em">ANTICOAG</text>
+      <text x="300" y="292" text-anchor="middle" font-family="monospace" font-size="6.5" fill="rgba(167,139,250,0.4)">IV RIVAROXABAN</text>
+      <!-- Drug infusion line -->
+      <path d="M 300 270 L 300 245 L 295 130" stroke="rgba(167,139,250,0.2)" stroke-width="1" fill="none" stroke-dasharray="3,3"/>
+      <circle cx="300" cy="245" r="2" fill="#a78bfa" opacity="0.5"/>
+
+      <!-- ── CIRCUIT LABEL (top) ── -->
+      <text x="20" y="20" font-family="monospace" font-size="8" fill="rgba(96,165,250,0.4)" letter-spacing="0.2em">PAS STUDY · CMU COOK LAB · N=6 OVINE</text>
+      <line x1="20" y1="24" x2="280" y2="24" stroke="rgba(96,165,250,0.15)" stroke-width="1"/>
+
+      <!-- Corner indicator -->
+      <circle cx="20" cy="320" r="4" fill="#e63046" opacity="0.8">
+        <animate attributeName="opacity" values="0.8;0.2;0.8" dur="1.4s" repeatCount="indefinite"/>
+      </circle>
+      <text x="30" y="323" font-family="monospace" font-size="7" fill="rgba(230,48,70,0.6)">SIM RUNNING · 04:32:17</text>
+    </svg>
+  </div>
+
+  <!-- ── KAPLAN-MEIER DIAGRAM ── -->
+  <div class="diagram-card">
+    <div class="diagram-label">
+      <span>KAPLAN-MEIER · SURVIVAL ANALYSIS</span>
+      <span class="badge">N=6 · INTERIM</span>
+    </div>
+    <svg viewBox="0 0 560 340" width="100%" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <filter id="km-glow">
+          <feGaussianBlur stdDeviation="3" result="blur"/>
+          <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+        </filter>
+        <pattern id="km-dots" x="0" y="0" width="20" height="20" patternUnits="userSpaceOnUse">
+          <circle cx="10" cy="10" r="0.7" fill="rgba(96,165,250,0.07)"/>
+        </pattern>
+        <linearGradient id="km-ci-grad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="rgba(96,165,250,0.18)"/>
+          <stop offset="100%" stop-color="rgba(96,165,250,0.02)"/>
+        </linearGradient>
+        <linearGradient id="km-fill" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="rgba(230,48,70,0.12)"/>
+          <stop offset="100%" stop-color="rgba(230,48,70,0.0)"/>
+        </linearGradient>
+
+        <!-- Survival line path for draw animation -->
+        <!-- Days: 0→7→14  Survival: 1.0→0.833→0.667 -->
+        <!-- Plot area: x 80–460, y 40–230. 0%=y230, 100%=y40 -->
+        <!-- x: day0=80, day7=220, day14=360, day30=460 -->
+        <!-- y: 100%=40, 83.3%=73, 66.7%=107 -->
+        <path id="km-line-path" d="M 80 40 L 220 40 L 220 73 L 360 73 L 360 107 L 460 107" fill="none"/>
+      </defs>
+
+      <!-- Background -->
+      <rect width="560" height="340" fill="#050710"/>
+      <rect width="560" height="340" fill="url(#km-dots)"/>
+
+      <!-- Holographic scan -->
+      <rect x="0" y="0" width="560" height="1.5" fill="rgba(96,165,250,0.4)" opacity="0">
+        <animate attributeName="y" from="-2" to="342" dur="6s" repeatCount="indefinite" begin="1s"/>
+        <animate attributeName="opacity" values="0;0.5;0.4;0" dur="6s" repeatCount="indefinite" begin="1s"/>
+      </rect>
+
+      <!-- Grid lines (mission-control style) -->
+      <!-- Horizontal y-axis gridlines -->
+      <line x1="80" y1="40" x2="460" y2="40" stroke="rgba(96,165,250,0.06)" stroke-width="1" stroke-dasharray="4,6"/>
+      <line x1="80" y1="73" x2="460" y2="73" stroke="rgba(96,165,250,0.04)" stroke-width="1" stroke-dasharray="4,6"/>
+      <line x1="80" y1="107" x2="460" y2="107" stroke="rgba(230,48,70,0.06)" stroke-width="1" stroke-dasharray="4,6"/>
+      <line x1="80" y1="135" x2="460" y2="135" stroke="rgba(96,165,250,0.04)" stroke-width="1" stroke-dasharray="4,6"/>
+      <line x1="80" y1="162" x2="460" y2="162" stroke="rgba(96,165,250,0.04)" stroke-width="1" stroke-dasharray="4,6"/>
+      <line x1="80" y1="190" x2="460" y2="190" stroke="rgba(96,165,250,0.04)" stroke-width="1" stroke-dasharray="4,6"/>
+      <line x1="80" y1="230" x2="460" y2="230" stroke="rgba(96,165,250,0.08)" stroke-width="1"/>
+      <!-- Vertical x-axis gridlines -->
+      <line x1="220" y1="40" x2="220" y2="230" stroke="rgba(96,165,250,0.04)" stroke-width="1" stroke-dasharray="4,6"/>
+      <line x1="360" y1="40" x2="360" y2="230" stroke="rgba(96,165,250,0.04)" stroke-width="1" stroke-dasharray="4,6"/>
+      <line x1="460" y1="40" x2="460" y2="230" stroke="rgba(96,165,250,0.04)" stroke-width="1" stroke-dasharray="4,6"/>
+
+      <!-- Axes -->
+      <line x1="80" y1="40" x2="80" y2="230" stroke="rgba(96,165,250,0.25)" stroke-width="1.5"/>
+      <line x1="80" y1="230" x2="480" y2="230" stroke="rgba(96,165,250,0.25)" stroke-width="1.5"/>
+      <!-- Axis arrow ticks -->
+      <polygon points="80,36 77,44 83,44" fill="rgba(96,165,250,0.3)"/>
+      <polygon points="484,230 476,227 476,233" fill="rgba(96,165,250,0.3)"/>
+
+      <!-- Y-axis labels -->
+      <text x="72" y="43" text-anchor="end" font-family="monospace" font-size="7.5" fill="rgba(255,255,255,0.7)">1.00</text>
+      <text x="72" y="76" text-anchor="end" font-family="monospace" font-size="7.5" fill="rgba(255,255,255,0.5)">0.83</text>
+      <text x="72" y="110" text-anchor="end" font-family="monospace" font-size="7.5" fill="rgba(230,48,70,0.7)">0.67</text>
+      <text x="72" y="234" text-anchor="end" font-family="monospace" font-size="7.5" fill="rgba(255,255,255,0.3)">0.00</text>
+      <!-- Y axis label -->
+      <text x="22" y="135" font-family="monospace" font-size="8" fill="rgba(96,165,250,0.5)" letter-spacing="0.1em" transform="rotate(-90, 22, 135)">SURVIVAL PROBABILITY</text>
+
+      <!-- X-axis labels -->
+      <text x="80" y="244" text-anchor="middle" font-family="monospace" font-size="7.5" fill="rgba(255,255,255,0.5)">0</text>
+      <text x="220" y="244" text-anchor="middle" font-family="monospace" font-size="7.5" fill="rgba(255,255,255,0.5)">7</text>
+      <text x="360" y="244" text-anchor="middle" font-family="monospace" font-size="7.5" fill="rgba(255,255,255,0.5)">14</text>
+      <text x="460" y="244" text-anchor="middle" font-family="monospace" font-size="7.5" fill="rgba(255,255,255,0.5)">30</text>
+      <text x="270" y="260" text-anchor="middle" font-family="monospace" font-size="8" fill="rgba(96,165,250,0.5)" letter-spacing="0.1em">TIME (DAYS)</text>
+
+      <!-- CI band (confidence interval) -->
+      <path d="M 80 30 L 220 30 L 220 55 L 360 55 L 360 88 L 460 88 L 460 130 L 360 130 L 360 92 L 220 92 L 220 58 L 80 58 Z" fill="rgba(96,165,250,0.07)"/>
+
+      <!-- Area fill under survival curve -->
+      <path d="M 80 40 L 220 40 L 220 73 L 360 73 L 360 107 L 460 107 L 460 230 L 80 230 Z" fill="rgba(230,48,70,0.06)"/>
+
+      <!-- KM survival line — animated draw on -->
+      <path d="M 80 40 L 220 40 L 220 73 L 360 73 L 360 107 L 460 107" fill="none" stroke="#e63046" stroke-width="2.5" stroke-linecap="square" stroke-linejoin="miter"
+        stroke-dasharray="500" stroke-dashoffset="500" opacity="0.9">
+        <animate attributeName="stroke-dashoffset" from="500" to="0" dur="2s" fill="freeze" begin="0.3s"/>
+      </path>
+      <!-- Glow copy -->
+      <path d="M 80 40 L 220 40 L 220 73 L 360 73 L 360 107 L 460 107" fill="none" stroke="#e63046" stroke-width="6" stroke-linecap="square" opacity="0.08"
+        stroke-dasharray="500" stroke-dashoffset="500" filter="url(#km-glow)">
+        <animate attributeName="stroke-dashoffset" from="500" to="0" dur="2s" fill="freeze" begin="0.3s"/>
+      </path>
+
+      <!-- Event markers — Day 7 (first drop) -->
+      <!-- Tick mark -->
+      <line x1="220" y1="68" x2="220" y2="58" stroke="rgba(230,48,70,0.6)" stroke-width="1.5"/>
+      <line x1="220" y1="78" x2="220" y2="88" stroke="rgba(230,48,70,0.6)" stroke-width="1.5"/>
+      <!-- Marker dot at top of step -->
+      <circle cx="220" cy="40" r="4.5" fill="#050710" stroke="#e63046" stroke-width="1.5" opacity="0.9"/>
+      <circle cx="220" cy="40" r="2" fill="#e63046" opacity="0.9">
+        <animate attributeName="r" values="2;3.5;2" dur="2s" repeatCount="indefinite"/>
+        <animate attributeName="opacity" values="0.9;0.4;0.9" dur="2s" repeatCount="indefinite"/>
+      </circle>
+      <!-- Event label -->
+      <rect x="228" y="28" width="60" height="22" rx="3" fill="rgba(10,12,24,0.9)" stroke="rgba(230,48,70,0.25)" stroke-width="1"/>
+      <text x="258" y="38" text-anchor="middle" font-family="monospace" font-size="7" fill="rgba(230,48,70,0.8)">DAY 7 · EVENT</text>
+      <text x="258" y="46" text-anchor="middle" font-family="monospace" font-size="6.5" fill="rgba(255,255,255,0.4)">n=1 · 0.833</text>
+
+      <!-- Event markers — Day 14 (second drop) -->
+      <line x1="360" y1="100" x2="360" y2="90" stroke="rgba(230,48,70,0.6)" stroke-width="1.5"/>
+      <line x1="360" y1="114" x2="360" y2="124" stroke="rgba(230,48,70,0.6)" stroke-width="1.5"/>
+      <circle cx="360" cy="73" r="4.5" fill="#050710" stroke="#e63046" stroke-width="1.5" opacity="0.9"/>
+      <circle cx="360" cy="73" r="2" fill="#e63046" opacity="0.9">
+        <animate attributeName="r" values="2;3.5;2" dur="2s" repeatCount="indefinite" begin="0.5s"/>
+        <animate attributeName="opacity" values="0.9;0.4;0.9" dur="2s" repeatCount="indefinite" begin="0.5s"/>
+      </circle>
+      <rect x="368" y="58" width="60" height="22" rx="3" fill="rgba(10,12,24,0.9)" stroke="rgba(230,48,70,0.25)" stroke-width="1"/>
+      <text x="398" y="68" text-anchor="middle" font-family="monospace" font-size="7" fill="rgba(230,48,70,0.8)">DAY 14 · EVENT</text>
+      <text x="398" y="76" text-anchor="middle" font-family="monospace" font-size="6.5" fill="rgba(255,255,255,0.4)">n=1 · 0.667</text>
+
+      <!-- Censoring marks (+ symbols) -->
+      <!-- Day 30 endpoint — censored at 0.667 -->
+      <text x="460" y="110" font-family="monospace" font-size="10" fill="#60a5fa" text-anchor="middle">+</text>
+      <text x="460" y="122" font-family="monospace" font-size="10" fill="#60a5fa" text-anchor="middle">+</text>
+      <text x="460" y="134" font-family="monospace" font-size="10" fill="#60a5fa" text-anchor="middle">+</text>
+      <text x="460" y="146" font-family="monospace" font-size="10" fill="#60a5fa" text-anchor="middle">+</text>
+
+      <!-- Survival readout box (right panel) -->
+      <rect x="478" y="40" width="72" height="190" rx="4" fill="rgba(5,7,16,0.95)" stroke="rgba(96,165,250,0.15)" stroke-width="1"/>
+      <path d="M 478 47 L 478 40 L 485 40" stroke="rgba(96,165,250,0.5)" stroke-width="1" fill="none"/>
+      <path d="M 543 47 L 543 40 L 536 40" stroke="rgba(96,165,250,0.5)" stroke-width="1" fill="none"/>
+      <path d="M 478 223 L 478 230 L 485 230" stroke="rgba(96,165,250,0.5)" stroke-width="1" fill="none"/>
+      <path d="M 543 223 L 543 230 L 536 230" stroke="rgba(96,165,250,0.5)" stroke-width="1" fill="none"/>
+
+      <text x="514" y="54" text-anchor="middle" font-family="monospace" font-size="7" fill="rgba(96,165,250,0.6)" letter-spacing="0.15em">STATS</text>
+      <line x1="486" y1="58" x2="542" y2="58" stroke="rgba(96,165,250,0.1)" stroke-width="1"/>
+
+      <text x="486" y="72" font-family="monospace" font-size="6.5" fill="rgba(96,165,250,0.4)">N</text>
+      <text x="542" y="72" text-anchor="end" font-family="monospace" font-size="9" fill="#ffffff">6</text>
+      <line x1="486" y1="77" x2="542" y2="77" stroke="rgba(255,255,255,0.03)" stroke-width="1"/>
+
+      <text x="486" y="91" font-family="monospace" font-size="6.5" fill="rgba(96,165,250,0.4)">EVENTS</text>
+      <text x="542" y="91" text-anchor="end" font-family="monospace" font-size="9" fill="#e63046">2</text>
+      <line x1="486" y1="96" x2="542" y2="96" stroke="rgba(255,255,255,0.03)" stroke-width="1"/>
+
+      <text x="486" y="110" font-family="monospace" font-size="6.5" fill="rgba(96,165,250,0.4)">CENSORED</text>
+      <text x="542" y="110" text-anchor="end" font-family="monospace" font-size="9" fill="#60a5fa">4</text>
+      <line x1="486" y1="115" x2="542" y2="115" stroke="rgba(255,255,255,0.03)" stroke-width="1"/>
+
+      <text x="486" y="129" font-family="monospace" font-size="6.5" fill="rgba(96,165,250,0.4)">S(30d)</text>
+      <text x="542" y="129" text-anchor="end" font-family="monospace" font-size="9" fill="#ffffff">0.667</text>
+      <line x1="486" y1="134" x2="542" y2="134" stroke="rgba(255,255,255,0.03)" stroke-width="1"/>
+
+      <text x="486" y="148" font-family="monospace" font-size="6.5" fill="rgba(96,165,250,0.4)">95% CI</text>
+      <text x="542" y="148" text-anchor="end" font-family="monospace" font-size="7" fill="rgba(255,255,255,0.45)">[0.29</text>
+      <text x="542" y="158" text-anchor="end" font-family="monospace" font-size="7" fill="rgba(255,255,255,0.45)">0.93]</text>
+      <line x1="486" y1="163" x2="542" y2="163" stroke="rgba(255,255,255,0.03)" stroke-width="1"/>
+
+      <text x="486" y="177" font-family="monospace" font-size="6.5" fill="rgba(96,165,250,0.4)">MED OS</text>
+      <text x="542" y="177" text-anchor="end" font-family="monospace" font-size="7" fill="rgba(255,255,255,0.5)">N/R</text>
+
+      <!-- Status -->
+      <circle cx="490" cy="220" r="3" fill="#4ade80">
+        <animate attributeName="opacity" values="1;0.3;1" dur="1.4s" repeatCount="indefinite"/>
+      </circle>
+      <text x="497" y="223" font-family="monospace" font-size="6.5" fill="rgba(74,222,128,0.6)">INTERIM</text>
+
+      <!-- Risk table -->
+      <rect x="80" y="272" width="380" height="50" rx="3" fill="rgba(10,12,24,0.8)" stroke="rgba(96,165,250,0.1)" stroke-width="1"/>
+      <text x="88" y="285" font-family="monospace" font-size="7" fill="rgba(96,165,250,0.4)" letter-spacing="0.15em">RISK TABLE</text>
+      <line x1="88" y1="289" x2="452" y2="289" stroke="rgba(96,165,250,0.08)" stroke-width="1"/>
+      <!-- Day row -->
+      <text x="88" y="301" font-family="monospace" font-size="7" fill="rgba(255,255,255,0.3)">DAY</text>
+      <text x="170" y="301" font-family="monospace" font-size="7" fill="rgba(255,255,255,0.3)">0</text>
+      <text x="240" y="301" font-family="monospace" font-size="7" fill="rgba(255,255,255,0.3)">7</text>
+      <text x="320" y="301" font-family="monospace" font-size="7" fill="rgba(255,255,255,0.3)">14</text>
+      <text x="400" y="301" font-family="monospace" font-size="7" fill="rgba(255,255,255,0.3)">30</text>
+      <!-- At-risk row -->
+      <text x="88" y="314" font-family="monospace" font-size="7" fill="rgba(96,165,250,0.4)">AT RISK</text>
+      <text x="170" y="314" font-family="monospace" font-size="7" fill="#ffffff">6</text>
+      <text x="240" y="314" font-family="monospace" font-size="7" fill="#ffffff">5</text>
+      <text x="320" y="314" font-family="monospace" font-size="7" fill="#ffffff">4</text>
+      <text x="400" y="314" font-family="monospace" font-size="7" fill="rgba(255,255,255,0.5)">—</text>
+
+      <!-- Title bar -->
+      <text x="20" y="20" font-family="monospace" font-size="8" fill="rgba(96,165,250,0.4)" letter-spacing="0.2em">VV-ECMO · RIVAROXABAN · KAPLAN-MEIER</text>
+      <line x1="20" y1="24" x2="300" y2="24" stroke="rgba(96,165,250,0.12)" stroke-width="1"/>
+
+      <!-- INTERIM watermark -->
+      <text x="280" y="145" text-anchor="middle" font-family="monospace" font-size="36" fill="rgba(96,165,250,0.04)" letter-spacing="0.3em" transform="rotate(-30, 280, 145)">INTERIM</text>
+    </svg>
+  </div>
+
+</div>
+
+<p style="color:rgba(236,230,216,0.35); font-size:11px; letter-spacing:0.1em; text-align:center; margin-top:8px;">
+  Both diagrams fully animated in-browser — scan sweep · rotating pump · flowing blood cells · pulsing event markers · draw-on KM curve
+</p>
+
+</body>
+</html>

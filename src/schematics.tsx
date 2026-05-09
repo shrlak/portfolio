@@ -54,8 +54,8 @@ export function HeroSchematic() {
           <path d="M 12 0 L 0 0 0 12" fill="none" stroke="rgba(236,230,216,0.025)" strokeWidth="0.4" />
         </pattern>
         <radialGradient id="hero-glow" cx="75%" cy="50%" r="45%">
-          <stop offset="0%" stopColor="rgba(230,48,70,0.20)" />
-          <stop offset="60%" stopColor="rgba(230,48,70,0.04)" />
+          <stop offset="0%" stopColor="rgba(96,165,250,0.14)" />
+          <stop offset="60%" stopColor="rgba(96,165,250,0.03)" />
           <stop offset="100%" stopColor="rgba(10,11,16,0)" />
         </radialGradient>
         <linearGradient id="hero-vignette" x1="0" y1="0" x2="0" y2="1">
@@ -76,13 +76,13 @@ export function HeroSchematic() {
       {/* Background circuit traces — top-left */}
       <g opacity="0.16">
         {[120, 240, 360, 480].map((y) => (
-          <line key={y} x1="0" y1={y} x2="560" y2={y} stroke="#ECE6D8" strokeWidth="0.4" strokeDasharray="2 6" />
+          <line key={y} x1="0" y1={y} x2="560" y2={y} stroke="#60a5fa" strokeWidth="0.4" strokeDasharray="2 6" />
         ))}
         {[120, 220, 320, 420].map((x) => (
-          <line key={x} x1={x} y1="80" x2={x} y2="540" stroke="#ECE6D8" strokeWidth="0.4" strokeDasharray="2 6" />
+          <line key={x} x1={x} y1="80" x2={x} y2="540" stroke="#60a5fa" strokeWidth="0.4" strokeDasharray="2 6" />
         ))}
         {[[120, 120], [220, 240], [320, 360], [420, 240], [120, 360]].map(([cx, cy], i) => (
-          <circle key={i} cx={cx} cy={cy} r="2" fill="#ECE6D8" />
+          <circle key={i} cx={cx} cy={cy} r="2" fill="#60a5fa" />
         ))}
       </g>
 
@@ -114,6 +114,12 @@ export function HeroSchematic() {
           <circle key={i} cx="0" cy="0" r="0" fill="none" stroke="#E63046" strokeWidth={1.4 - i * 0.3}>
             <animate attributeName="r" from="0" to="180" dur="2.4s" begin={`${delay}s`} repeatCount="indefinite" />
             <animate attributeName="opacity" from="0.7" to="0" dur="2.4s" begin={`${delay}s`} repeatCount="indefinite" />
+          </circle>
+        ))}
+        {[0.4, 1.2].map((delay, i) => (
+          <circle key={`blue-ping-${i}`} cx="0" cy="0" r="0" fill="none" stroke="#60a5fa" strokeWidth={0.8}>
+            <animate attributeName="r" from="0" to="220" dur="3.2s" begin={`${delay}s`} repeatCount="indefinite" />
+            <animate attributeName="opacity" from="0.5" to="0" dur="3.2s" begin={`${delay}s`} repeatCount="indefinite" />
           </circle>
         ))}
 
@@ -187,7 +193,7 @@ export function HeroSchematic() {
       {/* Telemetry column (left) */}
       <g transform="translate(96 200)">
         <line x1="0" y1="-12" x2="0" y2="360" className="schematic-stroke-faint" />
-        <text x="14" y="-18" className="schematic-label">TELEMETRY · LIVE</text>
+        <text x="14" y="-18" className="schematic-label" fill="rgba(96,165,250,0.6)">TELEMETRY · LIVE</text>
         {[
           { y: 0, label: 'HR', value: '72 BPM', accent: true },
           { y: 80, label: 'SpO₂', value: '98 %', accent: false },
@@ -197,10 +203,10 @@ export function HeroSchematic() {
         ].map((row) => (
           <g key={row.label} transform={`translate(0 ${row.y})`}>
             <line x1="-4" y1="0" x2="4" y2="0" className="schematic-stroke" strokeWidth="0.8" />
-            <text x="14" y="3" className="schematic-label" fill={row.accent ? '#E63046' : 'rgba(236,230,216,0.55)'}>
+            <text x="14" y="3" className="schematic-label" fill={row.accent ? '#E63046' : 'rgba(96,165,250,0.45)'}>
               {row.label}
             </text>
-            <text x="170" y="3" textAnchor="end" className="schematic-label" fill={row.accent ? '#E63046' : 'rgba(236,230,216,0.85)'}>
+            <text x="170" y="3" textAnchor="end" className="schematic-label" fill={row.accent ? '#E63046' : 'rgba(96,165,250,0.45)'}>
               {row.value}
             </text>
             {row.accent && (
@@ -225,6 +231,7 @@ export function HeroSchematic() {
             repeatCount="indefinite"
           />
           {/* Glow trail — faint wider copy behind main line */}
+          <path d={ecgPath} stroke="#60a5fa" strokeWidth="8" fill="none" opacity="0.04" strokeLinejoin="round" strokeLinecap="round" />
           <path d={ecgPath} stroke="#E63046" strokeWidth="6" fill="none" opacity="0.08" strokeLinejoin="round" strokeLinecap="round" />
           <path d={ecgPath} stroke="#E63046" strokeWidth="1.4" fill="none" opacity="0.92" strokeLinejoin="round" strokeLinecap="round" />
         </g>
@@ -268,8 +275,8 @@ export function AboutSchematic() {
           <path d="M 64 0 L 0 0 0 64" fill="none" stroke="rgba(236,230,216,0.05)" strokeWidth="0.5" />
         </pattern>
         <radialGradient id="about-glow" cx="30%" cy="80%" r="60%">
-          <stop offset="0%" stopColor="rgba(122,184,232,0.16)" />
-          <stop offset="60%" stopColor="rgba(122,184,232,0.02)" />
+          <stop offset="0%" stopColor="rgba(96,165,250,0.18)" />
+          <stop offset="60%" stopColor="rgba(96,165,250,0.03)" />
           <stop offset="100%" stopColor="rgba(10,11,16,0)" />
         </radialGradient>
       </defs>
@@ -371,16 +378,16 @@ export function AboutSchematic() {
       <g transform="translate(700 320)" opacity="0.5">
         <text className="schematic-label">RESP · 14 / MIN</text>
         <text y="14" className="schematic-label">VT · 480 ML</text>
-        <circle cx="140" cy="7" r="3" fill="#7AB8E8">
+        <circle cx="140" cy="7" r="3" fill="#60a5fa">
           <animate attributeName="r" values="2;5;2" dur="4.2s" repeatCount="indefinite" />
           <animate attributeName="opacity" values="0.3;1;0.3" dur="4.2s" repeatCount="indefinite" />
         </circle>
-        <text x="150" y="10" className="schematic-label" fill="#7AB8E8">INHALE</text>
+        <text x="150" y="10" className="schematic-label" fill="#60a5fa">INHALE</text>
       </g>
 
       {/* O₂ particles flowing down the trachea */}
       {[0, 0.7, 1.4, 2.1, 2.8].map((delay, i) => (
-        <circle key={`o2-${i}`} r="2" fill="rgba(122,184,232,0.7)" opacity="0">
+        <circle key={`o2-${i}`} r="2" fill="rgba(96,165,250,0.7)" opacity="0">
           <animate attributeName="cx" values="1060;1060;1060" dur="4.2s" begin={`${delay}s`} repeatCount="indefinite" />
           <animate attributeName="cy" values="280;420;560" dur="4.2s" begin={`${delay}s`} repeatCount="indefinite" />
           <animate attributeName="opacity" values="0;0.8;0" dur="4.2s" begin={`${delay}s`} repeatCount="indefinite" />
@@ -588,7 +595,7 @@ export function CoagCardSchematic() {
           <path d="M 20 0 L 0 0 0 20" fill="none" stroke="rgba(236,230,216,0.05)" strokeWidth="0.4" />
         </pattern>
         <radialGradient id="coag-card-glow" cx="50%" cy="50%" r="55%">
-          <stop offset="0%" stopColor="rgba(122,184,232,0.18)" />
+          <stop offset="0%" stopColor="rgba(96,165,250,0.18)" />
           <stop offset="100%" stopColor="rgba(10,11,16,0)" />
         </radialGradient>
         {/* Cascade drop path — single column */}
@@ -646,7 +653,7 @@ export function CoagCardSchematic() {
 
         {/* Cascade drops — particles falling that get blocked at XIIa */}
         {[0, 0.8, 1.6].map((delay, i) => (
-          <circle key={i} cx="0" cy="0" r="2" fill="rgba(122,184,232,0.85)">
+          <circle key={i} cx="0" cy="0" r="2" fill="rgba(96,165,250,0.85)">
             <animate
               attributeName="cy"
               values="-10;50;55"
@@ -889,7 +896,7 @@ export function PASDetailSchematic() {
 
         {/* Cannula lines going up/left toward device — exit body at neck */}
         <line x1="132" y1="150" x2="230" y2="170" stroke="#E63046" strokeWidth="3.5" strokeLinecap="round" opacity="0.85" />
-        <line x1="132" y1="155" x2="230" y2="180" stroke="rgba(122,184,232,0.8)" strokeWidth="3" strokeLinecap="round" />
+        <line x1="132" y1="155" x2="230" y2="180" stroke="rgba(96,165,250,0.8)" strokeWidth="3" strokeLinecap="round" />
         <text x="150" y="508" className="schematic-label" textAnchor="middle">OVINE MODEL · ~60 KG · VV ECMO</text>
       </g>
 
@@ -898,8 +905,8 @@ export function PASDetailSchematic() {
       <path d={tubeDrainPath} fill="none" stroke="#E63046" strokeWidth="3.5" strokeLinecap="round" opacity="0.85" />
 
       {/* ── RETURN TUBE (blue — oxygenated returning) ── */}
-      <path d={tubeReturnPath} fill="none" stroke="rgba(122,184,232,0.5)" strokeWidth="7" strokeLinecap="round" />
-      <path d={tubeReturnPath} fill="none" stroke="rgba(122,184,232,0.9)" strokeWidth="3" strokeLinecap="round" />
+      <path d={tubeReturnPath} fill="none" stroke="rgba(96,165,250,0.5)" strokeWidth="7" strokeLinecap="round" />
+      <path d={tubeReturnPath} fill="none" stroke="rgba(96,165,250,0.9)" strokeWidth="3" strokeLinecap="round" />
 
       {/* ── BLOOD FLOW PARTICLES — drain (red, sheep → pump) ── */}
       {[0, 1.1, 2.2, 3.3].map((delay, i) => (
@@ -913,7 +920,7 @@ export function PASDetailSchematic() {
 
       {/* ── BLOOD FLOW PARTICLES — return (blue, oxygenator → sheep) ── */}
       {[0.5, 1.6, 2.7, 3.8].map((delay, i) => (
-        <circle key={`rt-${i}`} r="4.5" fill="#7AB8E8" filter="url(#pas-glow-blue)">
+        <circle key={`rt-${i}`} r="4.5" fill="#60a5fa" filter="url(#pas-glow-blue)">
           <animateMotion dur="4.5s" begin={`${delay}s`} repeatCount="indefinite" rotate="auto">
             <mpath href="#pas-return-path" />
           </animateMotion>
@@ -954,13 +961,13 @@ export function PASDetailSchematic() {
         ))}
         {/* Gas exchange zones */}
         <rect x="-90" y="-28" width="180" height="16" rx="2"
-          fill="rgba(122,184,232,0.08)" stroke="rgba(122,184,232,0.3)" strokeWidth="0.8" />
+          fill="rgba(96,165,250,0.08)" stroke="rgba(96,165,250,0.3)" strokeWidth="0.8" />
         <rect x="-90" y="12" width="180" height="16" rx="2"
           fill="rgba(230,48,70,0.06)" stroke="rgba(230,48,70,0.25)" strokeWidth="0.8" />
 
         {/* O₂ bubble animation — entering top */}
         {[0, 0.6, 1.2, 1.8, 2.4].map((delay, i) => (
-          <circle key={`o2-${i}`} cx={-60 + i*30} cy="-70" r="3" fill="rgba(122,184,232,0.8)">
+          <circle key={`o2-${i}`} cx={-60 + i*30} cy="-70" r="3" fill="rgba(96,165,250,0.8)">
             <animate attributeName="cy" values="-70;-20;-70" dur="2.8s" begin={`${delay}s`} repeatCount="indefinite" />
             <animate attributeName="opacity" values="0;0.9;0" dur="2.8s" begin={`${delay}s`} repeatCount="indefinite" />
           </circle>
@@ -973,7 +980,7 @@ export function PASDetailSchematic() {
           </circle>
         ))}
 
-        <text x="-60" y="-80" className="schematic-label" fill="rgba(122,184,232,0.8)">O₂ IN</text>
+        <text x="-60" y="-80" className="schematic-label" fill="rgba(96,165,250,0.8)">O₂ IN</text>
         <text x="40" y="90" className="schematic-label" fill="rgba(230,48,70,0.7)">CO₂ OUT</text>
         <text x="0" y="105" textAnchor="middle" className="schematic-label">HOLLOW-FIBER OXYGENATOR</text>
       </g>
@@ -1010,7 +1017,7 @@ export function PASDetailSchematic() {
 
       {/* ── FLOW DIRECTION ARROWS on tubes ── */}
       <text x="590" y="240" className="schematic-label" fill="rgba(230,48,70,0.7)">→ DRAIN</text>
-      <text x="590" y="300" className="schematic-label" fill="rgba(122,184,232,0.7)">← RETURN</text>
+      <text x="590" y="300" className="schematic-label" fill="rgba(96,165,250,0.7)">← RETURN</text>
 
       {/* ── N=6 COHORT — names only, no results ── */}
       <g transform="translate(88 510)">
@@ -1046,7 +1053,7 @@ export function CoagDetailSchematic() {
           <path d="M 40 0 L 0 0 0 40" fill="none" stroke="rgba(236,230,216,0.06)" strokeWidth="0.5" />
         </pattern>
         <radialGradient id="coag-det-glow" cx="50%" cy="50%" r="55%">
-          <stop offset="0%" stopColor="rgba(122,184,232,0.15)" />
+          <stop offset="0%" stopColor="rgba(96,165,250,0.15)" />
           <stop offset="100%" stopColor="rgba(10,11,16,0)" />
         </radialGradient>
       </defs>
@@ -1084,7 +1091,7 @@ export function CoagDetailSchematic() {
 
         {/* Animated blocked particles falling onto FXIIa */}
         {[0, 0.9, 1.8].map((delay, i) => (
-          <circle key={i} cx="0" cy="-50" r="3" fill="rgba(122,184,232,0.85)">
+          <circle key={i} cx="0" cy="-50" r="3" fill="rgba(96,165,250,0.85)">
             <animate
               attributeName="cy"
               values="-60;40;42"
