@@ -305,3 +305,236 @@
   .marquee-track   { animation: none; }
   .timeline-vr     { transition: none; }
 }
+
+/* ══════════════════════════════════════════════════════════════════
+   ME/BME ANIMATION SYSTEM
+   ══════════════════════════════════════════════════════════════════ */
+
+/* ── Gear watermark ──────────────────────────────────────────────── */
+.gear-watermark {
+  position: fixed; inset: 0; z-index: 1; pointer-events: none;
+  display: flex; align-items: center; justify-content: center;
+  overflow: hidden;
+}
+.gear-svg {
+  width: clamp(320px, 50vw, 700px);
+  height: clamp(320px, 50vw, 700px);
+  opacity: 0.025;
+  will-change: transform;
+  transform-origin: center center;
+}
+
+/* ── Parallax dot grid ───────────────────────────────────────────── */
+.bp-parallax {
+  position: fixed; inset: 0; z-index: 1; pointer-events: none;
+  background-image: radial-gradient(circle, rgba(26,58,92,0.09) 1px, transparent 1px);
+  background-size: 28px 28px;
+  will-change: background-position;
+}
+
+/* ── Custom cursor ───────────────────────────────────────────────── */
+@media (pointer: fine) {
+  body.has-custom-cursor * { cursor: none !important; }
+}
+.cursor-ring {
+  position: fixed; top: 0; left: 0; z-index: 9999; pointer-events: none;
+  width: 20px; height: 20px; border-radius: 50%;
+  border: 1.5px solid #0d0d0d;
+  transform: translate(-50%, -50%);
+  will-change: transform, width, height, opacity;
+  transition: width 0.18s ease, height 0.18s ease, opacity 0.18s ease, border-color 0.18s ease;
+}
+.cursor-dot {
+  position: fixed; top: 0; left: 0; z-index: 10000; pointer-events: none;
+  width: 4px; height: 4px; border-radius: 50%; background: #c8102e;
+  transform: translate(-50%, -50%);
+  will-change: transform;
+}
+.cursor-burst {
+  position: fixed; top: 0; left: 0; z-index: 9998; pointer-events: none;
+  animation: cursor-burst-anim 0.35s ease-out both;
+}
+
+@keyframes cursor-burst-anim {
+  0%   { opacity: 1; transform: translate(-50%, -50%) scale(0.2); }
+  60%  { opacity: 0.8; transform: translate(-50%, -50%) scale(1.4); }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(2); }
+}
+
+/* ── Hero corner brackets ────────────────────────────────────────── */
+.bracket-tl, .bracket-br {
+  position: absolute; z-index: 2; pointer-events: none;
+}
+.bracket-tl { top: 16px; left: 16px; }
+.bracket-br { bottom: 16px; right: 16px; transform: rotate(180deg); }
+.bracket-path {
+  stroke: #c8102e; fill: none; stroke-width: 2;
+  stroke-dasharray: 60; stroke-dashoffset: 60;
+  animation: bracket-draw 0.6s cubic-bezier(0.4,0,0.2,1) 0.3s both;
+}
+@keyframes bracket-draw {
+  to { stroke-dashoffset: 0; }
+}
+
+/* ── Hero crosshair reticle ──────────────────────────────────────── */
+.hero-reticle {
+  position: absolute; inset: 0; z-index: 1; pointer-events: none;
+  display: flex; align-items: center; justify-content: center;
+  overflow: hidden; opacity: 0.04;
+}
+@keyframes reticle-spin { to { transform: rotate(360deg); } }
+.reticle-svg { animation: reticle-spin 30s linear infinite; }
+
+/* ── Blueprint grid reveal ───────────────────────────────────────── */
+.bp-grid-svg {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  pointer-events: none; z-index: 0;
+}
+.bp-line {
+  stroke: #1a3a5c; fill: none; stroke-width: 0.5; opacity: 0.12;
+  stroke-dasharray: 2000; stroke-dashoffset: 2000;
+  transition: stroke-dashoffset 0.9s cubic-bezier(0.4,0,0.2,1);
+}
+.bp-line.is-drawn { stroke-dashoffset: 0; }
+
+/* ── Credentials tolerance annotation ───────────────────────────── */
+.tolerance-note {
+  position: absolute; right: -120px; top: 50%;
+  transform: translateY(-50%);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 8px; letter-spacing: 0.14em;
+  color: #1a3a5c; opacity: 0; white-space: nowrap;
+  transition: opacity 0.2s ease;
+  pointer-events: none;
+}
+tr:hover .tolerance-note { opacity: 1; }
+
+/* ── ECG background trace ────────────────────────────────────────── */
+.ecg-bg {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  pointer-events: none; z-index: 0; overflow: hidden;
+}
+.ecg-path {
+  stroke: #00c8a0; fill: none; stroke-width: 1.5; opacity: 0.12;
+  stroke-dasharray: 2000; stroke-dashoffset: 2000;
+}
+.ecg-path.is-tracing {
+  animation: ecg-trace 1.4s cubic-bezier(0.4,0,0.2,1) forwards;
+}
+.ecg-path.is-flatline {
+  animation: ecg-flatline 0.3s ease forwards;
+}
+@keyframes ecg-trace {
+  to { stroke-dashoffset: 0; }
+}
+@keyframes ecg-flatline {
+  from { d: path('M0,60 L20,60 L25,55 L30,60 L45,60 L60,30 L65,110 L70,40 L80,60 L95,65 L110,60 L800,60'); }
+  to   { d: path('M0,60 L800,60'); }
+}
+@keyframes ecg-loop {
+  0%   { stroke-dashoffset: 2000; }
+  100% { stroke-dashoffset: -2000; }
+}
+.ecg-path.is-looping {
+  animation: ecg-loop 3s linear infinite;
+}
+
+/* ── Research card — piston SVG ──────────────────────────────────── */
+.piston-wrap {
+  position: absolute; top: 8px; right: 8px;
+  opacity: 0.18; pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+.research-card-wrap:hover .piston-wrap { opacity: 0.4; }
+@keyframes piston-move {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(8px); }
+}
+.piston-rod { animation: piston-move 3s ease-in-out infinite; }
+.research-card-wrap:hover .piston-rod { animation-duration: 1s; }
+
+/* ── Research card — ECG border + vitals ────────────────────────── */
+.vitals-readout {
+  position: absolute; bottom: 0; left: 0; right: 0;
+  padding: 6px 10px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 8px; letter-spacing: 0.12em;
+  color: #00c8a0; background: rgba(0,200,160,0.04);
+  border-top: 1px solid rgba(0,200,160,0.2);
+  opacity: 0; transform: translateY(4px);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  pointer-events: none;
+}
+.research-card-wrap:hover .vitals-readout { opacity: 1; transform: translateY(0); }
+@keyframes vitals-glow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(0,200,160,0); }
+  50%       { box-shadow: 0 0 0 3px rgba(0,200,160,0.15); }
+}
+.research-card-wrap:hover { animation: vitals-glow 1.5s ease-in-out infinite; }
+
+/* ── Scan line sweep (research card click transition) ────────────── */
+.scan-line {
+  position: fixed; inset: 0; z-index: 200; pointer-events: none;
+  background: linear-gradient(to bottom, transparent 0%, rgba(244,242,238,0.95) 50%, transparent 100%);
+  height: 60px; top: -60px;
+  animation: scan-sweep 0.35s ease-out both;
+}
+@keyframes scan-sweep {
+  from { top: -60px; }
+  to   { top: 100vh; }
+}
+
+/* ── Skill gauge ─────────────────────────────────────────────────── */
+.gauge-wrap { position: relative; display: inline-block; }
+.gauge-arc-bg  { fill: none; stroke: rgba(13,13,13,0.1); stroke-width: 3; stroke-linecap: round; }
+.gauge-arc     { fill: none; stroke: #c8102e; stroke-width: 3; stroke-linecap: round; stroke-dasharray: 188; stroke-dashoffset: 188; transition: stroke-dashoffset 0.8s cubic-bezier(0.4,0,0.2,1); }
+.gauge-needle  { transform-origin: 40px 40px; transition: transform 0.8s cubic-bezier(0.4,0,0.2,1); }
+.gauge-wrap:hover .gauge-arc { stroke: #00c8a0; }
+.gauge-tooltip {
+  position: absolute; bottom: calc(100% + 6px); left: 50%;
+  transform: translateX(-50%);
+  font-family: 'JetBrains Mono', monospace; font-size: 8px; letter-spacing: 0.12em;
+  background: #0d0d0d; color: #f4f2ee; padding: 4px 8px; white-space: nowrap;
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.18s ease;
+}
+.gauge-wrap:hover .gauge-tooltip { opacity: 1; }
+
+/* ── Timeline tick stamp ─────────────────────────────────────────── */
+@keyframes tick-stamp {
+  0%   { transform: scale(1.5) translateX(-50%); opacity: 0; }
+  60%  { transform: scale(0.9) translateX(-50%); opacity: 1; }
+  100% { transform: scale(1)   translateX(-50%); opacity: 1; }
+}
+.timeline-tick.is-stamped { animation: tick-stamp 0.18s cubic-bezier(0.4,0,0.2,1) both; }
+
+/* ── Contact oscilloscope grid ───────────────────────────────────── */
+.osc-grid {
+  position: absolute; inset: 0; z-index: 0; pointer-events: none;
+  background-image:
+    linear-gradient(rgba(0,200,160,0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,200,160,0.04) 1px, transparent 1px);
+  background-size: 32px 32px;
+}
+
+/* ── Contact input bio-green focus ───────────────────────────────── */
+.ed-input:focus {
+  border-color: #00c8a0 !important;
+  box-shadow: 0 0 0 2px rgba(0,200,160,0.12);
+}
+
+/* ── Send button gear + TRANSMITTED state ────────────────────────── */
+@keyframes gear-spin-fast { to { transform: rotate(360deg); } }
+.send-gear { display: inline-block; animation: gear-spin-fast 0.4s linear; }
+.ed-submit.is-sent { border-color: #00c8a0; color: #00c8a0; letter-spacing: 0.3em; }
+
+/* ── Reduced-motion additions ────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .gear-svg, .reticle-svg { animation: none !important; }
+  .bracket-path { animation: none !important; stroke-dashoffset: 0 !important; }
+  .bp-line { transition: none !important; stroke-dashoffset: 0 !important; }
+  .ecg-path { animation: none !important; stroke-dashoffset: 0 !important; }
+  .piston-rod { animation: none !important; }
+  .gauge-arc { transition: none !important; }
+  .scan-line { animation: none !important; display: none; }
+}

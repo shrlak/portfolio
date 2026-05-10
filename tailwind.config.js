@@ -21,6 +21,8 @@ export default {
         steel: '#aaaaaa',
         vital: '#c8102e',
         oxygen: '#1a5276',
+        'bio-green': '#00c8a0',
+        blueprint:   '#1a3a5c',
         ink:   '#0d0d0d',
         paper: '#f4f2ee',
       },
