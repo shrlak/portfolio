@@ -459,9 +459,44 @@ function Navbar({ onHome = false }: { onHome?: boolean }) {
 
 /* ── Hero ─────────────────────────────────────────────────────────── */
 
+function CornerBrackets() {
+  return (
+    <>
+      <div className="bracket-tl" aria-hidden="true">
+        <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+          <path className="bracket-path" d="M32,2 L2,2 L2,32" />
+        </svg>
+      </div>
+      <div className="bracket-br" aria-hidden="true">
+        <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+          <path className="bracket-path" d="M32,2 L2,2 L2,32" style={{ animationDelay: '0.15s' }} />
+        </svg>
+      </div>
+    </>
+  );
+}
+
+function HeroCrosshair() {
+  return (
+    <div className="hero-reticle" aria-hidden="true">
+      <svg viewBox="0 0 200 200" width="300" height="300" className="reticle-svg" fill="none" stroke="#0d0d0d" strokeWidth="0.5">
+        <circle cx="100" cy="100" r="80" />
+        <circle cx="100" cy="100" r="50" />
+        <line x1="100" y1="10"  x2="100" y2="40" />
+        <line x1="100" y1="160" x2="100" y2="190" />
+        <line x1="10"  y1="100" x2="40"  y2="100" />
+        <line x1="160" y1="100" x2="190" y2="100" />
+        <circle cx="100" cy="100" r="3" />
+      </svg>
+    </div>
+  );
+}
+
 function HeroSection() {
   return (
     <section id="home" className="relative bg-graphite overflow-hidden">
+      <HeroCrosshair />
+      <CornerBrackets />
       {/* Folio line */}
       <div className="mx-auto max-w-container px-6 md:px-10 lg:px-14 xl:px-16 pt-10 md:pt-14">
         <p className="comp-folio font-mono text-[8.5px] uppercase tracking-[0.28em] text-muted leading-none">
@@ -573,12 +608,39 @@ function HeroSection() {
 
 /* ── Credentials ─────────────────────────────────────────────────── */
 
+function BlueprintGridReveal() {
+  const ref = useRef<SVGSVGElement>(null);
+  useEffect(() => {
+    if (!ref.current) return;
+    const lines = ref.current.querySelectorAll<SVGPathElement>('.bp-line');
+    const obs = new IntersectionObserver(([entry]) => {
+      if (!entry.isIntersecting) return;
+      obs.disconnect();
+      lines.forEach((l, i) => setTimeout(() => l.classList.add('is-drawn'), i * 60));
+    }, { threshold: 0.1 });
+    obs.observe(ref.current);
+    return () => obs.disconnect();
+  }, []);
+
+  return (
+    <svg ref={ref} className="bp-grid-svg" aria-hidden="true" viewBox="0 0 800 400" preserveAspectRatio="xMidYMid slice">
+      {Array.from({ length: 10 }).map((_, i) => (
+        <path key={`h${i}`} className="bp-line" d={`M0,${i*44} L800,${i*44}`} style={{ transitionDelay: `${i * 0.06}s` }} />
+      ))}
+      {Array.from({ length: 20 }).map((_, i) => (
+        <path key={`v${i}`} className="bp-line" d={`M${i*42},0 L${i*42},400`} style={{ transitionDelay: `${0.6 + i * 0.04}s` }} />
+      ))}
+    </svg>
+  );
+}
+
 function CredentialsSection() {
   const tableRef = useRef<HTMLTableSectionElement>(null);
   useRowReveal(tableRef as React.RefObject<HTMLElement>, CREDENTIALS.items.length, 80);
 
   return (
-    <section id="credentials" className="relative ed-dark">
+    <section id="credentials" className="relative ed-dark overflow-hidden">
+      <BlueprintGridReveal />
       <div className="mx-auto max-w-container px-6 md:px-10 lg:px-14 xl:px-16 py-20 md:py-28">
         <div className="grid md:grid-cols-[40%_60%] gap-10 md:gap-14 items-start">
 
@@ -606,9 +668,10 @@ function CredentialsSection() {
             <table className="w-full border-collapse">
               <tbody ref={tableRef}>
                 {CREDENTIALS.items.map((item, i) => (
-                  <tr key={i} className="row-reveal border-b border-white/10 group">
-                    <td className="py-5 pr-6 align-top w-20">
+                  <tr key={i} className="row-reveal border-b border-white/10 group relative">
+                    <td className="py-5 pr-6 align-top w-20 relative">
                       <span className="font-mono text-[8.5px] uppercase tracking-[0.18em] text-steel">{String(i + 1).padStart(2, '0')}</span>
+                      <span className="tolerance-note">{`± 0.00${(i % 3) + 1} in`}</span>
                     </td>
                     <td className="py-5 align-top">
                       <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-steel mt-1.5">
@@ -647,24 +710,87 @@ function CredentialsSection() {
 
 /* ── About ───────────────────────────────────────────────────────── */
 
-function AboutSection() {
+const ECG_PATH = 'M0,60 L20,60 L25,55 L30,60 L45,60 L60,30 L65,110 L70,40 L80,60 L95,65 L110,60 L200,60 L220,60 L225,55 L230,60 L245,60 L260,30 L265,110 L270,40 L280,60 L295,65 L310,60 L800,60';
+
+function EcgBackground({ fast, flat }: { fast: boolean; flat: boolean }) {
+  const pathRef = useRef<SVGPathElement>(null);
+  useEffect(() => {
+    const p = pathRef.current;
+    if (!p) return;
+    if (flat) {
+      p.classList.remove('is-tracing', 'is-looping');
+      p.classList.add('is-flatline');
+      setTimeout(() => {
+        if (!pathRef.current) return;
+        pathRef.current.classList.remove('is-flatline');
+        pathRef.current.classList.add('is-looping');
+      }, 900);
+    }
+  }, [flat]);
+
+  useEffect(() => {
+    const p = pathRef.current;
+    if (!p) return;
+    const obs = new IntersectionObserver(([entry]) => {
+      if (!entry.isIntersecting) return;
+      obs.disconnect();
+      p.classList.add('is-tracing');
+      setTimeout(() => {
+        if (pathRef.current) {
+          pathRef.current.classList.remove('is-tracing');
+          pathRef.current.classList.add('is-looping');
+        }
+      }, 1500);
+    }, { threshold: 0.2 });
+    obs.observe(p);
+    return () => obs.disconnect();
+  }, []);
+
   return (
-    <section id="about" className="relative bg-graphite">
-      <div className="mx-auto max-w-container px-6 md:px-10 lg:px-14 xl:px-16 py-20 md:py-28">
+    <svg className="ecg-bg" viewBox="0 0 800 120" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+      <path
+        ref={pathRef}
+        className="ecg-path"
+        d={ECG_PATH}
+        style={{ animationDuration: fast ? '1.2s' : '3s' }}
+      />
+    </svg>
+  );
+}
+
+function AboutSection() {
+  const [fast, setFast] = useState(false);
+  const [flat, setFlat] = useState(false);
+  const flatRef = useRef(false);
+
+  const handleClick = () => {
+    if (flatRef.current) return;
+    flatRef.current = true;
+    setFlat(true);
+    setTimeout(() => { setFlat(false); flatRef.current = false; }, 1000);
+  };
+
+  return (
+    <section
+      id="about"
+      className="relative bg-graphite overflow-hidden"
+      onMouseEnter={() => setFast(true)}
+      onMouseLeave={() => setFast(false)}
+      onClick={handleClick}
+    >
+      <EcgBackground fast={fast} flat={flat} />
+      <div className="relative z-10 mx-auto max-w-container px-6 md:px-10 lg:px-14 xl:px-16 py-20 md:py-28">
 
         <div className="mb-14" data-reveal>
           <FolioLabel text={ABOUT.tag} />
         </div>
 
-        {/* Magazine two-column */}
         <div className="grid md:grid-cols-[45%_55%] gap-10 md:gap-16 mb-16">
-          {/* Pull quote */}
           <div data-ink data-ink-delay="1">
             <p className="font-serif-italic text-bone text-3xl sm:text-4xl md:text-5xl leading-[1.18]">
               "{ABOUT.accent}"
             </p>
           </div>
-          {/* Body text */}
           <div data-reveal data-reveal-delay="2">
             <div className="ed-rule-red mb-6" style={{ width: '2.5rem' }} />
             {ABOUT.body.map((para, i) => (
@@ -675,7 +801,6 @@ function AboutSection() {
           </div>
         </div>
 
-        {/* Marquee ticker */}
         <div className="mb-16 ed-rule-thin py-3 overflow-hidden" data-reveal>
           <div className="marquee-outer overflow-hidden">
             <div className="marquee-track inline-flex gap-0 whitespace-nowrap" style={{ '--marquee-speed': '40s' } as React.CSSProperties}>
@@ -688,7 +813,6 @@ function AboutSection() {
           </div>
         </div>
 
-        {/* Stats row */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-0 md:divide-x md:divide-bone/10" data-reveal data-reveal-delay="2">
           {[
             { value: '2',   label: 'Degrees',    sub: 'ME + BME' },
