@@ -1,59 +1,21 @@
 import { useEffect, useState, useRef } from 'react';
 import {
-  Mail,
-  Linkedin,
-  Github,
-  ArrowUpRight,
-  ArrowRight,
-  ArrowLeft,
-  ArrowUp,
-  FileText,
-  Activity,
-  ExternalLink,
-  GraduationCap,
-  MapPin,
-  CheckCircle2,
-  AlertTriangle,
-  Send,
-  Menu,
-  X,
+  Mail, Linkedin, Github, ArrowUpRight, ArrowRight, ArrowLeft,
+  FileText, ExternalLink, MapPin, Send, Menu, X,
   type LucideIcon,
 } from 'lucide-react';
 import {
-  PERSON,
-  HERO,
-  CREDENTIALS,
-  ABOUT,
-  RESEARCH,
-  RESEARCH_CARDS,
-  PAS_DETAIL,
-  COAG_DETAIL,
-  CANE_DETAIL,
-  CV,
-  CONTACT,
-  NAV_ITEMS,
-  PUBLICATIONS,
-  SKILLS,
-  TIMELINE,
+  PERSON, HERO, CREDENTIALS, ABOUT, RESEARCH, RESEARCH_CARDS,
+  PAS_DETAIL, COAG_DETAIL, CANE_DETAIL, CV, CONTACT, NAV_ITEMS,
+  PUBLICATIONS, SKILLS, TIMELINE,
   type CardSlug,
-  type TimelineState,
 } from './content';
 import {
-  HeroSchematic,
-  AboutSchematic,
-  CredentialsSchematic,
-  PASCardSchematic,
-  CoagCardSchematic,
-  CaneCardSchematic,
-  PASDetailSchematic,
-  CoagDetailSchematic,
-  CaneDetailSchematic,
-  CVSchematic,
-  CTASchematic,
+  PASDetailSchematic, CoagDetailSchematic, CaneDetailSchematic, CVSchematic,
 } from './schematics';
 import { PASCircuitDiagram, KaplanMeierDiagram } from './diagrams';
 
-/* ── Router ────────────────────────────────────────────────────────── */
+/* ── Router ───────────────────────────────────────────────────────── */
 
 type Route =
   | { kind: 'home'; anchor: string }
@@ -65,9 +27,8 @@ function parseHash(hash: string): Route {
     const parts = hash.slice(2).split('/').filter(Boolean);
     if (parts[0] === 'research' && parts[1]) {
       const slug = parts[1] as CardSlug;
-      if (slug === 'pas' || slug === 'coagulation' || slug === 'cane') {
+      if (slug === 'pas' || slug === 'coagulation' || slug === 'cane')
         return { kind: 'detail', slug };
-      }
     }
     if (parts[0] === 'cv') return { kind: 'cv' };
   }
@@ -75,28 +36,27 @@ function parseHash(hash: string): Route {
 }
 
 function useHashRoute(): Route {
-  const [hash, setHash] = useState(typeof window !== 'undefined' ? window.location.hash : '');
+  const [hash, setHash] = useState(
+    typeof window !== 'undefined' ? window.location.hash : ''
+  );
   useEffect(() => {
-    const handler = () => setHash(window.location.hash);
-    window.addEventListener('hashchange', handler);
-    return () => window.removeEventListener('hashchange', handler);
+    const h = () => setHash(window.location.hash);
+    window.addEventListener('hashchange', h);
+    return () => window.removeEventListener('hashchange', h);
   }, []);
   return parseHash(hash);
 }
 
+/* ── Scroll / intersection hooks ──────────────────────────────────── */
+
 function useScrollReveal() {
   useEffect(() => {
-    const els = document.querySelectorAll('[data-reveal]');
+    const els = document.querySelectorAll('[data-reveal], [data-ink]');
     const obs = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((e) => {
-          if (e.isIntersecting) {
-            e.target.classList.add('is-revealed');
-            obs.unobserve(e.target);
-          }
-        });
-      },
-      { threshold: 0.06, rootMargin: '0px 0px -48px 0px' }
+      (entries) => entries.forEach((e) => {
+        if (e.isIntersecting) { e.target.classList.add('is-revealed'); obs.unobserve(e.target); }
+      }),
+      { threshold: 0.06, rootMargin: '0px 0px -40px 0px' }
     );
     els.forEach((el) => obs.observe(el));
     return () => obs.disconnect();
@@ -107,571 +67,456 @@ function useActiveSection(ids: string[]): string {
   const [active, setActive] = useState(ids[0] ?? '');
   useEffect(() => {
     const obs = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((e) => {
-          if (e.isIntersecting) setActive(e.target.id);
-        });
-      },
+      (entries) => entries.forEach((e) => { if (e.isIntersecting) setActive(e.target.id); }),
       { threshold: 0.35 }
     );
-    ids.forEach((id) => {
-      const el = document.getElementById(id);
-      if (el) obs.observe(el);
-    });
+    ids.forEach((id) => { const el = document.getElementById(id); if (el) obs.observe(el); });
     return () => obs.disconnect();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [ids]);
   return active;
 }
 
-/* ── Global chrome ─────────────────────────────────────────────────── */
+/* ── Animation hooks ──────────────────────────────────────────────── */
+
+function useSplitFlap(target: number, digits = 2, duration = 1300) {
+  const [value, setValue] = useState(0);
+  const [gen, setGen] = useState(0);
+  const elRef = useRef<HTMLDivElement>(null);
+  const started = useRef(false);
+  useEffect(() => {
+    const el = elRef.current;
+    if (!el) return;
+    const obs = new IntersectionObserver(([entry]) => {
+      if (!entry.isIntersecting || started.current) return;
+      started.current = true;
+      obs.disconnect();
+      const t0 = performance.now();
+      const tick = (now: number) => {
+        const t = Math.min((now - t0) / duration, 1);
+        const eased = 1 - Math.pow(1 - t, 3);
+        const next = Math.round(eased * target);
+        setValue(prev => { if (prev !== next) setGen(g => g + 1); return next; });
+        if (t < 1) requestAnimationFrame(tick);
+      };
+      requestAnimationFrame(tick);
+    }, { threshold: 0.5 });
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, [target, duration]);
+  return { elRef, value, gen };
+}
+
+function useRowReveal(parentRef: React.RefObject<HTMLElement>, count: number, stagger = 70) {
+  useEffect(() => {
+    const parent = parentRef.current;
+    if (!parent) return;
+    const rows = Array.from(parent.querySelectorAll<HTMLElement>('.row-reveal'));
+    const obs = new IntersectionObserver(([entry]) => {
+      if (!entry.isIntersecting) return;
+      obs.disconnect();
+      rows.forEach((row, i) => setTimeout(() => row.classList.add('is-vis'), i * stagger));
+    }, { threshold: 0.1 });
+    obs.observe(parent);
+    return () => obs.disconnect();
+  }, [parentRef, count, stagger]);
+}
+
+function useTimelineScroll(containerRef: React.RefObject<HTMLDivElement>) {
+  const lineRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const update = () => {
+      const c = containerRef.current;
+      const l = lineRef.current;
+      if (!c || !l) return;
+      const rect = c.getBoundingClientRect();
+      const progress = Math.max(0, Math.min(1,
+        (window.innerHeight - rect.top) / (window.innerHeight * 0.6 + rect.height * 0.4)
+      ));
+      l.style.height = `${progress * 100}%`;
+    };
+    window.addEventListener('scroll', update, { passive: true });
+    update();
+    return () => window.removeEventListener('scroll', update);
+  }, [containerRef]);
+  return lineRef;
+}
+
+/* ── Global chrome ────────────────────────────────────────────────── */
 
 function ScrollProgress() {
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const update = () => {
-      const scrolled = window.scrollY;
-      const total = document.body.scrollHeight - window.innerHeight;
-      const pct = total > 0 ? (scrolled / total) * 100 : 0;
-      if (ref.current) ref.current.style.width = `${pct}%`;
+      const pct = (window.scrollY / (document.body.scrollHeight - window.innerHeight)) * 100;
+      if (ref.current) ref.current.style.height = `${Math.min(pct, 100)}%`;
     };
     window.addEventListener('scroll', update, { passive: true });
     return () => window.removeEventListener('scroll', update);
   }, []);
-  return <div ref={ref} className="scroll-progress" style={{ width: '0%' }} aria-hidden="true" />;
-}
-
-function CursorGlow() {
-  const ref = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (ref.current) {
-        ref.current.style.left = `${e.clientX}px`;
-        ref.current.style.top = `${e.clientY}px`;
-      }
-    };
-    window.addEventListener('mousemove', handler, { passive: true });
-    return () => window.removeEventListener('mousemove', handler);
-  }, []);
-  return <div ref={ref} className="cursor-glow" aria-hidden="true" />;
+  return <div ref={ref} className="scroll-progress-ed" aria-hidden="true" />;
 }
 
 function BackToTop() {
-  const [visible, setVisible] = useState(false);
+  const [vis, setVis] = useState(false);
   useEffect(() => {
-    const handler = () => setVisible(window.scrollY > 400);
-    window.addEventListener('scroll', handler, { passive: true });
-    return () => window.removeEventListener('scroll', handler);
+    const h = () => setVis(window.scrollY > 500);
+    window.addEventListener('scroll', h, { passive: true });
+    return () => window.removeEventListener('scroll', h);
   }, []);
+  if (!vis) return null;
   return (
     <button
       onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-      className={`back-to-top text-bone${visible ? '' : ' hidden'}`}
+      className="back-to-top-ed"
       aria-label="Back to top"
     >
-      <ArrowUp className="h-4 w-4" strokeWidth={2} />
+      ↑ TOP
     </button>
   );
 }
 
-/* ── Design primitives ─────────────────────────────────────────────── */
-
-function TextureOverlay() {
-  return <div className="texture-overlay" aria-hidden="true" />;
+function PaperGrain() {
+  return <div className="paper-grain" aria-hidden="true" />;
 }
 
-/** Section tag — vital dot + monospaced label */
-function SectionTag({ text }: { text: string }) {
-  return (
-    <div className="inline-flex items-center gap-2.5">
-      <span className="vital-dot shrink-0" />
-      <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted">
-        <span className="text-vital/40">[ </span>{text}<span className="text-vital/40"> ]</span>
-      </span>
-    </div>
-  );
-}
+/* ── Split-flap stat display ──────────────────────────────────────── */
 
-/** Full-width section divider — faint line with centered pulse dot */
-function SectionDivider() {
+function SplitFlapStat({
+  target, digits = 2, label, sub,
+}: {
+  target: number; digits?: number; label: string; sub: string;
+}) {
+  const { elRef, value, gen } = useSplitFlap(target, digits, 1400);
   return (
-    <div className="flex items-center justify-center py-4 px-6 md:px-10 lg:px-14" aria-hidden="true">
-      <div className="section-separator-wrap max-w-container w-full mx-auto">
-        <div className="section-separator-line" />
-        <div className="section-separator-dot mx-4" />
-        <div className="section-separator-line right" />
+    <div ref={elRef} className="text-left">
+      <div className="inline-flex tabular-nums" aria-label={String(target)}>
+        {String(value).padStart(digits, '0').split('').map((d, i) => (
+          <span
+            key={`${i}-${d}-${gen}`}
+            className="flap-d font-grotesk text-vital leading-none"
+            style={{
+              fontSize: 'clamp(28px, 5vw, 48px)',
+              letterSpacing: '-0.04em',
+              animationDelay: `${i * 0.04}s`,
+            }}
+          >{d}</span>
+        ))}
       </div>
+      <p className="font-mono text-[9px] uppercase tracking-[0.22em] text-muted mt-1">
+        {label} · {sub}
+      </p>
     </div>
   );
 }
 
-function IconButton({
-  icon: Icon,
-  href,
-  label,
-  size = 'md',
-  external = false,
-}: {
-  icon: LucideIcon;
-  href: string;
-  label: string;
-  size?: 'sm' | 'md' | 'lg';
-  external?: boolean;
-}) {
-  const dim = size === 'lg' ? 'h-14 w-14' : size === 'sm' ? 'h-9 w-9' : 'h-11 w-11';
-  return (
-    <a
-      href={href}
-      aria-label={label}
-      target={external ? '_blank' : undefined}
-      rel={external ? 'noreferrer' : undefined}
-      className={`liquid-glass ${dim} inline-flex items-center justify-center rounded-full text-muted transition-colors hover:text-vital`}
-    >
-      <Icon className="h-4 w-4 relative z-10" strokeWidth={1.5} />
-    </a>
-  );
+/* ── Status badge (stamp style) ───────────────────────────────────── */
+
+function StatusBadge({ status }: { status: string }) {
+  const color =
+    status === 'ACTIVE'    ? 'text-emerald-700 border-emerald-700' :
+    status === 'SUBMITTED' ? 'text-vital border-vital' :
+                             'text-oxygen border-oxygen';
+  return <span className={`ed-stamp ${color}`}>{status}</span>;
 }
 
-function PillLink({
-  href,
-  label,
-  external = false,
+/* ── Editorial link ───────────────────────────────────────────────── */
+
+function EdLink({
+  href, children, external = false, className = '',
 }: {
-  href: string;
-  label: string;
-  external?: boolean;
+  href: string; children: React.ReactNode; external?: boolean; className?: string;
 }) {
   return (
     <a
       href={href}
       target={external ? '_blank' : undefined}
       rel={external ? 'noreferrer' : undefined}
-      className="group inline-flex items-center gap-3"
+      className={`ed-link ${className}`}
     >
-      <span className="liquid-glass inline-flex items-center gap-3 rounded-full px-5 py-3">
-        <span className="relative z-10 font-sans text-sm font-medium tracking-ui text-bone/80 group-hover:text-bone transition-colors uppercase">
-          {label}
-        </span>
-        <span className="relative z-10 inline-flex h-7 w-7 items-center justify-center rounded-full bg-vital text-bone transition-colors group-hover:bg-bone group-hover:text-vital">
-          {external ? (
-            <ExternalLink className="h-3.5 w-3.5" strokeWidth={2} />
-          ) : (
-            <ArrowUpRight className="h-3.5 w-3.5" strokeWidth={2} />
-          )}
-        </span>
-      </span>
+      {children}
     </a>
   );
 }
 
-function StatusDot({ status }: { status: string }) {
-  const dotClass =
-    status === 'ACTIVE'
-      ? 'status-dot-active'
-      : status === 'SUBMITTED'
-      ? 'status-dot-submitted'
-      : 'status-dot-registered';
-  const textColor =
-    status === 'ACTIVE'
-      ? 'text-emerald-400'
-      : status === 'SUBMITTED'
-      ? 'text-amber-400'
-      : 'text-blue-400';
+/* ── Folio label ──────────────────────────────────────────────────── */
+
+function FolioLabel({ text }: { text: string }) {
   return (
-    <span className="inline-flex items-center gap-1.5">
-      <span className={`inline-block h-1.5 w-1.5 rounded-full ${dotClass}`} />
-      <span className={`font-mono text-[8.5px] uppercase tracking-[0.16em] ${textColor}`}>
-        {status}
-      </span>
+    <span className="font-mono text-[9px] uppercase tracking-[0.26em] text-muted inline-flex items-center gap-2">
+      <span className="inline-block w-3 h-px bg-vital" />
+      {text}
     </span>
   );
 }
 
-function OpenToCollab() {
-  return (
-    <a
-      href="#contact"
-      className="liquid-glass inline-flex w-fit items-center gap-2 rounded-full px-4 py-2 font-mono text-[9px] uppercase tracking-[0.14em] text-bone/70 hover:text-vital transition-colors"
-    >
-      <span className="relative z-10 inline-block h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
-      <span className="relative z-10">Open to collaboration · Summer 2026</span>
-    </a>
-  );
+/* ── Section divider ──────────────────────────────────────────────── */
+
+function SectionDivider() {
+  return <div className="ed-rule" aria-hidden="true" />;
 }
 
+/* ── Socials ──────────────────────────────────────────────────────── */
+
 const SOCIAL = [
-  { icon: Mail, href: `mailto:${PERSON.email}`, label: 'Email', external: false },
-  { icon: Linkedin, href: PERSON.linkedin, label: 'LinkedIn', external: true },
-  { icon: Github, href: PERSON.github, label: 'GitHub', external: true },
+  { icon: Mail,     href: `mailto:${PERSON.email}`,  label: 'Email',    external: false },
+  { icon: Linkedin, href: PERSON.linkedin,            label: 'LinkedIn', external: true  },
+  { icon: Github,   href: PERSON.github,              label: 'GitHub',   external: true  },
 ];
 
-/* ── Navbar ─────────────────────────────────────────────────────────── */
+/* ── Navbar ───────────────────────────────────────────────────────── */
 
 const SECTION_IDS = ['home', 'credentials', 'about', 'research', 'contact'];
 
 function Navbar({ onHome = false }: { onHome?: boolean }) {
-  const active = useActiveSection(onHome ? SECTION_IDS : []);
-  const [scrolled, setScrolled] = useState(false);
+  const active  = useActiveSection(onHome ? SECTION_IDS : []);
   const [menuOpen, setMenuOpen] = useState(false);
-
-  useEffect(() => {
-    const handler = () => setScrolled(window.scrollY > 60);
-    window.addEventListener('scroll', handler, { passive: true });
-    return () => window.removeEventListener('scroll', handler);
-  }, []);
 
   return (
     <>
-      <header
-        className={`sticky top-0 z-30 transition-all duration-500 ${
-          scrolled
-            ? 'py-3 backdrop-blur-xl bg-graphite/85 border-b border-bone/[0.06] -mx-6 md:-mx-10 lg:-mx-14 px-6 md:px-10 lg:px-14 shadow-2xl'
-            : 'py-6 md:py-8'
-        }`}
-      >
-        <div className="flex items-center justify-between gap-4">
+      <header className="sticky top-0 z-40 bg-graphite">
+        <div className="ed-rule-thick" />
+        <div className="mx-auto max-w-container px-6 md:px-10 lg:px-14 xl:px-16 py-3 flex items-center justify-between gap-6">
           {/* Logo */}
-          <a href="#home" className="font-sans font-semibold text-bone text-base md:text-lg leading-none tracking-ui">
-            <span className="inline-flex items-center gap-2">
-              <Activity className="h-4 w-4 text-vital" strokeWidth={1.75} />
-              {PERSON.shortName}
-              <span className="hidden sm:inline-flex items-center gap-1 rounded-full border border-vital/20 px-1.5 py-0.5 font-mono text-[7px] uppercase tracking-[0.14em] text-vital/60">
-                <span className="inline-block h-1 w-1 rounded-full bg-vital/70 animate-pulse" />
-                Live
-              </span>
-            </span>
-          </a>
+          <EdLink href="#home" className="font-grotesk text-bone text-sm tracking-[0.12em] uppercase">
+            SK.
+          </EdLink>
 
           {/* Desktop nav */}
-          <nav className="liquid-glass hidden md:flex items-center gap-0.5 rounded-full px-2 py-1.5">
+          <nav className="hidden md:flex items-center gap-0">
             {NAV_ITEMS.map((item) => {
               const isActive = onHome && active === item.href.replace('#', '');
               return (
                 <a
                   key={item.label}
                   href={item.href}
-                  className={`relative z-10 rounded-full px-4 py-2 font-sans text-[13px] font-medium tracking-ui transition-all duration-200 ${
-                    isActive ? 'nav-active-link' : 'text-muted hover:text-bone'
+                  className={`font-mono text-[10px] uppercase tracking-[0.2em] px-4 py-2 transition-colors ${
+                    isActive ? 'nav-active-ed text-bone' : 'text-muted hover:text-bone'
                   }`}
                 >
                   {item.label}
-                  {isActive && (
-                    <span className="absolute bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-vital" />
-                  )}
                 </a>
               );
             })}
-            <a
-              href="#/cv"
-              className="relative z-10 ml-1 rounded-full bg-vital px-4 py-2 font-sans text-[13px] font-medium tracking-ui text-bone transition-colors hover:bg-bone hover:text-graphite"
-            >
-              CV
-            </a>
           </nav>
 
-          {/* Desktop social */}
-          <div className="hidden md:flex items-center gap-2">
-            {SOCIAL.map((s) => (
-              <IconButton key={s.label} {...s} size="sm" />
-            ))}
-          </div>
-
-          {/* Mobile */}
-          <div className="flex md:hidden items-center gap-2">
-            <a
-              href="#/cv"
-              className="liquid-glass inline-flex h-9 items-center rounded-full px-4 font-sans text-[12px] font-medium tracking-ui text-bone"
-            >
-              <span className="relative z-10">CV</span>
-            </a>
-            <button
-              onClick={() => setMenuOpen(true)}
-              className="liquid-glass inline-flex h-9 w-9 items-center justify-center rounded-full text-muted"
-              aria-label="Open menu"
-            >
-              <Menu className="relative z-10 h-4 w-4" strokeWidth={1.5} />
-            </button>
-          </div>
+          {/* Mobile toggle */}
+          <button
+            className="md:hidden font-mono text-[9px] uppercase tracking-[0.2em] text-bone"
+            onClick={() => setMenuOpen(o => !o)}
+            aria-label="Menu"
+          >
+            {menuOpen ? 'CLOSE' : 'MENU'}
+          </button>
         </div>
+        <div className="ed-rule" />
 
-        {!onHome && (
-          <div className="mt-5">
-            <a
-              href="#home"
-              className="group inline-flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.22em] text-muted hover:text-vital transition-colors"
-            >
-              <ArrowLeft className="h-3.5 w-3.5 transition-transform group-hover:-translate-x-0.5" strokeWidth={1.5} />
-              Return to Dossier
-            </a>
-          </div>
-        )}
-      </header>
-
-      {/* Mobile overlay */}
-      {menuOpen && (
-        <div className="fixed inset-0 z-50 bg-graphite/98 backdrop-blur-xl flex flex-col">
-          <div className="flex items-center justify-between px-6 py-6">
-            <span className="font-sans font-semibold text-bone text-base inline-flex items-center gap-2">
-              <Activity className="h-4 w-4 text-vital" strokeWidth={1.75} />
-              {PERSON.shortName}
-            </span>
-            <button
-              onClick={() => setMenuOpen(false)}
-              className="liquid-glass inline-flex h-9 w-9 items-center justify-center rounded-full text-muted"
-              aria-label="Close menu"
-            >
-              <X className="relative z-10 h-4 w-4" strokeWidth={1.5} />
-            </button>
-          </div>
-          <nav className="flex flex-col px-6 pt-6 gap-1 flex-1">
+        {/* Mobile drawer */}
+        {menuOpen && (
+          <nav className="md:hidden bg-graphite border-b border-bone">
             {NAV_ITEMS.map((item) => (
               <a
                 key={item.label}
                 href={item.href}
                 onClick={() => setMenuOpen(false)}
-                className="font-grotesk uppercase text-bone text-4xl tracking-tightest leading-tight hover:text-vital transition-colors py-2.5 border-b border-bone/8"
+                className="block font-mono text-[10px] uppercase tracking-[0.2em] text-bone px-6 py-4 border-b border-bone/10 hover:text-vital transition-colors"
               >
                 {item.label}
               </a>
             ))}
-            <a
-              href="#/cv"
-              onClick={() => setMenuOpen(false)}
-              className="mt-8 inline-flex w-fit rounded-full bg-vital px-6 py-3 font-sans text-sm font-medium tracking-ui text-bone uppercase"
-            >
-              View CV
-            </a>
+            <div className="flex items-center gap-4 px-6 py-4">
+              {SOCIAL.map((s) => (
+                <a key={s.label} href={s.href} target={s.external ? '_blank' : undefined} rel={s.external ? 'noreferrer' : undefined} className="font-mono text-[9px] uppercase tracking-[0.18em] text-muted hover:text-vital transition-colors">
+                  {s.label}
+                </a>
+              ))}
+            </div>
           </nav>
-          <div className="flex items-center gap-3 px-6 pb-10">
-            {SOCIAL.map((s) => (
-              <IconButton key={s.label} {...s} />
-            ))}
-          </div>
-        </div>
-      )}
+        )}
+      </header>
     </>
   );
 }
 
-/* ── Hero ───────────────────────────────────────────────────────────── */
+/* ── Hero ─────────────────────────────────────────────────────────── */
 
 function HeroSection() {
   return (
-    <section id="home" className="relative min-h-[100svh] overflow-hidden bg-graphite flex flex-col">
-      <div className="scan-sweep" aria-hidden="true" />
-      <HeroSchematic />
-
-      {/* Navbar row — constrained to max-w-container */}
-      <div className="relative mx-auto w-full max-w-container px-6 md:px-10 lg:px-14 xl:px-16">
-        <Navbar onHome />
+    <section id="home" className="relative bg-graphite overflow-hidden">
+      {/* Folio line */}
+      <div className="mx-auto max-w-container px-6 md:px-10 lg:px-14 xl:px-16 pt-10 md:pt-14">
+        <p className="comp-folio font-mono text-[8.5px] uppercase tracking-[0.28em] text-muted leading-none">
+          {PERSON.fullName} &nbsp;·&nbsp; Cook Cardiopulmonary Engineering Lab &nbsp;·&nbsp; Carnegie Mellon &nbsp;·&nbsp; Pittsburgh PA &nbsp;·&nbsp; 40°N 79°W &nbsp;·&nbsp; 2026
+        </p>
+        <div className="mt-4 comp-rule-1 ed-rule-thick" />
       </div>
 
-      {/* Split layout — fills remaining height */}
-      <div className="relative flex-1 mx-auto w-full max-w-container px-6 md:px-10 lg:px-14 xl:px-16 grid md:grid-cols-[55%_45%] min-h-0">
+      {/* Main split */}
+      <div className="mx-auto max-w-container px-6 md:px-10 lg:px-14 xl:px-16 py-10 md:py-16 grid md:grid-cols-[60%_40%] gap-10 md:gap-0">
 
-        {/* ── Left: big type (cinematic) ── */}
-        <div className="flex flex-col justify-end pb-14 md:pb-20 pr-0 md:pr-10 pt-6">
-
-          {/* Coordinate label — desktop only */}
-          <div className="mb-10 hidden md:flex items-center gap-3 boot-in boot-d2">
-            <span className="inline-block h-px w-10 bg-bone/15" />
-            <span className="font-mono text-[10px] uppercase tracking-[0.26em] text-muted">
-              40.4432° N · 79.9428° W · Pittsburgh, PA · CMU
+        {/* Left: type */}
+        <div className="pr-0 md:pr-14">
+          {/* Accent phrase */}
+          <div className="comp-accent mb-6 md:mb-8">
+            <span className="font-serif-italic text-bone text-2xl sm:text-3xl md:text-4xl leading-[1.15]">
+              {HERO.accent}
             </span>
           </div>
 
-          {/* Mobile social icons */}
-          <div className="mb-6 flex gap-2 md:hidden boot-in boot-d2">
-            {SOCIAL.map((s) => (
-              <IconButton key={s.label} {...s} />
-            ))}
-          </div>
-
-          {/* Accent phrase */}
-          <span className="font-serif-italic block text-vital mb-3 text-3xl sm:text-4xl md:text-4xl lg:text-5xl boot-in boot-d3 cursor-blink">
-            {HERO.accent}
-          </span>
-
-          {/* Main heading */}
-          <div className="hud-corners">
-          <h1 className="font-grotesk uppercase text-bone leading-[0.88] tracking-tightest text-[14.5vw] md:text-[6.5vw] lg:text-[6vw] xl:text-[6.5rem] 2xl:text-[7.5rem] boot-in boot-d4">
+          {/* Massive heading */}
+          <h1 className="font-grotesk uppercase text-bone leading-[0.88] tracking-tightest" style={{ fontSize: 'clamp(64px, 11vw, 148px)' }}>
             {HERO.heading.map((line, i) => (
-              <span key={i} className="block">{line}</span>
+              <div key={i} className={`comp-hl-${i + 1}`}>
+                <span>{line}</span>
+              </div>
             ))}
           </h1>
-          </div>
-
-          {/* Bottom info bar */}
-          <div className="mt-8 border-t border-bone/8 pt-6 boot-in boot-d6">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-5">
-              <div className="flex items-start gap-2.5">
-                <span className="vital-dot mt-1.5 shrink-0" />
-                <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted leading-[1.8] max-w-[46ch]">
-                  {HERO.footnote}
-                </p>
-              </div>
-              <div className="flex items-center gap-8 sm:gap-10">
-                {[
-                  { v: '30', u: 'Day', sub: 'Ovine endpoint' },
-                  { v: '01', u: 'Patent', sub: 'KR granted' },
-                  { v: 'ISTH', u: '2026', sub: 'Abstract' },
-                ].map((s) => (
-                  <div key={s.u} className="text-left">
-                    <p className="font-grotesk text-2xl md:text-3xl tracking-tightest text-vital leading-none">{s.v}</p>
-                    <p className="font-mono text-[9px] uppercase tracking-[0.2em] text-muted mt-1">{s.u} · {s.sub}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
         </div>
 
-        {/* ── Right: live bento data — desktop only ── */}
-        <div className="hidden md:flex flex-col gap-3 py-8 pl-10 border-l border-bone/[0.05] boot-in boot-d3">
-
-          {/* Live study tile */}
-          <div className="liquid-glass rounded-2xl p-5 flex flex-col gap-3">
-            <div className="relative z-10 flex items-center justify-between">
-              <span className="inline-flex items-center gap-2 font-mono text-[9px] uppercase tracking-[0.18em] text-vital">
-                <span className="inline-block h-1.5 w-1.5 rounded-full status-dot-active" />
+        {/* Right: printed data panel — desktop only */}
+        <div className="hidden md:block pl-10 comp-panel border-l border-bone/20">
+          <div className="ed-panel">
+            {/* Header */}
+            <div className="px-4 py-3 border-b border-bone flex items-center gap-2">
+              <span className="vital-dot-ed shrink-0" />
+              <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-vital">
                 Active Study
               </span>
-              <span className="font-mono text-[8px] uppercase tracking-[0.12em] text-steel border border-bone/10 rounded-full px-2.5 py-0.5">
-                PAS · VV ECMO
-              </span>
             </div>
-            <div className="relative z-10 flex items-baseline gap-3">
-              <p className="font-grotesk text-5xl tracking-tightest text-vital leading-none">2/6</p>
-              <div>
-                <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-bone">Endpoint</p>
-                <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-muted">30-day ovine survival</p>
-              </div>
-            </div>
-            <div className="relative z-10 h-px w-full bg-bone/[0.06] overflow-hidden rounded-full">
-              <div className="h-full w-1/3 bg-gradient-to-r from-vital to-vital/40 rounded-full" />
-            </div>
-            <div className="relative z-10 grid grid-cols-3 gap-2 pt-3 border-t border-bone/[0.06]">
-              {[
-                { k: 'CIRCUIT', v: 'VV ECMO' },
-                { k: 'ANTICOAG', v: 'IV RIVO' },
-                { k: 'DURATION', v: '30 DAY' },
-              ].map(({ k, v }) => (
-                <div key={k}>
-                  <p className="font-mono text-[7px] uppercase tracking-[0.12em] text-steel/55">{k}</p>
-                  <p className="font-mono text-[8.5px] uppercase tracking-[0.08em] text-bone/70 mt-0.5">{v}</p>
+            {/* Data rows */}
+            {[
+              { k: 'PAS · VV ECMO',        v: 'STUDY ID' },
+              { k: '2 / 6',               v: 'SUBJECTS' },
+              { k: '30 DAY OVINE',         v: 'ENDPOINT' },
+              { k: 'VV ECMO CIRCUIT',      v: 'CIRCUIT' },
+              { k: 'IV RIVAROXABAN',       v: 'ANTICOAG' },
+              { k: 'COOK CPE LAB · CMU',   v: 'INSTITUTION' },
+              { k: 'KR 10-2675388',        v: 'PATENT' },
+              { k: 'KIPO · JUN 2024',      v: 'GRANTED' },
+            ].map(({ k, v }) => (
+              <div key={v} className="grid grid-cols-[40%_60%] border-b border-bone/15 last:border-0">
+                <div className="px-3 py-2.5 border-r border-bone/15">
+                  <p className="font-mono text-[8px] uppercase tracking-[0.14em] text-muted">{v}</p>
                 </div>
-              ))}
-            </div>
-            <p className="relative z-10 font-mono text-[7.5px] uppercase tracking-[0.12em] text-steel/50">
-              Cook Cardiopulmonary Engineering Lab · CMU
-            </p>
+                <div className="px-3 py-2.5">
+                  <p className="font-mono text-[9.5px] uppercase tracking-[0.06em] text-bone">{k}</p>
+                </div>
+              </div>
+            ))}
           </div>
 
-          {/* Credential row */}
-          <div className="grid grid-cols-2 gap-3">
-            <div className="liquid-glass rounded-xl p-4">
-              <p className="relative z-10 font-mono text-[8px] uppercase tracking-[0.16em] text-vital/75">Institution</p>
-              <p className="relative z-10 font-sans text-xs font-semibold tracking-ui text-bone uppercase mt-1 leading-snug">Carnegie Mellon University</p>
-              <p className="relative z-10 font-mono text-[9px] text-muted mt-0.5">College of Engineering</p>
-            </div>
-            <div className="liquid-glass rounded-xl p-4">
-              <p className="relative z-10 font-mono text-[8px] uppercase tracking-[0.16em] text-vital/75">Patent Granted</p>
-              <p className="relative z-10 font-sans text-xs font-semibold tracking-ui text-bone uppercase mt-1 leading-snug">KR 10-2675388</p>
-              <p className="relative z-10 font-mono text-[9px] text-muted mt-0.5">KIPO · Jun 2024</p>
-            </div>
-          </div>
-
-          {/* Research mini-cards */}
-          <div className="flex flex-col gap-2">
+          {/* Research index mini-list */}
+          <div className="mt-4 ed-panel">
             {RESEARCH_CARDS.map((card) => (
               <a
                 key={card.slug}
                 href={`#/research/${card.slug}`}
-                className="liquid-glass group rounded-xl px-4 py-3 flex items-center justify-between gap-3 hover:border-vital/30 transition-colors"
+                className="grid grid-cols-[auto_1fr_auto] gap-3 items-center px-3 py-2.5 border-b border-bone/12 last:border-0 hover:bg-bone/[0.04] transition-colors group"
               >
-                <div className="relative z-10 flex items-center gap-3 min-w-0">
-                  <span className="font-mono text-[9px] uppercase tracking-[0.16em] text-vital shrink-0">{card.index}</span>
-                  <div className="min-w-0">
-                    <p className="font-sans text-xs font-semibold tracking-ui text-bone uppercase truncate">
-                      {card.title} {card.titleTwo}
-                    </p>
-                    <p className="font-mono text-[9px] text-muted truncate">
-                      {card.subtitle.split('·')[0].trim()}
-                    </p>
-                  </div>
-                </div>
-                <div className="relative z-10 flex items-center gap-2 shrink-0">
-                  <StatusDot status={card.status} />
-                  <ArrowUpRight className="h-3 w-3 text-steel group-hover:text-vital transition-colors" strokeWidth={2} />
-                </div>
+                <span className="font-mono text-[8px] text-vital tracking-[0.14em]">{card.index}</span>
+                <span className="font-mono text-[9px] uppercase tracking-[0.06em] text-bone truncate">
+                  {card.title} {card.titleTwo}
+                </span>
+                <ArrowUpRight className="h-3 w-3 text-steel group-hover:text-vital transition-colors" strokeWidth={2} />
               </a>
             ))}
           </div>
+        </div>
+      </div>
 
-          {/* Social + collab strip */}
-          <div className="mt-auto flex items-center justify-between gap-3 pt-2">
-            <div className="flex items-center gap-2">
-              {SOCIAL.map((s) => (
-                <IconButton key={s.label} {...s} size="sm" />
-              ))}
-            </div>
-            <OpenToCollab />
+      {/* Bottom rule + stats */}
+      <div className="comp-rule-2 mx-auto max-w-container px-6 md:px-10 lg:px-14 xl:px-16 ed-rule" />
+      <div className="comp-stats mx-auto max-w-container px-6 md:px-10 lg:px-14 xl:px-16 py-6 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+        <div className="flex items-center gap-8 sm:gap-12">
+          <SplitFlapStat target={30} digits={2} label="Day" sub="Ovine endpoint" />
+          <SplitFlapStat target={1}  digits={2} label="Patent" sub="KR granted" />
+          <div className="text-left">
+            <p className="font-grotesk text-vital leading-none" style={{ fontSize: 'clamp(28px, 5vw, 48px)', letterSpacing: '-0.04em' }}>
+              ISTH
+            </p>
+            <p className="font-mono text-[9px] uppercase tracking-[0.22em] text-muted mt-1">2026 · Abstract</p>
           </div>
         </div>
-
+        <div className="flex items-center gap-5">
+          {SOCIAL.map((s) => (
+            <EdLink key={s.label} href={s.href} external={s.external} className="font-mono text-[9px] uppercase tracking-[0.2em] text-muted hover:text-bone">
+              {s.label}
+            </EdLink>
+          ))}
+          <a href="#contact" className="font-mono text-[9px] uppercase tracking-[0.2em] text-vital border-b border-vital pb-px hover:text-bone hover:border-bone transition-colors">
+            Open to collaboration →
+          </a>
+        </div>
       </div>
     </section>
   );
 }
 
-/* ── Credentials ────────────────────────────────────────────────────── */
+/* ── Credentials ─────────────────────────────────────────────────── */
 
 function CredentialsSection() {
+  const tableRef = useRef<HTMLTableSectionElement>(null);
+  useRowReveal(tableRef as React.RefObject<HTMLElement>, CREDENTIALS.items.length, 80);
+
   return (
-    <section id="credentials" className="relative overflow-hidden bg-surface">
-      <CredentialsSchematic />
-      <div className="relative mx-auto max-w-container px-6 md:px-10 lg:px-14 xl:px-16 py-20 md:py-28 lg:py-32">
-        <div className="grid gap-12 md:grid-cols-12 md:gap-14">
-          {/* Left: heading */}
-          <div className="md:col-span-5" data-reveal>
-            <SectionTag text={CREDENTIALS.tag} />
-            <span className="mt-7 font-serif-italic block text-vital text-4xl sm:text-5xl md:text-6xl">
-              {CREDENTIALS.accent}
-            </span>
-            <h2 className="mt-2 font-grotesk uppercase text-bone leading-[0.88] tracking-tightest text-4xl sm:text-5xl md:text-6xl lg:text-7xl">
-              {CREDENTIALS.heading.map((line, i) => (
-                <span key={i} className="block">{line}</span>
-              ))}
-            </h2>
-            <p className="mt-8 font-mono text-sm md:text-[15px] leading-[1.75] text-muted tracking-[0.01em] max-w-[40ch]">
-              {CREDENTIALS.statement}
-            </p>
-            <div className="mt-8 inline-flex items-center gap-2.5">
-              <GraduationCap className="h-4 w-4 text-vital" strokeWidth={1.5} />
-              <span className="font-sans text-sm font-medium tracking-ui text-bone/80 uppercase">
-                Class of 2027 · In residence
+    <section id="credentials" className="relative ed-dark">
+      <div className="mx-auto max-w-container px-6 md:px-10 lg:px-14 xl:px-16 py-20 md:py-28">
+        <div className="grid md:grid-cols-[40%_60%] gap-10 md:gap-14 items-start">
+
+          {/* Left: folio + heading */}
+          <div>
+            <div className="overflow-hidden relative" data-reveal>
+              <p className="folio-num absolute -top-6 -left-4 select-none pointer-events-none">02</p>
+              <FolioLabel text={CREDENTIALS.tag} />
+              <span className="mt-5 font-serif-italic block text-vital text-3xl sm:text-4xl md:text-5xl leading-[1.1]">
+                {CREDENTIALS.accent}
               </span>
+              <h2 className="mt-2 font-grotesk uppercase text-graphite leading-[0.88] tracking-tightest text-4xl sm:text-5xl md:text-6xl">
+                {CREDENTIALS.heading.map((line, i) => (
+                  <span key={i} className="block">{line}</span>
+                ))}
+              </h2>
+              <p className="mt-7 font-mono text-[13px] leading-[1.8] text-steel max-w-[40ch]">
+                {CREDENTIALS.statement}
+              </p>
             </div>
           </div>
 
-          {/* Right: credential grid */}
-          <div className="md:col-span-7" data-reveal data-reveal-delay="2">
-            <div className="liquid-glass rounded-2xl overflow-hidden">
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-px bg-bone/[0.06]">
+          {/* Right: ruled credential table */}
+          <div data-reveal data-reveal-delay="2">
+            <table className="w-full border-collapse">
+              <tbody ref={tableRef}>
                 {CREDENTIALS.items.map((item, i) => (
-                  <div key={i} className="cred-cell bg-surface p-5 md:p-6 relative">
-                    <span className="absolute top-3 right-4 font-mono text-[10px] tracking-[0.18em] text-steel">
-                      {String(i + 1).padStart(2, '0')}
-                    </span>
-                    <p className="font-mono text-[9px] uppercase tracking-[0.2em] text-vital/75 mb-2">
-                      {item.label}
-                    </p>
-                    <p className="font-sans text-sm font-medium tracking-ui text-bone uppercase leading-snug">
-                      {item.value}
-                    </p>
-                  </div>
+                  <tr key={i} className="row-reveal border-b border-white/10 group">
+                    <td className="py-5 pr-6 align-top w-20">
+                      <span className="font-mono text-[8.5px] uppercase tracking-[0.18em] text-steel">{String(i + 1).padStart(2, '0')}</span>
+                    </td>
+                    <td className="py-5 align-top">
+                      <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-steel mt-1.5">
+                        {item.label}
+                      </p>
+                      <p className="font-grotesk text-graphite text-lg md:text-xl tracking-tightest uppercase leading-none mt-1">
+                        {item.value}
+                      </p>
+                    </td>
+                  </tr>
                 ))}
-              </div>
+              </tbody>
+            </table>
+
+            {/* Key stats row */}
+            <div className="mt-10 pt-6 border-t border-white/10 grid grid-cols-2 sm:grid-cols-4 gap-6">
+              {[
+                { v: '30', u: 'Day', s: 'Survival endpoint' },
+                { v: '1',  u: 'Patent', s: 'KR granted' },
+                { v: '6',  u: 'Ovine', s: 'Cohort size' },
+                { v: '1',  u: 'Abstract', s: 'ISTH 2026' },
+              ].map((stat) => (
+                <div key={stat.u}>
+                  <p className="font-grotesk text-vital text-4xl md:text-5xl tracking-tightest leading-none">{stat.v}</p>
+                  <p className="font-mono text-[8.5px] uppercase tracking-[0.18em] text-graphite mt-1.5">{stat.u}</p>
+                  <p className="font-mono text-[8px] text-steel mt-0.5">{stat.s}</p>
+                </div>
+              ))}
             </div>
           </div>
         </div>
@@ -680,352 +525,315 @@ function CredentialsSection() {
   );
 }
 
-/* ── About ──────────────────────────────────────────────────────────── */
+/* ── About ───────────────────────────────────────────────────────── */
 
 function AboutSection() {
   return (
-    <section id="about" className="relative min-h-[90svh] overflow-hidden bg-graphite">
-      <AboutSchematic />
-      <div className="relative mx-auto flex min-h-[90svh] max-w-container flex-col justify-between px-6 md:px-10 lg:px-14 xl:px-16 py-20 md:py-28 lg:py-32">
+    <section id="about" className="relative bg-graphite">
+      <div className="mx-auto max-w-container px-6 md:px-10 lg:px-14 xl:px-16 py-20 md:py-28">
 
-        {/* Heading + body */}
-        <div className="grid gap-12 md:grid-cols-12 md:gap-10">
-          <div className="md:col-span-7" data-reveal>
-            <SectionTag text={ABOUT.tag} />
-            <span className="mt-7 font-serif-italic block text-vital text-4xl sm:text-5xl md:text-6xl lg:text-7xl">
-              {ABOUT.accent}
-            </span>
-            <h2 className="mt-2 font-grotesk uppercase text-bone leading-[0.88] tracking-tightest text-5xl sm:text-6xl md:text-7xl lg:text-8xl xl:text-[8.5rem]">
-              {ABOUT.heading.map((line, i) => (
-                <span key={i} className="block">{line}</span>
-              ))}
-            </h2>
+        <div className="mb-14" data-reveal>
+          <FolioLabel text={ABOUT.tag} />
+        </div>
+
+        {/* Magazine two-column */}
+        <div className="grid md:grid-cols-[45%_55%] gap-10 md:gap-16 mb-16">
+          {/* Pull quote */}
+          <div data-ink data-ink-delay="1">
+            <p className="font-serif-italic text-bone text-3xl sm:text-4xl md:text-5xl leading-[1.18]">
+              "{ABOUT.accent}"
+            </p>
           </div>
-
-          <div className="md:col-span-5 flex flex-col gap-6 md:pt-4" data-reveal data-reveal-delay="2">
-            {ABOUT.body.map((p, i) => (
-              <p
-                key={i}
-                className={`font-mono text-[13px] md:text-[14px] leading-[1.8] text-bone/85 tracking-[0.01em] ${
-                  i === 0 ? 'pl-4 border-l border-vital/50' : ''
-                }`}
-              >
-                {p}
+          {/* Body text */}
+          <div data-reveal data-reveal-delay="2">
+            <div className="ed-rule-red mb-6" style={{ width: '2.5rem' }} />
+            {ABOUT.body.map((para, i) => (
+              <p key={i} className="font-mono text-[13px] md:text-[14px] leading-[1.85] text-muted mb-4 last:mb-0">
+                {para}
               </p>
             ))}
-            <a
-              href="#contact"
-              className="liquid-glass inline-flex w-fit items-center gap-2 rounded-full px-5 py-2.5 font-sans text-xs font-medium tracking-ui text-bone/70 hover:text-vital transition-colors mt-1"
-            >
-              <span className="relative z-10">Open to collaboration · Summer 2026</span>
-              <ArrowRight className="relative z-10 h-3.5 w-3.5 shrink-0" strokeWidth={1.75} />
-            </a>
           </div>
         </div>
 
-        {/* Stats grid */}
-        <div className="relative mt-16 md:mt-20 grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4" data-reveal data-reveal-delay="3">
+        {/* Marquee ticker */}
+        <div className="mb-16 ed-rule-thin py-3 overflow-hidden" data-reveal>
+          <div className="marquee-outer overflow-hidden">
+            <div className="marquee-track inline-flex gap-0 whitespace-nowrap" style={{ '--marquee-speed': '40s' } as React.CSSProperties}>
+              {[...ABOUT.keywordRows, ...ABOUT.keywordRows].map((item, i) => (
+                <span key={i} className="font-mono text-[9px] uppercase tracking-[0.22em] text-muted px-6">
+                  {item} <span className="text-vital mx-1">·</span>
+                </span>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Stats row */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-0 md:divide-x md:divide-bone/10" data-reveal data-reveal-delay="2">
           {[
-            { value: '30', unit: 'Day', label: 'Ovine survival endpoint', color: 'vital' },
-            { value: '1', unit: 'Patent', label: 'KR 10-2675388 · Granted', color: 'oxygen' },
-            { value: '6', unit: 'Sheep', label: 'Cohort size · VV ECMO', color: 'vital' },
-            { value: '1', unit: 'Abstract', label: 'ISTH 2026 · Submitted', color: 'oxygen' },
-          ].map((stat, i) => (
-            <div
-              key={i}
-              className="liquid-glass rounded-2xl pt-5 md:pt-6 pb-0 px-5 md:px-6 text-center stat-item overflow-hidden"
-              style={{ animationDelay: `${0.7 + i * 0.1}s` }}
-            >
-              <p className={`relative z-10 font-grotesk text-5xl md:text-6xl lg:text-7xl tracking-tightest leading-none ${stat.color === 'vital' ? 'text-vital' : 'text-oxygen'}`}>
-                {stat.value}
-              </p>
-              <p className="relative z-10 mt-1.5 font-sans text-[10px] font-semibold tracking-[0.18em] text-bone uppercase">
-                {stat.unit}
-              </p>
-              <p className="relative z-10 mt-1.5 mb-5 font-mono text-[9px] uppercase tracking-[0.16em] text-muted">
-                {stat.label}
-              </p>
-              <div className={`h-[1.5px] w-full ${stat.color === 'vital' ? 'bg-vital/50' : 'bg-oxygen/40'}`} />
+            { value: '2',   label: 'Degrees',    sub: 'ME + BME' },
+            { value: '6',   label: 'Ovine',      sub: 'Cohort animals' },
+            { value: '33×', label: 'Half-life',  sub: 'FXII900-PCB vs. unconjugated' },
+            { value: '1',   label: 'Patent',     sub: 'KR 10-2675388 granted' },
+          ].map((stat) => (
+            <div key={stat.label} className="md:px-8 first:pl-0">
+              <p className="font-grotesk text-vital leading-none text-5xl md:text-6xl tracking-tightest">{stat.value}</p>
+              <p className="font-mono text-[9px] uppercase tracking-[0.2em] text-bone mt-2">{stat.label}</p>
+              <p className="font-mono text-[8.5px] text-muted mt-0.5">{stat.sub}</p>
             </div>
           ))}
-        </div>
-
-        {/* Marquee keywords */}
-        <div className="relative mt-14 md:mt-20 overflow-hidden marquee-outer">
-          <div className="flex flex-col gap-3 md:gap-4">
-            {ABOUT.keywordRows.map((row, i) => (
-              <div key={i} className="overflow-hidden whitespace-nowrap">
-                <div
-                  className="marquee-track inline-block font-grotesk uppercase text-bone/[0.07] leading-none tracking-[0.03em] text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl hover:text-bone/[0.14] transition-colors duration-700"
-                  style={{
-                    '--marquee-speed': `${36 + i * 8}s`,
-                    animationDirection: i % 2 === 0 ? 'normal' : 'reverse',
-                  } as React.CSSProperties}
-                >
-                  {row}&nbsp;&nbsp;·&nbsp;&nbsp;{row}&nbsp;&nbsp;·&nbsp;&nbsp;{row}&nbsp;&nbsp;·&nbsp;&nbsp;{row}&nbsp;&nbsp;·&nbsp;&nbsp;
-                </div>
-              </div>
-            ))}
-          </div>
         </div>
       </div>
     </section>
   );
 }
 
-/* ── Skills ─────────────────────────────────────────────────────────── */
+/* ── Skills ───────────────────────────────────────────────────────── */
 
 function SkillsSection() {
-  return (
-    <section className="relative bg-graphite eng-grid">
-      <div className="mx-auto max-w-container px-6 md:px-10 lg:px-14 xl:px-16 py-16 md:py-20">
-        <div className="mb-10" data-reveal>
-          <SectionTag text="004 · TOOLS + METHODS" />
-        </div>
-        <div className="grid gap-4 md:grid-cols-2">
-          {SKILLS.map((group, gi) => (
-            <div
-              key={gi}
-              data-reveal
-              data-reveal-delay={String(gi + 1)}
-              className="liquid-glass rounded-2xl p-6 md:p-8"
-            >
-              <p className="relative z-10 font-mono text-[9px] uppercase tracking-[0.2em] text-vital/75 mb-6">
-                {group.group}
-              </p>
-              <div className="relative z-10 flex flex-col gap-5">
-                {group.items.map((item, ii) => (
-                  <div key={ii}>
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="font-mono text-[11px] text-bone/80">{item.name}</span>
-                      <span className="font-mono text-[8.5px] text-vital/55">{item.pct}%</span>
-                    </div>
-                    <div className="skill-bar">
-                      <div className="skill-fill" style={{ width: `${item.pct}%` }} />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
+  const tableRef = useRef<HTMLDivElement>(null);
+  useRowReveal(tableRef as React.RefObject<HTMLElement>, SKILLS.reduce((a, g) => a + g.items.length, 0), 50);
 
-/* ── Research ───────────────────────────────────────────────────────── */
-
-function ResearchSection() {
-  const cardBg: Record<CardSlug, JSX.Element> = {
-    pas: <PASCardSchematic />,
-    coagulation: <CoagCardSchematic />,
-    cane: <CaneCardSchematic />,
-  };
-  return (
-    <section id="research" className="relative bg-surface eng-grid">
-      <div className="mx-auto max-w-container px-6 md:px-10 lg:px-14 xl:px-16 py-20 md:py-28 lg:py-32">
-        {/* Header */}
-        <div className="mb-14 md:mb-20 flex flex-col gap-8 md:flex-row md:items-end md:justify-between">
-          <div className="relative" data-reveal>
-            <SectionTag text={RESEARCH.tag} />
-            <h3 className="mt-5 font-grotesk uppercase text-bone leading-[0.88] tracking-tightest text-5xl sm:text-6xl md:text-7xl lg:text-8xl xl:text-[8.5rem]">
-              <span className="block">{RESEARCH.headingTop}</span>
-              <span className="font-serif-italic block text-vital normal-case leading-none mt-1">
-                {RESEARCH.headingAccent}
-              </span>
-            </h3>
-          </div>
-          <div data-reveal data-reveal-delay="2">
-            <PillLink href="#/cv" label={RESEARCH.cta} />
-          </div>
-        </div>
-
-        {/* Cards */}
-        <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-[1.4fr_1fr_1fr]">
-          {RESEARCH_CARDS.map((card, cardIdx) => {
-            return (
-              <a
-                key={card.slug}
-                data-reveal
-                data-reveal-delay={String(cardIdx + 1)}
-                href={`#/research/${card.slug}`}
-                className="scan-card glow-border tilt-card liquid-glass group relative aspect-[4/5] overflow-hidden rounded-2xl transition-all duration-400 hover:shadow-[0_0_60px_rgba(230,48,70,0.1)]"
-              >
-                {cardBg[card.slug]}
-
-                {/* Scrim */}
-                <div
-                  className="pointer-events-none absolute inset-0"
-                  style={{
-                    background:
-                      'linear-gradient(180deg, rgba(10,11,16,0.88) 0%, rgba(10,11,16,0.6) 25%, rgba(10,11,16,0.1) 48%, rgba(10,11,16,0.2) 68%, rgba(10,11,16,0.93) 100%)',
-                  }}
-                />
-
-                {/* Watermark index */}
-                <div className="absolute top-0 right-0 z-10 overflow-hidden h-full w-16 pointer-events-none">
-                  <span
-                    className="absolute -right-5 top-10 font-grotesk text-[4.5rem] tracking-tightest text-bone/[0.05] leading-none select-none"
-                    style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}
-                  >
-                    {card.index}
-                  </span>
-                </div>
-
-                <div className="relative z-10 flex h-full flex-col justify-between p-5 md:p-6">
-                  {/* Card header */}
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <div className="mb-3 flex items-center gap-2">
-                        <span className="inline-block h-px w-4 bg-vital" />
-                        <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-vital/80">
-                          {card.index} · {card.category}
-                        </span>
-                      </div>
-                      <h4 className="font-grotesk uppercase text-bone leading-[0.9] tracking-tightest text-3xl sm:text-4xl lg:text-5xl">
-                        <span className="block">{card.title}</span>
-                        <span className="block">{card.titleTwo}</span>
-                      </h4>
-                      <p className="mt-3 font-mono text-[11px] leading-[1.6] text-bone/75 max-w-[26ch]">
-                        {card.subtitle}
-                      </p>
-                    </div>
-                    <span className="liquid-glass shrink-0 inline-flex h-9 w-9 items-center justify-center rounded-full text-muted group-hover:text-vital transition-colors">
-                      <ArrowUpRight className="relative z-10 h-3.5 w-3.5" strokeWidth={2} />
-                    </span>
-                  </div>
-
-                  {/* Card footer */}
-                  <div>
-                    <div className="w-full h-px rounded-full mb-3 bg-vital/30" />
-                    <div className="liquid-glass rounded-xl px-4 py-3">
-                      <div className="relative z-10 flex items-center justify-between gap-3">
-                        <div className="min-w-0">
-                          <p className="font-mono text-[9px] uppercase tracking-[0.18em] text-muted">
-                            {card.metaLabel}
-                          </p>
-                          <p className="truncate font-sans text-sm font-medium tracking-ui text-bone uppercase mt-0.5">
-                            {card.metaValue}
-                          </p>
-                        </div>
-                        <StatusDot status={card.status} />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </a>
-            );
-          })}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-/* ── Publications ───────────────────────────────────────────────────── */
-
-function PublicationsSection() {
-  return (
-    <section className="relative bg-graphite eng-grid">
-      <div className="mx-auto max-w-container px-6 md:px-10 lg:px-14 xl:px-16 py-16 md:py-20">
-        <div className="mb-10" data-reveal>
-          <SectionTag text="006 · PUBLICATIONS + ABSTRACTS" />
-        </div>
-        <div className="flex flex-col gap-4">
-          {PUBLICATIONS.map((pub, i) => (
-            <div
-              key={i}
-              data-reveal
-              data-reveal-delay={String(i + 1)}
-              className="liquid-glass rounded-2xl p-6 md:p-8 flex flex-col sm:flex-row gap-6 items-start"
-            >
-              {/* Year badge */}
-              <div className="liquid-glass rounded-xl p-4 text-center shrink-0 min-w-[64px]">
-                <p className="relative z-10 font-grotesk text-3xl tracking-tightest text-vital leading-none">{pub.year}</p>
-                <p className="relative z-10 font-mono text-[8px] uppercase tracking-[0.18em] text-muted mt-1">{pub.conference}</p>
-              </div>
-              {/* Content */}
-              <div className="flex-1 min-w-0">
-                <div className="relative z-10 flex items-center gap-2 mb-3">
-                  <StatusDot status={pub.status} />
-                  <span className="font-mono text-[9px] uppercase tracking-[0.14em] text-steel">{pub.venue}</span>
-                </div>
-                <p className="relative z-10 font-sans text-sm font-semibold tracking-ui text-bone uppercase leading-snug mb-3">
-                  {pub.title}
-                </p>
-                <p className="relative z-10 font-mono text-[11px] leading-[1.75] text-muted">
-                  {pub.authors}
-                </p>
-                <p className="relative z-10 font-mono text-[9px] text-steel mt-1">* Spencer Kim</p>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-/* ── Timeline ───────────────────────────────────────────────────────── */
-
-function TimelineStrip() {
-  const doneCount = TIMELINE.filter((n) => n.state === 'done').length;
-  const fillPct = Math.round((doneCount / (TIMELINE.length - 1)) * 100);
+  function monoBar(pct: number) {
+    const filled = Math.round((pct / 100) * 14);
+    return '█'.repeat(filled) + '░'.repeat(14 - filled);
+  }
 
   return (
     <section className="relative bg-surface">
       <div className="mx-auto max-w-container px-6 md:px-10 lg:px-14 xl:px-16 py-16 md:py-20">
         <div className="mb-10" data-reveal>
-          <SectionTag text="PAS STUDY TIMELINE · N=6 OVINE COHORT" />
+          <FolioLabel text="005 · TECHNICAL SKILLS" />
         </div>
-        <div className="liquid-glass rounded-2xl px-8 md:px-14 py-8 md:py-10" data-reveal>
-          {/* Track */}
-          <div className="relative px-4 mb-0">
-            <div className="timeline-track">
-              <div className="timeline-fill" style={{ width: `${fillPct}%` }} />
-            </div>
-          </div>
-          {/* Nodes */}
-          <div
-            className="grid mt-0"
-            style={{ gridTemplateColumns: `repeat(${TIMELINE.length}, 1fr)` }}
-          >
-            {TIMELINE.map((node, i) => (
-              <div key={i} className="flex flex-col items-center gap-3 -mt-[5px]">
-                <div
-                  className={`tnode-dot${node.state !== 'pending' ? ` ${node.state}` : ''}`}
-                />
-                <div className="text-center">
-                  <p
-                    className={`font-mono text-[8px] md:text-[9px] uppercase tracking-[0.14em] leading-[1.4] ${
-                      node.state === 'done'
-                        ? 'text-vital'
-                        : node.state === 'active'
-                        ? 'text-bone'
-                        : 'text-steel'
-                    }`}
-                  >
-                    {node.label}
-                  </p>
-                  <p className="font-mono text-[7.5px] uppercase tracking-[0.12em] text-steel/60 mt-0.5">
-                    {node.sub}
-                  </p>
-                </div>
+
+        <div ref={tableRef} className="grid md:grid-cols-2 gap-0 md:gap-px">
+          {SKILLS.map((group, gi) => (
+            <div key={gi} className="border-t border-bone/10">
+              <div className="py-4 border-b border-bone/10">
+                <p className="font-mono text-[9px] uppercase tracking-[0.24em] text-muted">{group.group}</p>
               </div>
-            ))}
-          </div>
+              {group.items.map((item) => (
+                <div key={item.name} className="row-reveal grid grid-cols-[1fr_auto] gap-6 items-center py-3.5 border-b border-bone/[0.07]">
+                  <p className="font-mono text-[11px] uppercase tracking-[0.1em] text-bone">{item.name}</p>
+                  <span className="skill-bar-mono">{monoBar(item.pct)}</span>
+                </div>
+              ))}
+            </div>
+          ))}
         </div>
       </div>
     </section>
   );
 }
 
-/* ── Contact ─────────────────────────────────────────────────────────── */
+/* ── Research ────────────────────────────────────────────────────── */
+
+function ResearchEntry({ card, idx }: { card: (typeof RESEARCH_CARDS)[number]; idx: number }) {
+  return (
+    <a
+      href={`#/research/${card.slug}`}
+      className="ed-entry block px-0 py-10 md:py-14"
+      data-reveal
+      data-reveal-delay={String(idx + 1)}
+    >
+      <div className="grid md:grid-cols-[auto_1fr_auto] gap-4 md:gap-10 items-start">
+        {/* Index */}
+        <div className="shrink-0 pt-1">
+          <p className="font-mono text-[9px] uppercase tracking-[0.22em] e-vital text-vital">{card.index}</p>
+          <p className="font-mono text-[8.5px] uppercase tracking-[0.14em] e-muted text-muted mt-1">{card.category}</p>
+        </div>
+
+        {/* Content */}
+        <div>
+          <h3
+            className="e-text text-bone font-grotesk uppercase leading-[0.88] tracking-tightest"
+            style={{ fontSize: 'clamp(38px, 6vw, 80px)' }}
+          >
+            <span className="block">{card.title}</span>
+            <span className="block">{card.titleTwo}</span>
+          </h3>
+          <p className="e-muted text-muted font-serif-italic text-xl md:text-2xl leading-[1.25] mt-4 max-w-[48ch]">
+            {card.subtitle}
+          </p>
+          <div className="mt-5 flex items-center gap-4 flex-wrap">
+            <p className="e-muted text-muted font-mono text-[9px] uppercase tracking-[0.18em]">{card.metaLabel}</p>
+            <span className="e-muted text-muted font-mono text-[9px]">·</span>
+            <p className="e-text text-bone font-mono text-[9.5px] uppercase tracking-[0.1em]">{card.metaValue}</p>
+          </div>
+        </div>
+
+        {/* Data + arrow */}
+        <div className="hidden md:flex flex-col items-end gap-6 shrink-0 pt-1">
+          <div className="e-panel border border-bone/20" style={{ minWidth: '180px' }}>
+            {[
+              { k: 'STATUS', v: card.status },
+              { k: 'META',   v: card.metaValue.split('·')[0]?.trim() ?? '' },
+            ].map(({ k, v }) => (
+              <div key={k} className="e-rule border-b border-bone/15 last:border-0 px-3 py-2 grid grid-cols-[40%_60%]">
+                <span className="font-mono text-[7.5px] uppercase tracking-[0.14em] e-muted text-muted">{k}</span>
+                <span className="font-mono text-[9px] uppercase tracking-[0.06em] e-text text-bone">{v}</span>
+              </div>
+            ))}
+          </div>
+          <div className="e-arrow w-9 h-9 rounded-full border border-bone/25 flex items-center justify-center transition-colors">
+            <ArrowUpRight className="h-3.5 w-3.5 e-text text-bone" strokeWidth={2} />
+          </div>
+        </div>
+      </div>
+    </a>
+  );
+}
+
+function ResearchSection() {
+  return (
+    <section id="research" className="relative bg-graphite eng-grid">
+      <div className="mx-auto max-w-container px-6 md:px-10 lg:px-14 xl:px-16 py-14 md:py-20">
+        {/* Header */}
+        <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6 mb-0" data-reveal>
+          <div>
+            <FolioLabel text={RESEARCH.tag} />
+            <h2 className="mt-5 font-grotesk uppercase text-bone leading-[0.88] tracking-tightest text-5xl sm:text-6xl md:text-7xl lg:text-8xl">
+              <span className="block">{RESEARCH.headingTop}</span>
+              <span className="font-serif-italic block text-vital normal-case leading-none mt-1">
+                {RESEARCH.headingAccent}
+              </span>
+            </h2>
+          </div>
+          <EdLink href="#/cv" className="font-mono text-[10px] uppercase tracking-[0.22em] text-muted hover:text-bone shrink-0">
+            {RESEARCH.cta} →
+          </EdLink>
+        </div>
+
+        {/* Entries */}
+        <div className="divide-y-2 divide-bone">
+          {RESEARCH_CARDS.map((card, i) => (
+            <ResearchEntry key={card.slug} card={card} idx={i} />
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ── Publications ────────────────────────────────────────────────── */
+
+function PublicationsSection() {
+  return (
+    <section className="relative ed-dark">
+      <div className="mx-auto max-w-container px-6 md:px-10 lg:px-14 xl:px-16 py-20 md:py-28">
+        <div className="mb-12" data-reveal>
+          <FolioLabel text="006 · Publications + Abstracts" />
+        </div>
+
+        <div className="flex flex-col gap-0 divide-y divide-white/10">
+          {PUBLICATIONS.map((pub, i) => (
+            <div
+              key={i}
+              data-reveal
+              data-reveal-delay={String(i + 1)}
+              className="py-10 md:py-12 grid md:grid-cols-[120px_1fr] gap-6 md:gap-10"
+            >
+              {/* Hanging year */}
+              <div>
+                <p className="font-grotesk text-vital leading-none tracking-tightest" style={{ fontSize: 'clamp(48px, 8vw, 100px)' }}>
+                  {pub.year}
+                </p>
+                <p className="font-mono text-[9px] uppercase tracking-[0.2em] text-steel mt-2">{pub.conference}</p>
+              </div>
+
+              {/* Content */}
+              <div>
+                <div className="flex items-center gap-3 mb-5">
+                  <StatusBadge status={pub.status} />
+                  <span className="font-mono text-[9px] uppercase tracking-[0.16em] text-steel">{pub.venue}</span>
+                </div>
+                <p className="font-serif-italic text-graphite text-xl md:text-2xl leading-[1.35] mb-4">
+                  {pub.title}
+                </p>
+                <p className="font-mono text-[11px] leading-[1.75] text-steel">
+                  {pub.authors}
+                </p>
+                <p className="font-mono text-[9px] text-steel/50 mt-1">* Spencer Kim</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ── Timeline ────────────────────────────────────────────────────── */
+
+function TimelineStrip() {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const lineRef = useTimelineScroll(containerRef);
+
+  return (
+    <section className="relative bg-graphite">
+      <div className="mx-auto max-w-container px-6 md:px-10 lg:px-14 xl:px-16 py-20 md:py-28">
+        <div className="mb-12" data-reveal>
+          <FolioLabel text="PAS Study Timeline · N=6 Ovine Cohort" />
+        </div>
+
+        <div ref={containerRef} className="relative pl-8 md:pl-12">
+          {/* Vertical progress rule */}
+          <div className="absolute left-0 top-0 w-px bg-bone/10 h-full" />
+          <div ref={lineRef} className="timeline-vr" />
+
+          {TIMELINE.map((node, i) => (
+            <div
+              key={i}
+              data-reveal
+              data-reveal-delay={String((i % 4) + 1)}
+              className="relative pb-8 md:pb-10 last:pb-0"
+            >
+              {/* Node marker */}
+              <div
+                className={`absolute -left-[1.1rem] top-1.5 w-3 h-3 rounded-full border-2 transition-colors ${
+                  node.state === 'done'   ? 'bg-vital border-vital' :
+                  node.state === 'active' ? 'bg-graphite border-vital' :
+                  'bg-graphite border-bone/20'
+                }`}
+              />
+
+              <div className="grid md:grid-cols-[auto_1fr_auto] gap-3 md:gap-8 items-baseline">
+                <span className="font-grotesk text-vital text-sm md:text-base tracking-tightest leading-none">
+                  {String(i + 1).padStart(2, '0')}
+                </span>
+                <div>
+                  <p className={`font-mono text-[11px] md:text-[12px] uppercase tracking-[0.14em] ${
+                    node.state === 'done'   ? 'text-bone' :
+                    node.state === 'active' ? 'text-vital' :
+                    'text-steel'
+                  }`}>
+                    {node.label}
+                  </p>
+                  {node.sub && (
+                    <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-steel/60 mt-1">{node.sub}</p>
+                  )}
+                </div>
+                <span className={`font-mono text-[9px] uppercase tracking-[0.2em] shrink-0 hidden md:block ${
+                  node.state === 'done'   ? 'text-vital' :
+                  node.state === 'active' ? 'text-bone' :
+                  'text-steel/40'
+                }`}>
+                  {node.state === 'done' ? '✓ DONE' : node.state === 'active' ? '● ACTIVE' : '○ PENDING'}
+                </span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ── Contact ─────────────────────────────────────────────────────── */
 
 function ContactSection() {
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
+  const [name, setName]       = useState('');
+  const [email, setEmail]     = useState('');
   const [subject, setSubject] = useState('');
   const [message, setMessage] = useState('');
 
@@ -1036,162 +844,119 @@ function ContactSection() {
   )}`;
 
   return (
-    <section id="contact" className="relative bg-graphite">
-      {/* Subtle grid */}
-      <div
-        className="pointer-events-none absolute inset-0"
-        style={{
-          backgroundImage: 'radial-gradient(circle, rgba(236,230,216,0.04) 1px, transparent 1px)',
-          backgroundSize: '32px 32px',
-        }}
-      />
-      <div className="relative mx-auto max-w-container px-6 md:px-10 lg:px-14 xl:px-16 py-20 md:py-28 lg:py-32">
+    <section id="contact" className="relative bg-graphite eng-grid">
+      <div className="mx-auto max-w-container px-6 md:px-10 lg:px-14 xl:px-16 py-20 md:py-28 lg:py-32">
 
         {/* Header */}
-        <div className="grid gap-8 md:grid-cols-12 mb-14 md:mb-18">
+        <div className="mb-14 md:mb-18 grid md:grid-cols-12 gap-8">
           <div className="md:col-span-7" data-reveal>
-            <SectionTag text={CONTACT.tag} />
-            <span className="mt-7 font-serif-italic block text-vital text-4xl sm:text-5xl md:text-6xl lg:text-7xl">
+            <FolioLabel text={CONTACT.tag} />
+            <span className="mt-6 font-serif-italic block text-vital text-3xl sm:text-4xl md:text-5xl leading-[1.15]">
               {CONTACT.accent}
             </span>
-            <h3 className="mt-2 font-grotesk uppercase text-bone leading-[0.88] tracking-tightest text-5xl sm:text-6xl md:text-7xl lg:text-8xl">
-              {CONTACT.heading.map((line, i) => (
-                <span key={i} className="block">{line}</span>
-              ))}
-            </h3>
+            <h2 className="mt-1 font-grotesk uppercase text-bone leading-[0.88] tracking-tightest text-5xl sm:text-6xl md:text-7xl">
+              {CONTACT.heading.map((line, i) => <span key={i} className="block">{line}</span>)}
+            </h2>
           </div>
-          <div className="md:col-span-5 md:pt-8" data-reveal data-reveal-delay="2">
-            <p className="font-mono text-[13px] md:text-[14px] leading-[1.8] text-muted">
-              {CONTACT.body}
-            </p>
+          <div className="md:col-span-5 md:pt-6" data-reveal data-reveal-delay="2">
+            <p className="font-mono text-[13px] md:text-[14px] leading-[1.85] text-muted">{CONTACT.body}</p>
           </div>
         </div>
 
         {/* Form + channels */}
-        <div className="grid gap-5 md:grid-cols-12">
+        <div className="grid md:grid-cols-12 gap-6 md:gap-10">
           {/* Form */}
           <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              window.location.href = mailto;
-            }}
-            className="md:col-span-7 liquid-glass relative rounded-2xl p-6 md:p-10"
+            onSubmit={(e) => { e.preventDefault(); window.location.href = mailto; }}
+            className="md:col-span-7"
           >
-            <div className="relative z-10 mb-7 flex items-center justify-between">
-              <p className="font-mono text-[9px] uppercase tracking-[0.2em] text-vital/75">
-                Direct dispatch
-              </p>
-              <p className="font-mono text-[9px] uppercase tracking-[0.2em] text-steel">
-                Opens mail client
-              </p>
+            <div className="mb-6 flex items-center justify-between border-b border-bone/10 pb-4">
+              <p className="font-mono text-[9px] uppercase tracking-[0.2em] text-vital">Direct dispatch</p>
+              <p className="font-mono text-[9px] uppercase tracking-[0.2em] text-steel">Opens mail client</p>
             </div>
 
-            <div className="relative z-10 grid grid-cols-1 sm:grid-cols-2 gap-5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {[
-                { label: 'Name', type: 'text', value: name, setter: setName, placeholder: 'Your name', span: 1 },
-                { label: 'Email', type: 'email', value: email, setter: setEmail, placeholder: 'you@domain.com', span: 1 },
-                { label: 'Subject', type: 'text', value: subject, setter: setSubject, placeholder: 'Collaboration · opportunity · inquiry', span: 2 },
-              ].map((field) => (
-                <label key={field.label} className={`field-wrap block ${field.span === 2 ? 'sm:col-span-2' : ''}`}>
-                  <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-muted">{field.label}</span>
+                { label: 'Name',    type: 'text',  value: name,    setter: setName,    placeholder: 'Your name',           span: 1 },
+                { label: 'Email',   type: 'email', value: email,   setter: setEmail,   placeholder: 'you@domain.com',      span: 1 },
+                { label: 'Subject', type: 'text',  value: subject, setter: setSubject, placeholder: 'Collaboration · inquiry', span: 2 },
+              ].map((f) => (
+                <label key={f.label} className={`block ${f.span === 2 ? 'sm:col-span-2' : ''}`}>
+                  <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-muted block mb-1.5">{f.label}</span>
                   <input
-                    type={field.type}
-                    value={field.value}
-                    onChange={(e) => field.setter(e.target.value)}
-                    placeholder={field.placeholder}
-                    className="mt-2 w-full border-0 border-b border-bone/10 bg-transparent px-0 py-2 font-mono text-sm text-bone placeholder:text-steel focus:outline-none focus:ring-0"
+                    type={f.type} value={f.value}
+                    onChange={(e) => f.setter(e.target.value)}
+                    placeholder={f.placeholder}
+                    className="ed-input"
                   />
                 </label>
               ))}
-              <label className="field-wrap block sm:col-span-2">
-                <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-muted">Message</span>
+              <label className="block sm:col-span-2">
+                <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-muted block mb-1.5">Message</span>
                 <textarea
-                  value={message}
-                  onChange={(e) => setMessage(e.target.value)}
-                  rows={5}
-                  placeholder="Write as much or as little as you like."
-                  className="mt-2 w-full resize-none border-0 border-b border-bone/10 bg-transparent px-0 py-2 font-mono text-sm leading-relaxed text-bone placeholder:text-steel focus:outline-none focus:ring-0"
+                  value={message} onChange={(e) => setMessage(e.target.value)}
+                  rows={5} placeholder="Write as much or as little as you like."
+                  className="ed-input resize-none"
                 />
               </label>
             </div>
 
-            <div className="relative z-10 mt-8">
-              <button
-                type="submit"
-                className="group flex w-full items-center justify-between gap-3 rounded-full bg-vital px-6 py-3.5 font-sans text-sm font-medium tracking-ui text-bone transition-colors hover:bg-bone hover:text-graphite"
-              >
+            <div className="mt-5">
+              <button type="submit" className="ed-submit">
                 <span>Send dispatch</span>
-                <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-bone/20 group-hover:bg-vital/20 transition-colors">
-                  <Send className="h-3 w-3" strokeWidth={2} />
-                </span>
+                <Send className="h-3.5 w-3.5" strokeWidth={2} />
               </button>
-              <p className="mt-3 font-mono text-[9px] uppercase tracking-[0.18em] text-steel text-center">
+              <p className="font-mono text-[8.5px] uppercase tracking-[0.2em] text-steel mt-3 text-center">
                 Routed via your default mail client
               </p>
             </div>
           </form>
 
           {/* Channels */}
-          <div className="md:col-span-5 flex flex-col gap-4">
-            <div className="liquid-glass rounded-2xl p-6 md:p-8">
-              <p className="relative z-10 font-mono text-[9px] uppercase tracking-[0.2em] text-vital/75 mb-6">
-                Direct lines
-              </p>
-              <ul className="relative z-10 divide-y divide-bone/[0.07]">
+          <div className="md:col-span-5 flex flex-col gap-6">
+            {/* Letterhead block */}
+            <div className="ed-panel p-6 md:p-8">
+              <p className="font-mono text-[9px] uppercase tracking-[0.2em] text-vital mb-5">Direct Lines</p>
+              <div className="divide-y divide-bone/10">
                 {CONTACT.channels.map((c, i) => (
-                  <li key={i}>
+                  <div key={i} className="py-4">
+                    <p className="font-mono text-[8.5px] uppercase tracking-[0.18em] text-muted">{c.label}</p>
                     <a
                       href={c.href}
                       target={c.href.startsWith('http') ? '_blank' : undefined}
                       rel={c.href.startsWith('http') ? 'noreferrer' : undefined}
-                      className="group flex items-center justify-between gap-4 py-4 transition-colors"
+                      className="font-mono text-[12px] text-bone hover:text-vital transition-colors mt-0.5 block ed-link"
                     >
-                      <div className="min-w-0">
-                        <p className="font-mono text-[9px] uppercase tracking-[0.18em] text-muted group-hover:text-vital transition-colors">
-                          {c.label}
-                        </p>
-                        <p className="font-mono text-[13px] text-bone/80 group-hover:text-bone truncate mt-0.5 transition-colors">
-                          {c.value}
-                        </p>
-                      </div>
-                      <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-bone/10 text-muted group-hover:border-vital group-hover:text-vital transition-colors">
-                        <ArrowUpRight className="h-3 w-3" strokeWidth={2} />
-                      </span>
+                      {c.value}
                     </a>
-                  </li>
+                  </div>
                 ))}
-              </ul>
+              </div>
             </div>
 
-            <a
-              href="#/cv"
-              className="liquid-glass group flex items-center justify-between gap-4 rounded-2xl p-6 md:p-8 transition-colors"
-            >
-              <div className="relative z-10">
-                <p className="font-mono text-[9px] uppercase tracking-[0.2em] text-vital/75">
-                  Curriculum Vitae
+            {/* CV link */}
+            <a href="#/cv" className="ed-panel p-6 md:p-8 flex items-center justify-between group hover:bg-bone/[0.03] transition-colors">
+              <div>
+                <p className="font-mono text-[9px] uppercase tracking-[0.2em] text-vital">Curriculum Vitae</p>
+                <p className="mt-2 font-grotesk text-xl md:text-2xl tracking-tightest text-bone uppercase group-hover:text-vital transition-colors">
+                  View Full CV
                 </p>
-                <p className="mt-2 font-sans text-xl font-medium tracking-ui text-bone group-hover:text-vital uppercase transition-colors">
-                  View full CV
-                </p>
-                <p className="mt-1 font-mono text-[11px] text-muted">
-                  Education · research · patents · skills
-                </p>
+                <p className="mt-1 font-mono text-[10px] text-muted">Education · Research · Patents</p>
               </div>
-              <span className="relative z-10 inline-flex h-11 w-11 items-center justify-center rounded-full bg-vital text-bone group-hover:bg-bone group-hover:text-vital transition-colors">
-                <FileText className="h-4 w-4" strokeWidth={1.75} />
-              </span>
+              <div className="w-10 h-10 border border-bone/20 flex items-center justify-center group-hover:border-vital group-hover:text-vital transition-colors">
+                <FileText className="h-4 w-4 text-bone group-hover:text-vital transition-colors" strokeWidth={1.5} />
+              </div>
             </a>
           </div>
         </div>
 
         {/* Footer */}
-        <div className="mt-16 flex flex-col items-start justify-between gap-4 border-t border-bone/[0.07] pt-6 md:flex-row md:items-center">
-          <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-steel">
+        <div className="mt-16 pt-6 border-t border-bone/10 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <p className="font-mono text-[9px] uppercase tracking-[0.22em] text-steel">
             © {new Date().getFullYear()} · {PERSON.fullName} · Research Dossier
           </p>
-          <div className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.2em] text-steel">
-            <MapPin className="h-3.5 w-3.5 text-vital/60" strokeWidth={1.5} />
+          <div className="flex items-center gap-1.5 font-mono text-[9px] uppercase tracking-[0.22em] text-steel">
+            <MapPin className="h-3 w-3 text-vital/60" strokeWidth={1.5} />
             {PERSON.location}
           </div>
         </div>
@@ -1200,7 +965,7 @@ function ContactSection() {
   );
 }
 
-/* ── Home page ───────────────────────────────────────────────────────── */
+/* ── Home page ───────────────────────────────────────────────────── */
 
 function HomePage() {
   useScrollReveal();
@@ -1225,32 +990,18 @@ function HomePage() {
   );
 }
 
-/* ── Detail page shell ───────────────────────────────────────────────── */
+/* ── Detail shell ────────────────────────────────────────────────── */
 
 function DetailShell({
-  index,
-  category,
-  shortTitle,
-  fullTitle,
-  subtitle,
-  meta,
-  schematic,
-  children,
-  accent,
+  index, category, shortTitle, fullTitle, subtitle, meta, schematic, children, accent,
 }: {
-  index: string;
-  category: string;
-  shortTitle: string;
-  fullTitle: string;
-  subtitle: string;
-  meta: Array<{ label: string; value: string }>;
-  schematic: JSX.Element;
-  children: React.ReactNode;
-  accent: string;
+  index: string; category: string; shortTitle: string; fullTitle: string;
+  subtitle: string; meta: Array<{ label: string; value: string }>;
+  schematic: JSX.Element; children: React.ReactNode; accent: string;
 }) {
   return (
-    <div className="relative min-h-screen bg-graphite text-bone">
-      <TextureOverlay />
+    <div className="relative min-h-screen bg-graphite text-bone page-enter">
+      <PaperGrain />
       <div className="mx-auto max-w-container px-6 md:px-10 lg:px-14 xl:px-16">
         <Navbar />
 
@@ -1258,62 +1009,54 @@ function DetailShell({
         <section className="pt-10 md:pt-14 pb-12 md:pb-16">
           <div className="grid gap-10 md:grid-cols-12">
             <div className="md:col-span-8">
-              <SectionTag text={`${index} · ${category}`} />
-              <span className="mt-5 font-serif-italic block text-vital text-3xl sm:text-4xl md:text-5xl">
+              <FolioLabel text={`${index} · ${category}`} />
+              <span className="mt-5 font-serif-italic block text-vital text-3xl sm:text-4xl md:text-5xl leading-[1.1]">
                 {accent}
               </span>
               <h1 className="mt-2 font-grotesk uppercase text-bone leading-[0.9] tracking-tightest text-4xl sm:text-5xl md:text-6xl lg:text-7xl">
                 {shortTitle}
               </h1>
-              <p className="mt-6 max-w-[56ch] font-mono text-[13px] md:text-[15px] leading-[1.75] text-bone/85">
+              <p className="mt-6 max-w-[56ch] font-mono text-[13px] md:text-[15px] leading-[1.75] text-muted">
                 {fullTitle}
               </p>
-              <p className="mt-2 font-mono text-[11px] uppercase tracking-[0.2em] text-muted">
-                {subtitle}
-              </p>
+              <p className="mt-2 font-mono text-[10px] uppercase tracking-[0.2em] text-steel">{subtitle}</p>
             </div>
 
             <div className="md:col-span-4">
-              <div className="glass-panel rounded-2xl overflow-hidden">
-                <div className="divide-y divide-bone/[0.07]">
-                  {meta.map((m, i) => (
-                    <div key={i} className="px-5 py-4">
-                      <p className="font-mono text-[9px] uppercase tracking-[0.2em] text-vital/75">
-                        {m.label}
-                      </p>
-                      <p className="mt-1 font-sans text-sm font-medium tracking-ui text-bone uppercase leading-snug">
-                        {m.value}
-                      </p>
-                    </div>
-                  ))}
-                </div>
+              <div className="ed-panel">
+                {meta.map((m, i) => (
+                  <div key={i} className="px-4 py-3.5 border-b border-bone/12 last:border-0">
+                    <p className="font-mono text-[8.5px] uppercase tracking-[0.2em] text-vital">{m.label}</p>
+                    <p className="mt-1 font-mono text-[11px] uppercase tracking-[0.08em] text-bone">{m.value}</p>
+                  </div>
+                ))}
               </div>
             </div>
           </div>
         </section>
 
-        {/* Schematic banner */}
-        <section className="relative overflow-hidden rounded-2xl border border-bone/[0.07]">
+        {/* Schematic banner — now as ink drawing on paper */}
+        <section className="relative overflow-hidden border border-bone/12 bg-surface">
           {schematic}
-          <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-graphite/60 via-transparent to-graphite/10" />
         </section>
 
         {/* Body */}
         <section className="py-14 md:py-20">{children}</section>
 
         {/* Footer CTA */}
-        <section className="border-t border-bone/[0.07] py-10 md:py-14">
+        <section className="border-t border-bone/12 py-10 md:py-14">
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            <div className="flex items-center gap-2.5">
-              <span className="vital-dot shrink-0" />
-              <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted">
-                Continue the dossier
-              </p>
-            </div>
-            <div className="flex flex-wrap gap-3">
-              <PillLink href="#contact" label="Get in touch" />
-              <PillLink href="#/cv" label="View CV" />
-              <PillLink href="#research" label="Back to index" />
+            <p className="font-mono text-[9px] uppercase tracking-[0.22em] text-muted">Continue the dossier</p>
+            <div className="flex flex-wrap gap-5">
+              {[
+                { href: '#contact', label: 'Get in touch' },
+                { href: '#/cv',     label: 'View CV' },
+                { href: '#research',label: 'Back to index' },
+              ].map((l) => (
+                <EdLink key={l.label} href={l.href} className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted hover:text-bone">
+                  {l.label} →
+                </EdLink>
+              ))}
             </div>
           </div>
         </section>
@@ -1322,216 +1065,146 @@ function DetailShell({
   );
 }
 
-/* ── PAS Detail ──────────────────────────────────────────────────────── */
+/* ── Detail inline sections ──────────────────────────────────────── */
+
+function DetailFolio({ text }: { text: string }) {
+  return <FolioLabel text={text} />;
+}
+
+function DetailPanel({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="ed-panel p-6 md:p-8">
+      <p className="font-mono text-[9px] uppercase tracking-[0.2em] text-vital mb-5">{label}</p>
+      {children}
+    </div>
+  );
+}
+
+/* ── PAS Detail ──────────────────────────────────────────────────── */
 
 function PASDetailPage() {
   const d = PAS_DETAIL;
   return (
     <DetailShell
-      index={d.index}
-      category={d.category}
-      shortTitle={d.shortTitle}
-      fullTitle={d.fullTitle}
-      subtitle={d.subtitle}
+      index={d.index} category={d.category} shortTitle={d.shortTitle}
+      fullTitle={d.fullTitle} subtitle={d.subtitle}
       accent="Ambulatory respiratory support."
       meta={[
-        { label: 'Lab', value: d.lab },
+        { label: 'Lab',                value: d.lab },
         { label: 'Principal investigator', value: d.pi },
-        { label: 'Co-investigators', value: d.studyLead.join(' · ') },
-        { label: 'My role', value: d.role },
+        { label: 'Co-investigators',   value: d.studyLead.join(' · ') },
+        { label: 'My role',            value: d.role },
       ]}
       schematic={<PASDetailSchematic />}
     >
       <div className="grid gap-12 md:grid-cols-12">
-        {/* Abstract + objectives */}
         <div className="md:col-span-7">
-          <SectionTag text="01 · Abstract" />
-          <p className="mt-6 font-mono text-[13px] md:text-[15px] leading-[1.8] text-bone/85">
-            {d.abstract}
-          </p>
+          <DetailFolio text="01 · Abstract" />
+          <p className="mt-6 font-mono text-[13px] md:text-[15px] leading-[1.8] text-muted">{d.abstract}</p>
 
           <div className="mt-12">
-            <SectionTag text="02 · Objectives" />
+            <DetailFolio text="02 · Objectives" />
             <ul className="mt-6 space-y-4">
               {d.objectives.map((o, i) => (
                 <li key={i} className="flex gap-3">
-                  <span className="mt-[7px] inline-block h-px w-5 bg-vital shrink-0" />
-                  <p className="font-mono text-[13px] md:text-[14px] leading-[1.75] text-bone/85">{o}</p>
+                  <span className="font-grotesk text-vital text-sm tracking-tightest shrink-0 mt-0.5">{String(i + 1).padStart(2, '0')}</span>
+                  <p className="font-mono text-[13px] md:text-[14px] leading-[1.75] text-muted">{o}</p>
                 </li>
               ))}
             </ul>
           </div>
         </div>
 
-        {/* Methods */}
         <div className="md:col-span-5">
-          <div className="glass-panel rounded-2xl p-6 md:p-8">
-            <p className="relative z-10 font-mono text-[9px] uppercase tracking-[0.2em] text-vital/75 mb-6">Methods</p>
-            <dl className="relative z-10 space-y-5">
+          <DetailPanel label="Methods">
+            <dl className="space-y-5">
               {d.methods.map((m, i) => (
                 <div key={i}>
                   <dt className="font-mono text-[9px] uppercase tracking-[0.18em] text-muted">{m.label}</dt>
-                  <dd className="mt-1 font-mono text-[12px] md:text-[13px] leading-[1.65] text-bone/85">{m.value}</dd>
+                  <dd className="mt-1 font-mono text-[12px] md:text-[13px] leading-[1.65] text-bone">{m.value}</dd>
                 </div>
               ))}
             </dl>
-          </div>
+          </DetailPanel>
         </div>
 
-        {/* Diagrams */}
         <div className="md:col-span-12">
           <div className="grid gap-4 md:grid-cols-2">
-            <div className="relative overflow-hidden rounded-2xl border border-bone/[0.07]">
+            <div className="relative overflow-hidden border border-bone/12 bg-surface">
               <PASCircuitDiagram />
-              <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between pointer-events-none">
-                <span className="font-mono text-[9px] uppercase tracking-[0.18em] text-vital/75">VV ECMO · Circuit schematic</span>
-                <span className="vital-dot" />
+              <div className="absolute bottom-4 left-4 right-4 flex justify-between pointer-events-none">
+                <span className="font-mono text-[9px] uppercase tracking-[0.18em] text-vital">VV ECMO · Circuit schematic</span>
               </div>
             </div>
-            <div className="relative overflow-hidden rounded-2xl border border-bone/[0.07]">
+            <div className="relative overflow-hidden border border-bone/12 bg-surface">
               <KaplanMeierDiagram />
-              <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between pointer-events-none">
-                <span className="font-mono text-[9px] uppercase tracking-[0.18em] text-vital/75">Kaplan-Meier · Cohort outcomes</span>
-                <span className="font-mono text-[9px] uppercase tracking-[0.18em] text-muted">2/6 endpoint</span>
+              <div className="absolute bottom-4 left-4 right-4 flex justify-between pointer-events-none">
+                <span className="font-mono text-[9px] uppercase tracking-[0.18em] text-vital">Kaplan–Meier · Survival curve</span>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Cohort */}
-        <div className="md:col-span-12">
-          <SectionTag text="03 · Cohort · N=6" />
-          <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
-            {d.subjects.map((s, i) => (
-              <div
-                key={i}
-                className={`glow-border liquid-glass rounded-2xl p-5 md:p-6 transition-all duration-400 hover:-translate-y-1 ${
-                  s.tone === 'ok' ? 'border border-vital/25' : ''
-                }`}
-              >
-                <div className="relative z-10 flex items-center justify-between">
-                  <p className="font-mono text-[9px] uppercase tracking-[0.18em] text-muted">
-                    {s.id} · {s.start}
-                  </p>
-                  {s.tone === 'ok' ? (
-                    <CheckCircle2 className="h-4 w-4 text-vital" strokeWidth={1.75} />
-                  ) : (
-                    <AlertTriangle className="h-4 w-4 text-steel" strokeWidth={1.5} />
-                  )}
-                </div>
-                <p className="relative z-10 mt-3 font-grotesk text-3xl tracking-tightest text-bone uppercase">
-                  {s.name}
-                </p>
-                <p className={`relative z-10 mt-1.5 font-mono text-[11px] uppercase tracking-[0.16em] ${s.tone === 'ok' ? 'text-vital' : 'text-muted'}`}>
-                  {s.outcome}
-                </p>
-                <div className="relative z-10 mt-3 h-1 w-full rounded-full bg-bone/8 overflow-hidden">
-                  <div
-                    className="h-full rounded-full draw-line"
-                    style={{
-                      background: s.tone === 'ok'
-                        ? 'linear-gradient(90deg, #E63046, #E63046)'
-                        : 'linear-gradient(90deg, rgba(236,230,216,0.25), rgba(236,230,216,0.1))',
-                      maxWidth: `${(parseInt(s.outcome.match(/\d+/)?.[0] || '30') / 30) * 100}%`,
-                      animationDelay: `${i * 0.15}s`,
-                    }}
-                  />
-                </div>
-                <p className="relative z-10 mt-3 font-mono text-[11px] leading-[1.65] text-muted">
-                  {s.detail}
-                </p>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Findings */}
-        <div className="md:col-span-12">
-          <SectionTag text="04 · Key findings" />
-          <div className="mt-6 rounded-2xl overflow-hidden border border-bone/[0.07] divide-y divide-bone/[0.07]">
-            {d.findings.map((f, i) => (
-              <div key={i} className="bg-surface p-6 md:p-8 grid md:grid-cols-12 gap-4">
-                <p className="md:col-span-3 font-mono text-[10px] uppercase tracking-[0.18em] text-vital/75">{f.label}</p>
-                <p className="md:col-span-9 font-mono text-[13px] md:text-[14px] leading-[1.75] text-bone/85">{f.value}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Optimizations + outcome */}
         <div className="md:col-span-7">
-          <SectionTag text="05 · Protocol optimizations" />
-          <ul className="mt-6 space-y-3">
-            {d.optimizations.map((o, i) => (
-              <li key={i} className="flex gap-3 font-mono text-[13px] md:text-[14px] leading-[1.75] text-bone/85">
-                <span className="font-grotesk text-vital text-sm tracking-wider shrink-0">{`0${i + 1}`}</span>
-                <span>{o}</span>
+          <DetailFolio text="03 · Key Findings" />
+          <ul className="mt-6 space-y-4">
+            {d.findings.map((f, i) => (
+              <li key={i} className="flex gap-3">
+                <span className="font-grotesk text-vital text-sm tracking-tightest shrink-0 mt-0.5">{`F-${String(i + 1).padStart(2, '0')}`}</span>
+                <div className="font-mono text-[13px] md:text-[14px] leading-[1.75] text-muted">
+                  <span className="text-bone uppercase tracking-[0.08em] text-[11px]">{f.label} — </span>{f.value}
+                </div>
               </li>
             ))}
           </ul>
         </div>
 
         <div className="md:col-span-5">
-          <div className="glass-panel rounded-2xl p-6 md:p-8 h-full">
-            <p className="relative z-10 font-mono text-[9px] uppercase tracking-[0.2em] text-vital/75 mb-4">06 · Outcome</p>
-            <p className="relative z-10 font-serif-italic text-vital text-2xl md:text-3xl leading-tight">Proof of concept.</p>
-            <p className="relative z-10 mt-4 font-mono text-[13px] md:text-[14px] leading-[1.75] text-bone/85">{d.outcome}</p>
-          </div>
+          <DetailPanel label="Monitoring parameters">
+            <dl className="space-y-5">
+              {d.monitoringParams.map((p, i) => (
+                <div key={i}>
+                  <dt className="font-mono text-[9px] uppercase tracking-[0.18em] text-muted">{p.label}</dt>
+                  <dd className="mt-1 font-mono text-[12px] md:text-[13px] leading-[1.65] text-bone">{p.value}</dd>
+                </div>
+              ))}
+            </dl>
+          </DetailPanel>
         </div>
       </div>
     </DetailShell>
   );
 }
 
-/* ── Coag Detail ─────────────────────────────────────────────────────── */
+/* ── Coagulation Detail ──────────────────────────────────────────── */
 
 function CoagDetailPage() {
   const d = COAG_DETAIL;
   return (
     <DetailShell
-      index={d.index}
-      category={d.category}
-      shortTitle={d.shortTitle}
-      fullTitle={d.fullTitle}
-      subtitle={d.subtitle}
-      accent="Block surface clot. Spare hemostasis."
+      index={d.index} category={d.category} shortTitle={d.shortTitle}
+      fullTitle={d.fullTitle} subtitle={d.subtitle}
+      accent="Targeting contact pathway coagulation."
       meta={[
-        { label: 'Lab', value: d.lab },
-        { label: 'Principal investigator', value: d.pi },
-        { label: 'Conference', value: 'ISTH 2026 · Abstract submitted' },
-        { label: 'My role', value: d.role },
+        { label: 'Role',        value: d.role },
+        { label: 'PI',          value: d.pi },
+        { label: 'Lab',         value: d.lab },
+        { label: 'Status',      value: d.subtitle },
       ]}
       schematic={<CoagDetailSchematic />}
     >
       <div className="grid gap-12 md:grid-cols-12">
         <div className="md:col-span-7">
-          <SectionTag text="01 · Abstract" />
-          <p className="mt-6 font-sans text-base md:text-lg font-medium tracking-ui text-bone uppercase leading-snug max-w-[56ch]">
-            {d.abstractTitle}
-          </p>
-          <p className="mt-3 font-mono text-[11px] leading-[1.75] text-muted">
-            {d.authors.map((a, i) => (
-              <span key={i}>
-                {a.name}<sup className="text-vital ml-0.5">{a.affil}</sup>{i < d.authors.length - 1 ? ', ' : ''}
-              </span>
-            ))}
-          </p>
-          <div className="mt-2 space-y-1">
-            {d.affiliations.map((aff) => (
-              <p key={aff.id} className="font-mono text-[10px] text-steel">
-                <sup className="text-vital">{aff.id}</sup>{' '}{aff.name}
-              </p>
-            ))}
-          </div>
-          <p className="mt-8 font-mono text-[13px] md:text-[15px] leading-[1.8] text-bone/85">{d.abstract}</p>
+          <DetailFolio text="01 · Abstract" />
+          <p className="mt-6 font-mono text-[13px] md:text-[15px] leading-[1.8] text-muted">{d.abstract}</p>
 
           <div className="mt-12">
-            <SectionTag text="02 · The problem" />
+            <DetailFolio text="02 · Problem" />
             <ul className="mt-6 space-y-4">
-              {d.problem.map((p, i) => (
+              {d.problem.map((o, i) => (
                 <li key={i} className="flex gap-3">
-                  <span className="mt-[7px] inline-block h-px w-5 bg-vital shrink-0" />
-                  <p className="font-mono text-[13px] md:text-[14px] leading-[1.75] text-bone/85">{p}</p>
+                  <span className="font-grotesk text-vital text-sm tracking-tightest shrink-0 mt-0.5">{String(i + 1).padStart(2, '0')}</span>
+                  <p className="font-mono text-[13px] md:text-[14px] leading-[1.75] text-muted">{o}</p>
                 </li>
               ))}
             </ul>
@@ -1539,25 +1212,24 @@ function CoagDetailPage() {
         </div>
 
         <div className="md:col-span-5">
-          <div className="glass-panel rounded-2xl p-6 md:p-8">
-            <p className="relative z-10 font-mono text-[9px] uppercase tracking-[0.2em] text-vital/75 mb-6">Approach</p>
-            <dl className="relative z-10 space-y-5">
+          <DetailPanel label="Approach">
+            <dl className="space-y-5">
               {d.approach.map((m, i) => (
                 <div key={i}>
                   <dt className="font-mono text-[9px] uppercase tracking-[0.18em] text-muted">{m.label}</dt>
-                  <dd className="mt-1 font-mono text-[12px] md:text-[13px] leading-[1.65] text-bone/85">{m.value}</dd>
+                  <dd className="mt-1 font-mono text-[12px] md:text-[13px] leading-[1.65] text-bone">{m.value}</dd>
                 </div>
               ))}
             </dl>
-          </div>
+          </DetailPanel>
         </div>
 
         <div className="md:col-span-7">
-          <SectionTag text="03 · My contributions" />
+          <DetailFolio text="03 · My contributions" />
           <ul className="mt-6 space-y-4">
             {d.contributions.map((c, i) => (
-              <li key={i} className="flex gap-3 font-mono text-[13px] md:text-[14px] leading-[1.75] text-bone/85">
-                <span className="font-grotesk text-vital text-sm tracking-wider shrink-0">{`C-${String(i + 1).padStart(2, '0')}`}</span>
+              <li key={i} className="flex gap-3 font-mono text-[13px] md:text-[14px] leading-[1.75] text-muted">
+                <span className="font-grotesk text-vital text-sm tracking-tightest shrink-0">{`C-${String(i + 1).padStart(2, '0')}`}</span>
                 <span>{c}</span>
               </li>
             ))}
@@ -1565,35 +1237,31 @@ function CoagDetailPage() {
         </div>
 
         <div className="md:col-span-5">
-          <div className="glass-panel rounded-2xl p-6 md:p-8">
-            <p className="relative z-10 font-mono text-[9px] uppercase tracking-[0.2em] text-vital/75 mb-4">Selected references</p>
-            <ul className="relative z-10 space-y-3">
+          <DetailPanel label="Selected references">
+            <ul className="space-y-3">
               {d.references.map((r, i) => (
-                <li key={i} className="font-mono text-[11px] md:text-[12px] leading-[1.65] text-muted border-l border-bone/10 pl-3">{r}</li>
+                <li key={i} className="font-mono text-[11px] md:text-[12px] leading-[1.65] text-muted border-l-2 border-vital/30 pl-3">{r}</li>
               ))}
             </ul>
-          </div>
+          </DetailPanel>
         </div>
       </div>
     </DetailShell>
   );
 }
 
-/* ── Cane Detail ─────────────────────────────────────────────────────── */
+/* ── Cane Detail ─────────────────────────────────────────────────── */
 
 function CaneDetailPage() {
   const d = CANE_DETAIL;
   return (
     <DetailShell
-      index={d.index}
-      category={d.category}
-      shortTitle={d.shortTitle}
-      fullTitle={d.fullTitle}
-      subtitle={d.subtitle}
+      index={d.index} category={d.category} shortTitle={d.shortTitle}
+      fullTitle={d.fullTitle} subtitle={d.subtitle}
       accent="Active assistive mobility."
       meta={[
-        { label: 'Patent', value: d.patentNumber },
-        { label: 'Office', value: d.office },
+        { label: 'Patent',         value: d.patentNumber },
+        { label: 'Office',         value: d.office },
         { label: 'Filed · Granted', value: `${d.filed} → ${d.registered}` },
         { label: 'Inventor · Status', value: `${d.inventor} · ${d.status}` },
       ]}
@@ -1601,28 +1269,28 @@ function CaneDetailPage() {
     >
       <div className="grid gap-12 md:grid-cols-12">
         <div className="md:col-span-7">
-          <SectionTag text="01 · Abstract" />
-          <p className="mt-6 font-mono text-[13px] md:text-[15px] leading-[1.8] text-bone/85">{d.abstract}</p>
+          <DetailFolio text="01 · Abstract" />
+          <p className="mt-6 font-mono text-[13px] md:text-[15px] leading-[1.8] text-muted">{d.abstract}</p>
 
           <div className="mt-12">
-            <SectionTag text="02 · Problem statement" />
+            <DetailFolio text="02 · Problem statement" />
             <ul className="mt-6 space-y-4">
               {d.problem.map((p, i) => (
                 <li key={i} className="flex gap-3">
-                  <span className="mt-[7px] inline-block h-px w-5 bg-vital shrink-0" />
-                  <p className="font-mono text-[13px] md:text-[14px] leading-[1.75] text-bone/85">{p}</p>
+                  <span className="font-grotesk text-vital text-sm tracking-tightest shrink-0 mt-0.5">{String(i + 1).padStart(2, '0')}</span>
+                  <p className="font-mono text-[13px] md:text-[14px] leading-[1.75] text-muted">{p}</p>
                 </li>
               ))}
             </ul>
           </div>
 
           <div className="mt-12">
-            <SectionTag text="03 · Solution" />
+            <DetailFolio text="03 · Solution" />
             <ol className="mt-6 space-y-4">
               {d.solution.map((s, i) => (
                 <li key={i} className="flex gap-3">
-                  <span className="font-grotesk text-vital text-sm tracking-wider shrink-0">{`0${i + 1}`}</span>
-                  <p className="font-mono text-[13px] md:text-[14px] leading-[1.75] text-bone/85">{s}</p>
+                  <span className="font-grotesk text-vital text-sm tracking-tightest shrink-0">{String(i + 1).padStart(2, '0')}</span>
+                  <p className="font-mono text-[13px] md:text-[14px] leading-[1.75] text-muted">{s}</p>
                 </li>
               ))}
             </ol>
@@ -1630,77 +1298,70 @@ function CaneDetailPage() {
         </div>
 
         <div className="md:col-span-5">
-          <div className="glass-panel rounded-2xl p-6 md:p-8 sticky top-8">
-            <p className="relative z-10 font-mono text-[9px] uppercase tracking-[0.2em] text-vital/75 mb-6">Parts list · BOM</p>
-            <ul className="relative z-10 space-y-4">
+          <DetailPanel label="Parts List · BOM">
+            <ul className="space-y-4">
               {d.components.map((c) => (
-                <li key={c.id} className="grid grid-cols-[36px_1fr] gap-3 border-b border-bone/[0.07] pb-3 last:border-0">
-                  <span className="font-grotesk text-vital text-sm tracking-wider">{c.id}</span>
+                <li key={c.id} className="grid grid-cols-[36px_1fr] gap-3 border-b border-bone/10 pb-3 last:border-0">
+                  <span className="font-mono text-[9px] text-vital">{c.id}</span>
                   <div>
-                    <p className="font-sans text-sm font-medium tracking-ui text-bone uppercase">{c.label}</p>
-                    <p className="mt-0.5 font-mono text-[11px] leading-[1.6] text-muted">{c.detail}</p>
+                    <p className="font-mono text-[11px] text-bone">{c.label}</p>
+                    <p className="font-mono text-[10px] text-muted mt-0.5">{c.detail}</p>
                   </div>
                 </li>
               ))}
             </ul>
-          </div>
+          </DetailPanel>
         </div>
 
         <div className="md:col-span-12">
-          <SectionTag text="04 · Representative claims" />
-          <div className="mt-6 rounded-2xl overflow-hidden border border-bone/[0.07] divide-y divide-bone/[0.07]">
+          <DetailFolio text="04 · Representative claims" />
+          <div className="mt-6 divide-y divide-bone/10 border border-bone/12">
             {d.claims.map((c, i) => (
-              <div key={i} className="bg-surface p-6 md:p-8 grid md:grid-cols-12 gap-4">
-                <p className="md:col-span-2 font-mono text-[10px] uppercase tracking-[0.18em] text-vital/75">Claim {i + 1}</p>
-                <p className="md:col-span-10 font-mono text-[13px] md:text-[14px] leading-[1.75] text-bone/85">{c}</p>
+              <div key={i} className="p-6 md:p-8 grid md:grid-cols-12 gap-4">
+                <p className="md:col-span-2 font-mono text-[10px] uppercase tracking-[0.18em] text-vital">Claim {i + 1}</p>
+                <p className="md:col-span-10 font-mono text-[13px] md:text-[14px] leading-[1.75] text-muted">{c}</p>
               </div>
             ))}
           </div>
         </div>
 
-        <div className="md:col-span-12">
-          <div className="glass-panel rounded-2xl p-8 md:p-12">
-            <p className="relative z-10 font-mono text-[9px] uppercase tracking-[0.2em] text-vital/75 mb-4">05 · Impact</p>
-            <p className="relative z-10 font-serif-italic text-vital text-3xl md:text-5xl leading-tight">
-              Mechanical feedback, not just sensory alert.
-            </p>
-            <p className="relative z-10 mt-6 max-w-[72ch] font-mono text-[13px] md:text-[15px] leading-[1.8] text-bone/85">
-              {d.impact}
-            </p>
-          </div>
+        <div className="md:col-span-12 border border-bone/12 p-8 md:p-12">
+          <p className="font-mono text-[9px] uppercase tracking-[0.2em] text-vital mb-4">05 · Impact</p>
+          <p className="font-serif-italic text-vital text-3xl md:text-5xl leading-tight">
+            Mechanical feedback, not just sensory alert.
+          </p>
+          <p className="mt-6 max-w-[72ch] font-mono text-[13px] md:text-[15px] leading-[1.8] text-muted">{d.impact}</p>
         </div>
       </div>
     </DetailShell>
   );
 }
 
-/* ── CV Page ─────────────────────────────────────────────────────────── */
+/* ── CV Page ─────────────────────────────────────────────────────── */
 
 function CVPage() {
   return (
-    <div className="relative min-h-screen bg-graphite text-bone">
-      <TextureOverlay />
+    <div className="relative min-h-screen bg-graphite text-bone page-enter">
+      <PaperGrain />
       <div className="mx-auto max-w-container px-6 md:px-10 lg:px-14 xl:px-16">
         <Navbar />
 
         <section className="pt-10 md:pt-14 pb-10 md:pb-14">
           <div className="grid gap-8 md:grid-cols-12">
             <div className="md:col-span-8">
-              <SectionTag text={CV.tag} />
+              <FolioLabel text={CV.tag} />
               <h1 className="mt-5 font-grotesk uppercase text-bone leading-[0.88] tracking-tightest text-5xl sm:text-6xl md:text-7xl lg:text-8xl">
                 {CV.heading}
               </h1>
-              <p className="mt-4 font-mono text-[13px] md:text-[14px] leading-[1.75] text-muted">
-                {CV.subheading}
-              </p>
+              <p className="mt-4 font-mono text-[13px] md:text-[14px] leading-[1.75] text-muted">{CV.subheading}</p>
             </div>
 
             <div className="md:col-span-4 md:pt-6">
-              <div className="glass-panel rounded-2xl p-5 md:p-6">
-                <p className="relative z-10 font-mono text-[9px] uppercase tracking-[0.2em] text-vital/75">Contact</p>
-                <p className="relative z-10 mt-2 font-mono text-[13px] text-bone">{PERSON.email}</p>
-                <p className="relative z-10 font-mono text-[12px] text-muted">{PERSON.personalEmail}</p>
-                <p className="relative z-10 mt-3 font-mono text-[11px] text-steel">
+              <div className="ed-panel p-5 md:p-6">
+                <p className="font-mono text-[9px] uppercase tracking-[0.2em] text-vital mb-3">Contact</p>
+                <p className="font-mono text-[12px] text-bone">{PERSON.email}</p>
+                <p className="font-mono text-[11px] text-muted">{PERSON.personalEmail}</p>
+                <p className="font-mono text-[10px] text-steel mt-2">
                   {PERSON.linkedinHandle} · {PERSON.location}
                 </p>
               </div>
@@ -1708,50 +1369,47 @@ function CVPage() {
           </div>
         </section>
 
-        <section className="relative overflow-hidden rounded-2xl border border-bone/[0.07]">
+        <section className="relative overflow-hidden border border-bone/12 bg-surface mb-14">
           <CVSchematic />
         </section>
 
-        <section className="py-14 md:py-20 grid gap-12 md:grid-cols-12">
-          {/* Education */}
+        <section className="grid gap-12 md:grid-cols-12">
           <div className="md:col-span-12">
-            <SectionTag text="01 · Education" />
-            <div className="mt-6 grid gap-4">
+            <FolioLabel text="01 · Education" />
+            <div className="mt-6 divide-y divide-bone/10 border border-bone/12">
               {CV.education.map((e, i) => (
-                <div key={i} className="glass-panel rounded-2xl p-6 md:p-8 grid gap-6 md:grid-cols-12">
-                  <div className="relative z-10 md:col-span-4">
-                    <p className="font-mono text-[9px] uppercase tracking-[0.18em] text-vital/75">{e.dates}</p>
+                <div key={i} className="p-6 md:p-8 grid md:grid-cols-12 gap-6">
+                  <div className="md:col-span-4">
+                    <p className="font-mono text-[9px] uppercase tracking-[0.18em] text-vital">{e.dates}</p>
                     <p className="mt-3 font-grotesk text-2xl md:text-3xl tracking-tightest text-bone uppercase">{e.inst}</p>
-                    <p className="mt-1 font-mono text-[11px] text-muted">{e.loc}</p>
+                    <p className="mt-1 font-mono text-[10px] text-muted">{e.loc}</p>
                   </div>
-                  <div className="relative z-10 md:col-span-8">
-                    <p className="font-sans text-lg font-semibold tracking-ui text-bone uppercase">{e.degree}</p>
-                    <p className="mt-2 font-mono text-[13px] md:text-[14px] leading-[1.75] text-bone/85">{e.program}</p>
+                  <div className="md:col-span-8">
+                    <p className="font-mono text-[11px] md:text-[12px] leading-[1.7] text-muted">{e.degree}</p>
+                    <p className="font-mono text-[10px] text-steel mt-2">{e.program}</p>
                   </div>
                 </div>
               ))}
             </div>
           </div>
 
-          {/* Research */}
           <div className="md:col-span-12">
-            <SectionTag text="02 · Research" />
-            <div className="mt-6 grid gap-4">
-              {CV.research.map((r, i) => (
-                <div key={i} className="glass-panel rounded-2xl p-6 md:p-8 grid gap-6 md:grid-cols-12">
-                  <div className="relative z-10 md:col-span-4">
-                    <p className="font-mono text-[9px] uppercase tracking-[0.18em] text-vital/75">{r.dates}</p>
-                    <p className="mt-3 font-grotesk text-xl md:text-2xl tracking-tightest text-bone uppercase">{r.lab}</p>
-                    <p className="mt-1 font-mono text-[11px] text-muted">{r.inst}</p>
-                    <p className="mt-3 font-mono text-[10px] uppercase tracking-[0.16em] text-vital/75">{r.role}</p>
-                    <p className="mt-1 font-mono text-[11px] text-muted">{r.pi}</p>
+            <FolioLabel text="02 · Research Experience" />
+            <div className="mt-6 divide-y divide-bone/10 border border-bone/12">
+              {CV.research.map((ex, i) => (
+                <div key={i} className="p-6 md:p-8 grid md:grid-cols-12 gap-6">
+                  <div className="md:col-span-4">
+                    <p className="font-mono text-[9px] uppercase tracking-[0.18em] text-vital">{ex.dates}</p>
+                    <p className="mt-3 font-grotesk text-xl tracking-tightest text-bone uppercase">{ex.lab}</p>
+                    <p className="mt-1 font-mono text-[10px] text-muted">{ex.inst}</p>
                   </div>
-                  <div className="relative z-10 md:col-span-8">
-                    <ul className="space-y-3">
-                      {r.bullets.map((b, j) => (
-                        <li key={j} className="flex gap-3 font-mono text-[13px] md:text-[14px] leading-[1.75] text-bone/85">
-                          <span className="mt-[7px] inline-block h-px w-5 bg-vital shrink-0" />
-                          <span>{b}</span>
+                  <div className="md:col-span-8">
+                    <p className="font-mono text-[11px] font-medium text-bone uppercase tracking-[0.08em]">{ex.role}</p>
+                    <p className="font-mono text-[10px] text-muted mt-1">{ex.pi}</p>
+                    <ul className="mt-3 space-y-1.5">
+                      {ex.bullets.map((b, j) => (
+                        <li key={j} className="font-mono text-[10px] md:text-[11px] text-muted flex gap-2">
+                          <span className="text-vital shrink-0">—</span> {b}
                         </li>
                       ))}
                     </ul>
@@ -1761,121 +1419,56 @@ function CVPage() {
             </div>
           </div>
 
-          {/* Patents */}
           <div className="md:col-span-12">
-            <SectionTag text="03 · Patents" />
-            <div className="mt-6 grid gap-4">
+            <FolioLabel text="03 · Patents" />
+            <div className="mt-6 divide-y divide-bone/10 border border-bone/12">
               {CV.patents.map((p, i) => (
-                <a key={i} href="#/research/cane" className="glass-panel group rounded-2xl p-6 md:p-8 grid gap-6 md:grid-cols-12">
-                  <div className="relative z-10 md:col-span-4">
-                    <p className="font-mono text-[9px] uppercase tracking-[0.18em] text-vital/75">{p.filed} → {p.granted}</p>
-                    <p className="mt-3 font-grotesk text-2xl md:text-3xl tracking-tightest text-bone uppercase group-hover:text-vital transition-colors">{p.number}</p>
-                    <p className="mt-1 font-mono text-[11px] text-muted">{p.office}</p>
+                <div key={i} className="p-6 md:p-8 grid md:grid-cols-12 gap-4">
+                  <p className="md:col-span-3 font-mono text-[9px] uppercase tracking-[0.18em] text-vital">{p.granted}</p>
+                  <div className="md:col-span-9">
+                    <p className="font-mono text-[12px] text-bone">{p.number} — {p.title}</p>
+                    <p className="font-mono text-[10px] text-muted mt-1">{p.office} · {p.inventor}</p>
                   </div>
-                  <div className="relative z-10 md:col-span-7 flex items-center">
-                    <p className="font-mono text-[13px] md:text-[14px] leading-[1.75] text-bone/85">
-                      {p.title} — <span className="text-muted">{p.inventor}</span>
-                    </p>
-                  </div>
-                  <div className="relative z-10 md:col-span-1 flex items-center justify-end">
-                    <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-vital text-bone group-hover:bg-bone group-hover:text-vital transition-colors">
-                      <ArrowUpRight className="h-4 w-4" strokeWidth={1.75} />
-                    </span>
-                  </div>
-                </a>
-              ))}
-            </div>
-          </div>
-
-          {/* Skills */}
-          <div className="md:col-span-12">
-            <SectionTag text="04 · Skills + Certifications" />
-            <div className="mt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              {CV.skills.map((s, i) => (
-                <div key={i} className="glass-panel rounded-2xl p-5 md:p-6">
-                  <p className="relative z-10 font-mono text-[9px] uppercase tracking-[0.2em] text-vital/75">{s.group}</p>
-                  <ul className="relative z-10 mt-4 space-y-2">
-                    {s.items.map((it, j) => (
-                      <li key={j} className="font-mono text-[12px] leading-[1.6] text-bone/85">{it}</li>
-                    ))}
-                  </ul>
                 </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Languages */}
-          <div className="md:col-span-12">
-            <div className="glass-panel rounded-2xl p-6 md:p-8 flex flex-wrap items-center gap-6">
-              <p className="relative z-10 font-mono text-[9px] uppercase tracking-[0.2em] text-vital/75">Languages</p>
-              {CV.languages.map((l, i) => (
-                <p key={i} className="relative z-10 font-sans text-lg font-semibold tracking-ui text-bone uppercase">{l}</p>
               ))}
             </div>
           </div>
         </section>
 
-        <section className="border-t border-bone/[0.07] py-10 md:py-14">
-          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-steel">
-              Curriculum Vitae · {PERSON.fullName}
-            </p>
-            <div className="flex flex-wrap gap-3">
-              <PillLink href="#contact" label="Get in touch" />
-              <PillLink href="#research" label="Research index" />
-            </div>
-          </div>
+        <section className="mt-14 border-t border-bone/10 py-10 flex flex-col sm:flex-row justify-between gap-3">
+          <EdLink href="#home" className="font-mono text-[9px] uppercase tracking-[0.22em] text-muted hover:text-bone">← Back to Portfolio</EdLink>
+          <EdLink href="#contact" className="font-mono text-[9px] uppercase tracking-[0.22em] text-muted hover:text-bone">Get in Touch →</EdLink>
         </section>
       </div>
     </div>
   );
 }
 
-/* ── Root ────────────────────────────────────────────────────────────── */
-
-function ScrollOnRouteChange({ route }: { route: Route }) {
-  useEffect(() => {
-    if (route.kind === 'home') {
-      if (route.anchor && route.anchor !== '#home') {
-        const el = document.querySelector(route.anchor);
-        if (el) {
-          el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-          return;
-        }
-      }
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    } else {
-      window.scrollTo({ top: 0, behavior: 'auto' });
-    }
-  }, [route]);
-  return null;
-}
+/* ── Root ─────────────────────────────────────────────────────────── */
 
 export default function App() {
   const route = useHashRoute();
 
-  let body: JSX.Element;
-  if (route.kind === 'detail' && route.slug === 'pas') body = <PASDetailPage />;
-  else if (route.kind === 'detail' && route.slug === 'coagulation') body = <CoagDetailPage />;
-  else if (route.kind === 'detail' && route.slug === 'cane') body = <CaneDetailPage />;
-  else if (route.kind === 'cv') body = <CVPage />;
-  else
-    body = (
-      <div className="relative min-h-screen bg-graphite text-bone">
-        <TextureOverlay />
-        <main className="relative z-0">
-          <HomePage />
-        </main>
-      </div>
-    );
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [route.kind]);
+
+  if (route.kind === 'detail') {
+    if (route.slug === 'pas')         return <PASDetailPage />;
+    if (route.slug === 'coagulation') return <CoagDetailPage />;
+    if (route.slug === 'cane')        return <CaneDetailPage />;
+  }
+  if (route.kind === 'cv') return <CVPage />;
 
   return (
-    <>
+    <div className="relative">
+      <PaperGrain />
       <ScrollProgress />
-      <CursorGlow />
       <BackToTop />
-      <ScrollOnRouteChange route={route} />
-      {body}
-    </>
+      <Navbar onHome />
+      <main>
+        <HomePage />
+      </main>
+    </div>
   );
 }
