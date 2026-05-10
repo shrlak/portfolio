@@ -14,6 +14,7 @@ import {
   PASDetailSchematic, CoagDetailSchematic, CaneDetailSchematic, CVSchematic,
 } from './schematics';
 import { PASCircuitDiagram, KaplanMeierDiagram } from './diagrams';
+import { startEngine, subscribe, unsubscribe } from './animations';
 
 /* ── Router ───────────────────────────────────────────────────────── */
 
@@ -177,6 +178,125 @@ function BackToTop() {
 
 function PaperGrain() {
   return <div className="paper-grain" aria-hidden="true" />;
+}
+
+function GearWatermark() {
+  const svgRef = useRef<SVGSVGElement>(null);
+  const angleRef = useRef(0);
+  useEffect(() => {
+    const stop = startEngine();
+    subscribe('gear', ({ velocity }) => {
+      const rpm = Math.max(0.3, Math.min(60, 1 + Math.abs(velocity) * 1.5));
+      angleRef.current = (angleRef.current + rpm / 60 * 6) % 360;
+      if (svgRef.current) svgRef.current.style.transform = `rotate(${angleRef.current}deg)`;
+    });
+    return () => { unsubscribe('gear'); stop(); };
+  }, []);
+
+  const teeth = 12;
+  const r1 = 60, r2 = 75, holeR = 18;
+  const pts: string[] = [];
+  for (let i = 0; i < teeth; i++) {
+    const a0 = (i / teeth) * Math.PI * 2;
+    const a1 = a0 + Math.PI / teeth * 0.4;
+    const a2 = a0 + Math.PI / teeth * 0.6;
+    const a3 = a0 + Math.PI / teeth;
+    pts.push(
+      `L${(Math.cos(a0) * r1 + 100).toFixed(2)},${(Math.sin(a0) * r1 + 100).toFixed(2)}`,
+      `L${(Math.cos(a1) * r2 + 100).toFixed(2)},${(Math.sin(a1) * r2 + 100).toFixed(2)}`,
+      `L${(Math.cos(a2) * r2 + 100).toFixed(2)},${(Math.sin(a2) * r2 + 100).toFixed(2)}`,
+      `L${(Math.cos(a3) * r1 + 100).toFixed(2)},${(Math.sin(a3) * r1 + 100).toFixed(2)}`,
+    );
+  }
+  const gearD = `M${(100 + r1).toFixed(2)},100 ${pts.join(' ')} Z`;
+
+  return (
+    <div className="gear-watermark" aria-hidden="true">
+      <svg ref={svgRef} viewBox="0 0 200 200" className="gear-svg">
+        <path d={gearD} fill="currentColor" />
+        <circle cx="100" cy="100" r={holeR} fill="#f4f2ee" />
+      </svg>
+    </div>
+  );
+}
+
+function BlueprintParallax() {
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    subscribe('parallax', ({ scrollY }) => {
+      if (ref.current) ref.current.style.backgroundPosition = `0px ${scrollY * 0.3}px`;
+    });
+    return () => unsubscribe('parallax');
+  }, []);
+  return <div ref={ref} className="bp-parallax" aria-hidden="true" />;
+}
+
+function CustomCursor() {
+  const ringRef = useRef<HTMLDivElement>(null);
+  const dotRef  = useRef<HTMLDivElement>(null);
+  const [burst, setBurst] = useState<{x:number;y:number;id:number}|null>(null);
+
+  useEffect(() => {
+    document.body.classList.add('has-custom-cursor');
+    const onMove = (e: MouseEvent) => {
+      if (ringRef.current) {
+        ringRef.current.style.left = `${e.clientX}px`;
+        ringRef.current.style.top  = `${e.clientY}px`;
+      }
+      if (dotRef.current) {
+        dotRef.current.style.left = `${e.clientX}px`;
+        dotRef.current.style.top  = `${e.clientY}px`;
+      }
+    };
+    const onDown = (e: MouseEvent) => {
+      setBurst({ x: e.clientX, y: e.clientY, id: Date.now() });
+    };
+    const onEnter = (e: MouseEvent) => {
+      const t = e.target as HTMLElement;
+      const interactive = t.closest('a,button,input,textarea,select,[role=button]');
+      if (ringRef.current) {
+        ringRef.current.style.width  = interactive ? '36px' : '20px';
+        ringRef.current.style.height = interactive ? '36px' : '20px';
+        ringRef.current.style.borderColor = interactive ? '#c8102e' : '#0d0d0d';
+      }
+    };
+    window.addEventListener('mousemove', onMove, { passive: true });
+    window.addEventListener('mousedown', onDown);
+    document.addEventListener('mouseover', onEnter);
+    return () => {
+      document.body.classList.remove('has-custom-cursor');
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mousedown', onDown);
+      document.removeEventListener('mouseover', onEnter);
+    };
+  }, []);
+
+  return (
+    <>
+      <div ref={ringRef} className="cursor-ring" aria-hidden="true" />
+      <div ref={dotRef}  className="cursor-dot"  aria-hidden="true" />
+      {burst && (
+        <div
+          key={burst.id}
+          className="cursor-burst"
+          aria-hidden="true"
+          style={{ left: burst.x, top: burst.y }}
+          onAnimationEnd={() => setBurst(null)}
+        >
+          <svg width="40" height="40" viewBox="0 0 40 40">
+            {[0,45,90,135,180,225,270,315].map(deg => {
+              const rad = deg * Math.PI / 180;
+              const x1 = 20 + Math.cos(rad) * 8;
+              const y1 = 20 + Math.sin(rad) * 8;
+              const x2 = 20 + Math.cos(rad) * 18;
+              const y2 = 20 + Math.sin(rad) * 18;
+              return <line key={deg} x1={x1} y1={y1} x2={x2} y2={y2} stroke="#c8102e" strokeWidth="1.5" />;
+            })}
+          </svg>
+        </div>
+      )}
+    </>
+  );
 }
 
 /* ── Split-flap stat display ──────────────────────────────────────── */
@@ -1462,6 +1582,9 @@ export default function App() {
 
   return (
     <div className="relative">
+      <GearWatermark />
+      <BlueprintParallax />
+      <CustomCursor />
       <PaperGrain />
       <ScrollProgress />
       <BackToTop />
