@@ -834,14 +834,60 @@ function AboutSection() {
 
 /* ── Skills ───────────────────────────────────────────────────────── */
 
+function SkillGauge({ name, pct }: { name: string; pct: number }) {
+  const arcRef  = useRef<SVGPathElement>(null);
+  const started = useRef(false);
+  const R = 34;
+  const ARC = Math.PI * R;
+  const offset = ARC - (pct / 100) * ARC;
+
+  const rated =
+    pct >= 80 ? 'Expert' :
+    pct >= 60 ? 'Advanced' :
+    pct >= 40 ? 'Proficient' :
+    'Developing';
+
+  useEffect(() => {
+    const el = arcRef.current;
+    if (!el) return;
+    const obs = new IntersectionObserver(([entry]) => {
+      if (!entry.isIntersecting || started.current) return;
+      started.current = true;
+      obs.disconnect();
+      setTimeout(() => {
+        if (arcRef.current) arcRef.current.style.strokeDashoffset = String(offset);
+      }, 80);
+    }, { threshold: 0.5 });
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, [offset]);
+
+  return (
+    <div className="gauge-wrap flex flex-col items-center gap-1">
+      <div className="gauge-tooltip">Rated: {rated}</div>
+      <svg width="80" height="46" viewBox="0 0 80 46">
+        <path
+          className="gauge-arc-bg"
+          d={`M${40 - R},40 A${R},${R} 0 0,1 ${40 + R},40`}
+          strokeDasharray={ARC} strokeDashoffset="0"
+        />
+        <path
+          ref={arcRef}
+          className="gauge-arc"
+          d={`M${40 - R},40 A${R},${R} 0 0,1 ${40 + R},40`}
+          strokeDasharray={ARC}
+          strokeDashoffset={ARC}
+          style={{ transition: 'stroke-dashoffset 0.8s cubic-bezier(0.4,0,0.2,1)' }}
+        />
+      </svg>
+      <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-bone text-center leading-tight">{name}</p>
+    </div>
+  );
+}
+
 function SkillsSection() {
   const tableRef = useRef<HTMLDivElement>(null);
   useRowReveal(tableRef as React.RefObject<HTMLElement>, SKILLS.reduce((a, g) => a + g.items.length, 0), 50);
-
-  function monoBar(pct: number) {
-    const filled = Math.round((pct / 100) * 14);
-    return '█'.repeat(filled) + '░'.repeat(14 - filled);
-  }
 
   return (
     <section className="relative bg-surface">
@@ -856,12 +902,11 @@ function SkillsSection() {
               <div className="py-4 border-b border-bone/10">
                 <p className="font-mono text-[9px] uppercase tracking-[0.24em] text-muted">{group.group}</p>
               </div>
-              {group.items.map((item) => (
-                <div key={item.name} className="row-reveal grid grid-cols-[1fr_auto] gap-6 items-center py-3.5 border-b border-bone/[0.07]">
-                  <p className="font-mono text-[11px] uppercase tracking-[0.1em] text-bone">{item.name}</p>
-                  <span className="skill-bar-mono">{monoBar(item.pct)}</span>
-                </div>
-              ))}
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-6 py-6">
+                {group.items.map((item) => (
+                  <SkillGauge key={item.name} name={item.name} pct={item.pct} />
+                ))}
+              </div>
             </div>
           ))}
         </div>
@@ -872,59 +917,89 @@ function SkillsSection() {
 
 /* ── Research ────────────────────────────────────────────────────── */
 
-function ResearchEntry({ card, idx }: { card: (typeof RESEARCH_CARDS)[number]; idx: number }) {
+function PistonIcon() {
   return (
-    <a
-      href={`#/research/${card.slug}`}
-      className="ed-entry block px-0 py-10 md:py-14"
-      data-reveal
-      data-reveal-delay={String(idx + 1)}
-    >
-      <div className="grid md:grid-cols-[auto_1fr_auto] gap-4 md:gap-10 items-start">
-        {/* Index */}
-        <div className="shrink-0 pt-1">
-          <p className="font-mono text-[9px] uppercase tracking-[0.22em] e-vital text-vital">{card.index}</p>
-          <p className="font-mono text-[8.5px] uppercase tracking-[0.14em] e-muted text-muted mt-1">{card.category}</p>
+    <div className="piston-wrap" aria-hidden="true">
+      <svg width="28" height="36" viewBox="0 0 28 36" fill="none" stroke="currentColor" strokeWidth="1.5">
+        <rect x="4" y="2" width="20" height="12" rx="1" />
+        <line x1="14" y1="14" x2="14" y2="22" className="piston-rod" />
+        <rect x="8" y="22" width="12" height="8" rx="1" />
+        <line x1="4" y1="34" x2="24" y2="34" />
+      </svg>
+    </div>
+  );
+}
+
+function ResearchEntry({ card, idx }: { card: (typeof RESEARCH_CARDS)[number]; idx: number }) {
+  const [scanning, setScanning] = useState(false);
+
+  const handleClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setScanning(true);
+    setTimeout(() => {
+      setScanning(false);
+      window.location.href = `#/research/${card.slug}`;
+    }, 380);
+  };
+
+  return (
+    <>
+      {scanning && <div className="scan-line" aria-hidden="true" />}
+      <a
+        href={`#/research/${card.slug}`}
+        onClick={handleClick}
+        className="research-card-wrap ed-entry block px-0 py-10 md:py-14 relative"
+        data-reveal
+        data-reveal-delay={String(idx + 1)}
+      >
+        <PistonIcon />
+        <div className="grid md:grid-cols-[auto_1fr_auto] gap-4 md:gap-10 items-start">
+          <div className="shrink-0 pt-1">
+            <p className="font-mono text-[9px] uppercase tracking-[0.22em] e-vital text-vital">{card.index}</p>
+            <p className="font-mono text-[8.5px] uppercase tracking-[0.14em] e-muted text-muted mt-1">{card.category}</p>
+          </div>
+
+          <div>
+            <h3
+              className="e-text text-bone font-grotesk uppercase leading-[0.88] tracking-tightest"
+              style={{ fontSize: 'clamp(38px, 6vw, 80px)' }}
+            >
+              <span className="block">{card.title}</span>
+              <span className="block">{card.titleTwo}</span>
+            </h3>
+            <p className="e-muted text-muted font-serif-italic text-xl md:text-2xl leading-[1.25] mt-4 max-w-[48ch]">
+              {card.subtitle}
+            </p>
+            <div className="mt-5 flex items-center gap-4 flex-wrap">
+              <p className="e-muted text-muted font-mono text-[9px] uppercase tracking-[0.18em]">{card.metaLabel}</p>
+              <span className="e-muted text-muted font-mono text-[9px]">·</span>
+              <p className="e-text text-bone font-mono text-[9.5px] uppercase tracking-[0.1em]">{card.metaValue}</p>
+            </div>
+          </div>
+
+          <div className="hidden md:flex flex-col items-end gap-6 shrink-0 pt-1">
+            <div className="e-panel border border-bone/20" style={{ minWidth: '180px' }}>
+              {[
+                { k: 'STATUS', v: card.status },
+                { k: 'META',   v: card.metaValue.split('·')[0]?.trim() ?? '' },
+              ].map(({ k, v }) => (
+                <div key={k} className="e-rule border-b border-bone/15 last:border-0 px-3 py-2 grid grid-cols-[40%_60%]">
+                  <span className="font-mono text-[7.5px] uppercase tracking-[0.14em] e-muted text-muted">{k}</span>
+                  <span className="font-mono text-[9px] uppercase tracking-[0.06em] e-text text-bone">{v}</span>
+                </div>
+              ))}
+            </div>
+            <div className="e-arrow w-9 h-9 rounded-full border border-bone/25 flex items-center justify-center transition-colors">
+              <ArrowUpRight className="h-3.5 w-3.5 e-text text-bone" strokeWidth={2} />
+            </div>
+          </div>
         </div>
 
-        {/* Content */}
-        <div>
-          <h3
-            className="e-text text-bone font-grotesk uppercase leading-[0.88] tracking-tightest"
-            style={{ fontSize: 'clamp(38px, 6vw, 80px)' }}
-          >
-            <span className="block">{card.title}</span>
-            <span className="block">{card.titleTwo}</span>
-          </h3>
-          <p className="e-muted text-muted font-serif-italic text-xl md:text-2xl leading-[1.25] mt-4 max-w-[48ch]">
-            {card.subtitle}
-          </p>
-          <div className="mt-5 flex items-center gap-4 flex-wrap">
-            <p className="e-muted text-muted font-mono text-[9px] uppercase tracking-[0.18em]">{card.metaLabel}</p>
-            <span className="e-muted text-muted font-mono text-[9px]">·</span>
-            <p className="e-text text-bone font-mono text-[9.5px] uppercase tracking-[0.1em]">{card.metaValue}</p>
-          </div>
+        <div className="vitals-readout">
+          SpO₂ 98% &nbsp;|&nbsp; Flow 4.2 L/min &nbsp;|&nbsp; ΔP 12 mmHg
         </div>
-
-        {/* Data + arrow */}
-        <div className="hidden md:flex flex-col items-end gap-6 shrink-0 pt-1">
-          <div className="e-panel border border-bone/20" style={{ minWidth: '180px' }}>
-            {[
-              { k: 'STATUS', v: card.status },
-              { k: 'META',   v: card.metaValue.split('·')[0]?.trim() ?? '' },
-            ].map(({ k, v }) => (
-              <div key={k} className="e-rule border-b border-bone/15 last:border-0 px-3 py-2 grid grid-cols-[40%_60%]">
-                <span className="font-mono text-[7.5px] uppercase tracking-[0.14em] e-muted text-muted">{k}</span>
-                <span className="font-mono text-[9px] uppercase tracking-[0.06em] e-text text-bone">{v}</span>
-              </div>
-            ))}
-          </div>
-          <div className="e-arrow w-9 h-9 rounded-full border border-bone/25 flex items-center justify-center transition-colors">
-            <ArrowUpRight className="h-3.5 w-3.5 e-text text-bone" strokeWidth={2} />
-          </div>
-        </div>
-      </div>
-    </a>
+      </a>
+    </>
   );
 }
 
@@ -1012,6 +1087,24 @@ function PublicationsSection() {
 function TimelineStrip() {
   const containerRef = useRef<HTMLDivElement>(null);
   const lineRef = useTimelineScroll(containerRef);
+  const tickRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const stamped = useRef<Set<number>>(new Set());
+
+  useEffect(() => {
+    const onScroll = () => {
+      tickRefs.current.forEach((el, i) => {
+        if (!el || stamped.current.has(i)) return;
+        const rect = el.getBoundingClientRect();
+        if (rect.top < window.innerHeight * 0.8) {
+          stamped.current.add(i);
+          el.classList.add('is-stamped');
+        }
+      });
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    onScroll();
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
 
   return (
     <section className="relative bg-graphite">
@@ -1021,7 +1114,6 @@ function TimelineStrip() {
         </div>
 
         <div ref={containerRef} className="relative pl-8 md:pl-12">
-          {/* Vertical progress rule */}
           <div className="absolute left-0 top-0 w-px bg-bone/10 h-full" />
           <div ref={lineRef} className="timeline-vr" />
 
@@ -1032,13 +1124,14 @@ function TimelineStrip() {
               data-reveal-delay={String((i % 4) + 1)}
               className="relative pb-8 md:pb-10 last:pb-0"
             >
-              {/* Node marker */}
               <div
-                className={`absolute -left-[1.1rem] top-1.5 w-3 h-3 rounded-full border-2 transition-colors ${
+                ref={el => { tickRefs.current[i] = el; }}
+                className={`timeline-tick absolute -left-[1.1rem] top-1.5 w-3 h-3 rounded-full border-2 transition-colors ${
                   node.state === 'done'   ? 'bg-vital border-vital' :
                   node.state === 'active' ? 'bg-graphite border-vital' :
                   'bg-graphite border-bone/20'
                 }`}
+                style={{ transformOrigin: '50% 50%' }}
               />
 
               <div className="grid md:grid-cols-[auto_1fr_auto] gap-3 md:gap-8 items-baseline">
@@ -1080,6 +1173,7 @@ function ContactSection() {
   const [email, setEmail]     = useState('');
   const [subject, setSubject] = useState('');
   const [message, setMessage] = useState('');
+  const [sent, setSent]       = useState(false);
 
   const mailto = `mailto:${PERSON.email}?subject=${encodeURIComponent(
     subject || 'Portfolio inquiry'
@@ -1087,11 +1181,17 @@ function ContactSection() {
     `From: ${name || 'Unsigned'}\nReply-to: ${email || 'n/a'}\n\n${message || ''}`
   )}`;
 
-  return (
-    <section id="contact" className="relative bg-graphite eng-grid">
-      <div className="mx-auto max-w-container px-6 md:px-10 lg:px-14 xl:px-16 py-20 md:py-28 lg:py-32">
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setSent(true);
+    setTimeout(() => { setSent(false); window.location.href = mailto; }, 1600);
+  };
 
-        {/* Header */}
+  return (
+    <section id="contact" className="relative bg-graphite overflow-hidden">
+      <div className="osc-grid" aria-hidden="true" />
+      <div className="relative z-10 mx-auto max-w-container px-6 md:px-10 lg:px-14 xl:px-16 py-20 md:py-28 lg:py-32">
+
         <div className="mb-14 md:mb-18 grid md:grid-cols-12 gap-8">
           <div className="md:col-span-7" data-reveal>
             <FolioLabel text={CONTACT.tag} />
@@ -1107,13 +1207,8 @@ function ContactSection() {
           </div>
         </div>
 
-        {/* Form + channels */}
         <div className="grid md:grid-cols-12 gap-6 md:gap-10">
-          {/* Form */}
-          <form
-            onSubmit={(e) => { e.preventDefault(); window.location.href = mailto; }}
-            className="md:col-span-7"
-          >
+          <form onSubmit={handleSubmit} className="md:col-span-7">
             <div className="mb-6 flex items-center justify-between border-b border-bone/10 pb-4">
               <p className="font-mono text-[9px] uppercase tracking-[0.2em] text-vital">Direct dispatch</p>
               <p className="font-mono text-[9px] uppercase tracking-[0.2em] text-steel">Opens mail client</p>
@@ -1121,8 +1216,8 @@ function ContactSection() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {[
-                { label: 'Name',    type: 'text',  value: name,    setter: setName,    placeholder: 'Your name',           span: 1 },
-                { label: 'Email',   type: 'email', value: email,   setter: setEmail,   placeholder: 'you@domain.com',      span: 1 },
+                { label: 'Name',    type: 'text',  value: name,    setter: setName,    placeholder: 'Your name',              span: 1 },
+                { label: 'Email',   type: 'email', value: email,   setter: setEmail,   placeholder: 'you@domain.com',         span: 1 },
                 { label: 'Subject', type: 'text',  value: subject, setter: setSubject, placeholder: 'Collaboration · inquiry', span: 2 },
               ].map((f) => (
                 <label key={f.label} className={`block ${f.span === 2 ? 'sm:col-span-2' : ''}`}>
@@ -1146,9 +1241,22 @@ function ContactSection() {
             </div>
 
             <div className="mt-5">
-              <button type="submit" className="ed-submit">
-                <span>Send dispatch</span>
-                <Send className="h-3.5 w-3.5" strokeWidth={2} />
+              <button
+                type="submit"
+                className={`ed-submit ${sent ? 'is-sent' : ''}`}
+                style={{ transition: 'border-color 0.3s ease, color 0.3s ease, letter-spacing 0.3s ease' }}
+              >
+                {sent ? (
+                  <>
+                    <span>Transmitted</span>
+                    <span className="send-gear">⚙</span>
+                  </>
+                ) : (
+                  <>
+                    <span>Send dispatch</span>
+                    <Send className="h-3.5 w-3.5" strokeWidth={2} />
+                  </>
+                )}
               </button>
               <p className="font-mono text-[8.5px] uppercase tracking-[0.2em] text-steel mt-3 text-center">
                 Routed via your default mail client
@@ -1156,9 +1264,7 @@ function ContactSection() {
             </div>
           </form>
 
-          {/* Channels */}
           <div className="md:col-span-5 flex flex-col gap-6">
-            {/* Letterhead block */}
             <div className="ed-panel p-6 md:p-8">
               <p className="font-mono text-[9px] uppercase tracking-[0.2em] text-vital mb-5">Direct Lines</p>
               <div className="divide-y divide-bone/10">
@@ -1178,7 +1284,6 @@ function ContactSection() {
               </div>
             </div>
 
-            {/* CV link */}
             <a href="#/cv" className="ed-panel p-6 md:p-8 flex items-center justify-between group hover:bg-bone/[0.03] transition-colors">
               <div>
                 <p className="font-mono text-[9px] uppercase tracking-[0.2em] text-vital">Curriculum Vitae</p>
@@ -1194,7 +1299,6 @@ function ContactSection() {
           </div>
         </div>
 
-        {/* Footer */}
         <div className="mt-16 pt-6 border-t border-bone/10 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <p className="font-mono text-[9px] uppercase tracking-[0.22em] text-steel">
             © {new Date().getFullYear()} · {PERSON.fullName} · Research Dossier
