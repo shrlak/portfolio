@@ -907,7 +907,14 @@ function CredentialsSection() {
                   <tr key={i} className="row-reveal border-b border-white/10 group relative">
                     <td className="py-5 pr-6 align-top w-20 relative">
                       <span className="font-mono text-[8.5px] uppercase tracking-[0.18em] text-steel">{String(i + 1).padStart(2, '0')}</span>
-                      <span className="tolerance-note">{`± 0.00${(i % 3) + 1} in`}</span>
+                      <span className="tolerance-note">
+                        <svg width="80" height="14" viewBox="0 0 80 14" style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '4px' }}>
+                          <line x1="0" y1="7" x2="70" y2="7" stroke="#1a3a5c" strokeWidth="0.5" />
+                          <line x1="0" y1="3" x2="0" y2="11" stroke="#1a3a5c" strokeWidth="0.5" />
+                          <line x1="70" y1="3" x2="70" y2="11" stroke="#1a3a5c" strokeWidth="0.5" />
+                        </svg>
+                        {`± 0.00${(i % 3) + 1}" · REF`}
+                      </span>
                     </td>
                     <td className="py-5 align-top">
                       <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-steel mt-1.5">
@@ -998,6 +1005,7 @@ function AboutSection() {
   const [fast, setFast] = useState(false);
   const [flat, setFlat] = useState(false);
   const flatRef = useRef(false);
+  const [bpm, setBpm] = useState(72);
 
   const handleClick = () => {
     if (flatRef.current) return;
@@ -1010,11 +1018,12 @@ function AboutSection() {
     <section
       id="about"
       className="relative bg-graphite overflow-hidden"
-      onMouseEnter={() => setFast(true)}
-      onMouseLeave={() => setFast(false)}
+      onMouseEnter={() => { setFast(true); setBpm(95 + Math.floor(Math.random() * 30)); }}
+      onMouseLeave={() => { setFast(false); setBpm(68 + Math.floor(Math.random() * 10)); }}
       onClick={handleClick}
     >
       <EcgBackground fast={fast} flat={flat} />
+      <div className="bpm-display" aria-hidden="true">{bpm} BPM</div>
       <div className="relative z-10 mx-auto max-w-container px-6 md:px-10 lg:px-14 xl:px-16 py-20 md:py-28">
 
         <div className="mb-14" data-reveal>
@@ -1071,11 +1080,14 @@ function AboutSection() {
 /* ── Skills ───────────────────────────────────────────────────────── */
 
 function SkillGauge({ name, pct }: { name: string; pct: number }) {
-  const arcRef  = useRef<SVGPathElement>(null);
-  const started = useRef(false);
-  const R = 34;
-  const ARC = Math.PI * R;
-  const offset = ARC - (pct / 100) * ARC;
+  const arcRef   = useRef<SVGPathElement>(null);
+  const needleRef = useRef<SVGLineElement>(null);
+  const posRef   = useRef({ val: 0, vel: 0 });
+  const started  = useRef(false);
+  const rafRef   = useRef(0);
+
+  const R   = 34;
+  const ARC = Math.PI * R; // ~106.8
 
   const rated =
     pct >= 80 ? 'Expert' :
@@ -1090,31 +1102,79 @@ function SkillGauge({ name, pct }: { name: string; pct: number }) {
       if (!entry.isIntersecting || started.current) return;
       started.current = true;
       obs.disconnect();
-      setTimeout(() => {
-        if (arcRef.current) arcRef.current.style.strokeDashoffset = String(offset);
-      }, 80);
-    }, { threshold: 0.5 });
+
+      // Spring animate toward target
+      const target = pct / 100;
+      const loop = () => {
+        const [nv, nvl] = springStep(posRef.current.val, target, posRef.current.vel, 0.07, 0.78);
+        posRef.current = { val: nv, vel: nvl };
+
+        // Update arc strokeDashoffset
+        if (arcRef.current) {
+          arcRef.current.style.strokeDashoffset = String(ARC - nv * ARC);
+        }
+        // Update needle angle: -90deg = 0%, +90deg = 100%
+        if (needleRef.current) {
+          const deg = -90 + nv * 180;
+          needleRef.current.style.transform = `rotate(${deg}deg)`;
+        }
+
+        if (Math.abs(target - nv) > 0.001 || Math.abs(nvl) > 0.001) {
+          rafRef.current = requestAnimationFrame(loop);
+        }
+      };
+      rafRef.current = requestAnimationFrame(loop);
+    }, { threshold: 0.4 });
     obs.observe(el);
-    return () => obs.disconnect();
-  }, [offset]);
+    return () => { obs.disconnect(); cancelAnimationFrame(rafRef.current); };
+  }, [pct, ARC]);
+
+  // Needle geometry: pivot at (40, 40), points upward at rest
+  const needleCX = 40; // arc center x in viewBox
+  const needleCY = 40; // arc center y in viewBox
 
   return (
     <div className="gauge-wrap flex flex-col items-center gap-1">
       <div className="gauge-tooltip">Rated: {rated}</div>
-      <svg width="80" height="46" viewBox="0 0 80 46">
+      <svg width="80" height="50" viewBox="0 0 80 50">
+        {/* Background arc */}
         <path
           className="gauge-arc-bg"
-          d={`M${40 - R},40 A${R},${R} 0 0,1 ${40 + R},40`}
-          strokeDasharray={ARC} strokeDashoffset="0"
+          d={`M${needleCX - R},${needleCY} A${R},${R} 0 0,1 ${needleCX + R},${needleCY}`}
+          strokeDasharray={ARC}
+          strokeDashoffset="0"
         />
+        {/* Animated arc */}
         <path
           ref={arcRef}
           className="gauge-arc"
-          d={`M${40 - R},40 A${R},${R} 0 0,1 ${40 + R},40`}
+          d={`M${needleCX - R},${needleCY} A${R},${R} 0 0,1 ${needleCX + R},${needleCY}`}
           strokeDasharray={ARC}
           strokeDashoffset={ARC}
-          style={{ transition: 'stroke-dashoffset 0.8s cubic-bezier(0.4,0,0.2,1)' }}
         />
+        {/* Needle */}
+        <line
+          ref={needleRef}
+          x1={needleCX}
+          y1={needleCY}
+          x2={needleCX}
+          y2={needleCY - R + 4}
+          stroke="#c8102e"
+          strokeWidth="1.5"
+          strokeLinecap="round"
+          style={{ transformOrigin: `${needleCX}px ${needleCY}px`, transform: 'rotate(-90deg)' }}
+        />
+        {/* Pivot dot */}
+        <circle cx={needleCX} cy={needleCY} r="3" fill="#0d0d0d" />
+        {/* Tick marks */}
+        {[0, 25, 50, 75, 100].map(pctTick => {
+          const angle = (-90 + pctTick * 1.8) * Math.PI / 180;
+          const x1 = (needleCX + Math.cos(angle) * (R - 5)).toFixed(1);
+          const y1 = (needleCY + Math.sin(angle) * (R - 5)).toFixed(1);
+          const x2 = (needleCX + Math.cos(angle) * R).toFixed(1);
+          const y2 = (needleCY + Math.sin(angle) * R).toFixed(1);
+          return <line key={pctTick} x1={x1} y1={y1} x2={x2} y2={y2} stroke="rgba(13,13,13,0.3)" strokeWidth="1" />;
+        })}
       </svg>
       <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-bone text-center leading-tight">{name}</p>
     </div>
@@ -1130,6 +1190,20 @@ function SkillsSection() {
       <div className="mx-auto max-w-container px-6 md:px-10 lg:px-14 xl:px-16 py-16 md:py-20">
         <div className="mb-10" data-reveal>
           <FolioLabel text="005 · TECHNICAL SKILLS" />
+          <div className="mt-4 overflow-hidden" style={{ height: '18px' }} aria-hidden="true">
+            <svg viewBox="0 0 200 18" width="200" height="18" style={{ display: 'block' }}>
+              {/* Worm gear thread */}
+              <g className="worm-thread">
+                {Array.from({ length: 14 }).map((_, i) => (
+                  <ellipse key={i} cx={i * 14 + 7} cy="9" rx="5" ry="7"
+                    fill="none" stroke="rgba(13,13,13,0.18)" strokeWidth="1"
+                  />
+                ))}
+              </g>
+              {/* Shaft line */}
+              <line x1="0" y1="9" x2="200" y2="9" stroke="rgba(13,13,13,0.12)" strokeWidth="1.5" />
+            </svg>
+          </div>
         </div>
 
         <div ref={tableRef} className="grid md:grid-cols-2 gap-0 md:gap-px">
