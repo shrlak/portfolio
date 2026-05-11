@@ -14,7 +14,7 @@ import {
   PASDetailSchematic, CoagDetailSchematic, CaneDetailSchematic, CVSchematic,
 } from './schematics';
 import { PASCircuitDiagram, KaplanMeierDiagram } from './diagrams';
-import { startEngine, subscribe, unsubscribe } from './animations';
+import { startEngine, subscribe, unsubscribe, gearPath, springStep } from './animations';
 
 /* ── Router ───────────────────────────────────────────────────────── */
 
@@ -180,41 +180,68 @@ function PaperGrain() {
   return <div className="paper-grain" aria-hidden="true" />;
 }
 
-function GearWatermark() {
+function GearTrain() {
   const svgRef = useRef<SVGSVGElement>(null);
-  const angleRef = useRef(0);
+  const anglesRef = useRef([0, 0, 0]); // 3 gears
+
+  // Gear specs: [teeth, pitchRadius, cx, cy]
+  const GEARS = [
+    { teeth: 16, r1: 52, r2: 64, cx: 110, cy: 110, holeR: 14 },
+    { teeth: 10, r1: 32, r2: 40, cx: 185, cy: 110, holeR: 9 },
+    { teeth: 24, r1: 78, r2: 95, cx: 110, cy: 220, holeR: 20 },
+  ];
+  // Ratio of gear 0 to gear 1: teeth[0]/teeth[1] = 16/10 (counter-rotate)
+  // Ratio of gear 0 to gear 2: teeth[0]/teeth[2] = 16/24 (counter-rotate)
+  const RATIOS = [1, -16/10, -16/24];
+
+  const gearPaths = GEARS.map(g => gearPath(g.cx, g.cy, g.r1, g.r2, g.teeth));
+
   useEffect(() => {
     const stop = startEngine();
-    subscribe('gear', ({ velocity }) => {
-      const rpm = Math.max(0.3, Math.min(60, 1 + Math.abs(velocity) * 1.5));
-      angleRef.current = (angleRef.current + rpm / 60 * 6) % 360;
-      if (svgRef.current) svgRef.current.style.transform = `rotate(${angleRef.current}deg)`;
+    const gearEls = svgRef.current ? Array.from(svgRef.current.querySelectorAll<SVGGElement>('.gear-g')) : [];
+    subscribe('geartrain', ({ velocity }) => {
+      const rpm = Math.max(0.2, Math.min(80, 0.8 + Math.abs(velocity) * 2));
+      const delta = rpm / 60 * 6; // degrees per frame at this RPM
+      anglesRef.current = anglesRef.current.map((a, i) => (a + delta * RATIOS[i] + 360) % 360);
+      gearEls.forEach((el, i) => {
+        if (el) el.style.transform = `rotate(${anglesRef.current[i]}deg)`;
+      });
     });
-    return () => { unsubscribe('gear'); stop(); };
+    return () => { unsubscribe('geartrain'); stop(); };
   }, []);
 
-  const teeth = 12;
-  const r1 = 60, r2 = 75, holeR = 18;
-  const pts: string[] = [];
-  for (let i = 0; i < teeth; i++) {
-    const a0 = (i / teeth) * Math.PI * 2;
-    const a1 = a0 + Math.PI / teeth * 0.4;
-    const a2 = a0 + Math.PI / teeth * 0.6;
-    const a3 = a0 + Math.PI / teeth;
-    pts.push(
-      `L${(Math.cos(a0) * r1 + 100).toFixed(2)},${(Math.sin(a0) * r1 + 100).toFixed(2)}`,
-      `L${(Math.cos(a1) * r2 + 100).toFixed(2)},${(Math.sin(a1) * r2 + 100).toFixed(2)}`,
-      `L${(Math.cos(a2) * r2 + 100).toFixed(2)},${(Math.sin(a2) * r2 + 100).toFixed(2)}`,
-      `L${(Math.cos(a3) * r1 + 100).toFixed(2)},${(Math.sin(a3) * r1 + 100).toFixed(2)}`,
-    );
-  }
-  const gearD = `M${(100 + r1).toFixed(2)},100 ${pts.join(' ')} Z`;
-
   return (
-    <div className="gear-watermark" aria-hidden="true">
-      <svg ref={svgRef} viewBox="0 0 200 200" className="gear-svg">
-        <path d={gearD} fill="currentColor" />
-        <circle cx="100" cy="100" r={holeR} fill="#f4f2ee" />
+    <div className="gear-train-wrap" aria-hidden="true">
+      <svg
+        ref={svgRef}
+        viewBox="0 0 320 330"
+        className="gear-train-svg"
+        style={{ width: 'clamp(280px,35vw,520px)', bottom: '5%', right: '3%', position: 'absolute' }}
+      >
+        {GEARS.map((g, i) => (
+          <g key={i} className="gear-g" style={{ transformOrigin: `${g.cx}px ${g.cy}px` }}>
+            <path d={gearPaths[i]} fill="currentColor" opacity="0.9" />
+            <circle cx={g.cx} cy={g.cy} r={g.holeR} fill="#f4f2ee" />
+            <circle cx={g.cx} cy={g.cy} r={g.holeR * 0.35} fill="currentColor" />
+            {/* Spoke lines */}
+            {[0, 60, 120, 180, 240, 300].map(a => {
+              const rad = a * Math.PI / 180;
+              return <line key={a}
+                x1={(Math.cos(rad) * g.holeR + g.cx).toFixed(1)}
+                y1={(Math.sin(rad) * g.holeR + g.cy).toFixed(1)}
+                x2={(Math.cos(rad) * (g.r1 * 0.78) + g.cx).toFixed(1)}
+                y2={(Math.sin(rad) * (g.r1 * 0.78) + g.cy).toFixed(1)}
+                stroke="#f4f2ee" strokeWidth="2.5"
+              />;
+            })}
+          </g>
+        ))}
+        {/* Axle dots */}
+        {GEARS.map((g, i) => (
+          <circle key={`axle-${i}`} cx={g.cx} cy={g.cy} r="2.5" fill="rgba(200,16,46,0.6)" />
+        ))}
+        {/* Mesh lines between gears */}
+        <line x1="162" y1="110" x2="153" y2="110" stroke="rgba(200,16,46,0.2)" strokeWidth="1" strokeDasharray="2 2" />
       </svg>
     </div>
   );
@@ -231,40 +258,76 @@ function BlueprintParallax() {
   return <div ref={ref} className="bp-parallax" aria-hidden="true" />;
 }
 
-function CustomCursor() {
-  const ringRef = useRef<HTMLDivElement>(null);
-  const dotRef  = useRef<HTMLDivElement>(null);
-  const [burst, setBurst] = useState<{x:number;y:number;id:number}|null>(null);
+function SpringCursor() {
+  const ringRef  = useRef<HTMLDivElement>(null);
+  const dotRef   = useRef<HTMLDivElement>(null);
+  const posRef   = useRef({ x: 0, y: 0, vx: 0, vy: 0 });
+  const targetRef = useRef({ x: 0, y: 0 });
+  const [bursts, setBursts] = useState<Array<{x:number;y:number;id:number;color:string}>>([]);
+  const [sparks, setSparks]  = useState<Array<{x:number;y:number;id:number}>>([]);
+  const [shockwave, setShockwave] = useState(0);
+  const rafRef = useRef(0);
+  const isActiveRef = useRef(false);
 
   useEffect(() => {
     document.body.classList.add('has-custom-cursor');
+
     const onMove = (e: MouseEvent) => {
-      if (ringRef.current) {
-        ringRef.current.style.left = `${e.clientX}px`;
-        ringRef.current.style.top  = `${e.clientY}px`;
-      }
+      targetRef.current = { x: e.clientX, y: e.clientY };
       if (dotRef.current) {
         dotRef.current.style.left = `${e.clientX}px`;
         dotRef.current.style.top  = `${e.clientY}px`;
       }
     };
+
     const onDown = (e: MouseEvent) => {
-      setBurst({ x: e.clientX, y: e.clientY, id: Date.now() });
+      setBursts(prev => [...prev.slice(-4), { x: e.clientX, y: e.clientY, id: Date.now(), color: '#c8102e' }]);
     };
+
     const onEnter = (e: MouseEvent) => {
       const t = e.target as HTMLElement;
-      const interactive = t.closest('a,button,input,textarea,select,[role=button]');
+      isActiveRef.current = !!t.closest('a,button,input,textarea,select,[role=button]');
       if (ringRef.current) {
-        ringRef.current.style.width  = interactive ? '36px' : '20px';
-        ringRef.current.style.height = interactive ? '36px' : '20px';
-        ringRef.current.style.borderColor = interactive ? '#c8102e' : '#0d0d0d';
+        ringRef.current.classList.toggle('is-active', isActiveRef.current);
       }
     };
+
+    // Spring animation loop for cursor ring
+    const loop = () => {
+      const { x, y, vx, vy } = posRef.current;
+      const { x: tx, y: ty } = targetRef.current;
+      const [nx, nvx] = springStep(x, tx, vx, 0.18, 0.72);
+      const [ny, nvy] = springStep(y, ty, vy, 0.18, 0.72);
+      posRef.current = { x: nx, y: ny, vx: nvx, vy: nvy };
+
+      if (ringRef.current) {
+        ringRef.current.style.left = `${nx}px`;
+        ringRef.current.style.top  = `${ny}px`;
+      }
+
+      // Emit sparks when ring lags behind dot significantly
+      const dist = Math.sqrt((tx - nx) ** 2 + (ty - ny) ** 2);
+      if (dist > 20 && Math.random() < 0.3) {
+        setSparks(prev => [...prev.slice(-12), { x: nx, y: ny, id: Date.now() + Math.random() }]);
+      }
+
+      rafRef.current = requestAnimationFrame(loop);
+    };
+
+    // Subscribe to animation engine for shockwave on velocity spike
+    subscribe('cursor-shock', ({ jerk }) => {
+      if (Math.abs(jerk) > 8) setShockwave(Date.now());
+    });
+
     window.addEventListener('mousemove', onMove, { passive: true });
     window.addEventListener('mousedown', onDown);
     document.addEventListener('mouseover', onEnter);
+    rafRef.current = requestAnimationFrame(loop);
+
     return () => {
       document.body.classList.remove('has-custom-cursor');
+      cancelAnimationFrame(rafRef.current);
+      unsubscribe('cursor-shock');
       window.removeEventListener('mousemove', onMove);
       window.removeEventListener('mousedown', onDown);
       document.removeEventListener('mouseover', onEnter);
@@ -273,27 +336,36 @@ function CustomCursor() {
 
   return (
     <>
-      <div ref={ringRef} className="cursor-ring" aria-hidden="true" />
+      <div ref={ringRef} className="cursor-ring-spring" aria-hidden="true" />
       <div ref={dotRef}  className="cursor-dot"  aria-hidden="true" />
-      {burst && (
-        <div
-          key={burst.id}
-          className="cursor-burst"
-          aria-hidden="true"
-          style={{ left: burst.x, top: burst.y }}
-          onAnimationEnd={() => setBurst(null)}
+      {sparks.map(s => (
+        <div key={s.id} className="spark-particle" aria-hidden="true"
+          style={{ left: s.x + (Math.random()-0.5)*16, top: s.y + (Math.random()-0.5)*16 }}
+          onAnimationEnd={() => setSparks(prev => prev.filter(p => p.id !== s.id))}
+        />
+      ))}
+      {bursts.map(b => (
+        <div key={b.id} className="cursor-burst" aria-hidden="true"
+          style={{ left: b.x, top: b.y }}
+          onAnimationEnd={() => setBursts(prev => prev.filter(p => p.id !== b.id))}
         >
-          <svg width="40" height="40" viewBox="0 0 40 40">
-            {[0,45,90,135,180,225,270,315].map(deg => {
+          <svg width="48" height="48" viewBox="0 0 48 48">
+            {[0,30,60,90,120,150,180,210,240,270,300,330].map(deg => {
               const rad = deg * Math.PI / 180;
-              const x1 = 20 + Math.cos(rad) * 8;
-              const y1 = 20 + Math.sin(rad) * 8;
-              const x2 = 20 + Math.cos(rad) * 18;
-              const y2 = 20 + Math.sin(rad) * 18;
-              return <line key={deg} x1={x1} y1={y1} x2={x2} y2={y2} stroke="#c8102e" strokeWidth="1.5" />;
+              const len = 8 + Math.random() * 10;
+              return <line key={deg}
+                x1={(24 + Math.cos(rad)*6).toFixed(1)} y1={(24 + Math.sin(rad)*6).toFixed(1)}
+                x2={(24 + Math.cos(rad)*len).toFixed(1)} y2={(24 + Math.sin(rad)*len).toFixed(1)}
+                stroke={b.color} strokeWidth="1.5" strokeOpacity={(0.4+Math.random()*0.6).toFixed(2)}
+              />;
             })}
           </svg>
         </div>
+      ))}
+      {shockwave > 0 && (
+        <div key={shockwave} className="shockwave" aria-hidden="true"
+          onAnimationEnd={() => setShockwave(0)}
+        />
       )}
     </>
   );
@@ -917,14 +989,70 @@ function SkillsSection() {
 
 /* ── Research ────────────────────────────────────────────────────── */
 
-function PistonIcon() {
+function CrankMechanism() {
+  const svgRef = useRef<SVGSVGElement>(null);
+  const cranks  = useRef<SVGLineElement | null>(null);
+  const rod     = useRef<SVGLineElement | null>(null);
+  const piston  = useRef<SVGRectElement | null>(null);
+  const angleRef = useRef(0);
+
+  useEffect(() => {
+    subscribe('crank', ({ velocity }) => {
+      const rpm = Math.max(0.5, Math.min(120, 2 + Math.abs(velocity) * 3));
+      angleRef.current = (angleRef.current + rpm / 60 * 6) % 360;
+      const a = angleRef.current * Math.PI / 180;
+      // Crankshaft geometry
+      const crankR = 12;
+      const rodLen = 28;
+      const cx = 22, cy = 22; // crank center
+      const crankX = cx + Math.cos(a) * crankR;
+      const crankY = cy + Math.sin(a) * crankR;
+      // Piston constrained to vertical axis at cx
+      const dy = crankY - cy;
+      const pistonY = cy + Math.sqrt(rodLen * rodLen - (crankX - cx) * (crankX - cx)) * Math.sign(Math.cos(a)) + dy;
+
+      if (cranks.current) {
+        cranks.current.setAttribute('x1', String(cx));
+        cranks.current.setAttribute('y1', String(cy));
+        cranks.current.setAttribute('x2', String(crankX.toFixed(2)));
+        cranks.current.setAttribute('y2', String(crankY.toFixed(2)));
+      }
+      if (rod.current) {
+        rod.current.setAttribute('x1', String(crankX.toFixed(2)));
+        rod.current.setAttribute('y1', String(crankY.toFixed(2)));
+        rod.current.setAttribute('x2', String(cx));
+        rod.current.setAttribute('y2', String(Math.max(2, Math.min(42, pistonY)).toFixed(2)));
+      }
+      if (piston.current) {
+        const py = Math.max(2, Math.min(38, pistonY)) - 5;
+        piston.current.setAttribute('y', String(py.toFixed(2)));
+      }
+    });
+    return () => unsubscribe('crank');
+  }, []);
+
   return (
-    <div className="piston-wrap" aria-hidden="true">
-      <svg width="28" height="36" viewBox="0 0 28 36" fill="none" stroke="currentColor" strokeWidth="1.5">
-        <rect x="4" y="2" width="20" height="12" rx="1" />
-        <line x1="14" y1="14" x2="14" y2="22" className="piston-rod" />
-        <rect x="8" y="22" width="12" height="8" rx="1" />
-        <line x1="4" y1="34" x2="24" y2="34" />
+    <div className="crank-wrap" aria-hidden="true">
+      <svg ref={svgRef} className="crank-svg" width="44" height="52" viewBox="0 0 44 52" fill="none" stroke="currentColor" strokeWidth="1.5">
+        {/* Cylinder walls */}
+        <line x1="14" y1="0" x2="14" y2="40" strokeOpacity="0.4" />
+        <line x1="30" y1="0" x2="30" y2="40" strokeOpacity="0.4" />
+        {/* Cylinder cap */}
+        <rect x="13" y="0" width="18" height="3" fill="currentColor" fillOpacity="0.3" />
+        {/* Crankshaft circle */}
+        <circle cx="22" cy="22" r="14" strokeOpacity="0.3" strokeDasharray="2 2" />
+        <circle cx="22" cy="22" r="2" fill="currentColor" />
+        {/* Crank arm */}
+        <line ref={cranks} x1="22" y1="22" x2="34" y2="22" strokeWidth="2" />
+        {/* Crank pin */}
+        <circle cx="34" cy="22" r="2.5" fill="currentColor" />
+        {/* Connecting rod */}
+        <line ref={rod} x1="34" y1="22" x2="22" y2="8" strokeWidth="1.5" />
+        {/* Piston */}
+        <rect ref={piston} x="15" y="3" width="14" height="8" rx="1" fill="currentColor" fillOpacity="0.5" />
+        {/* Crankshaft output */}
+        <line x1="22" y1="36" x2="22" y2="52" strokeWidth="2" strokeOpacity="0.5" />
+        <line x1="14" y1="44" x2="30" y2="44" strokeOpacity="0.4" />
       </svg>
     </div>
   );
@@ -952,7 +1080,7 @@ function ResearchEntry({ card, idx }: { card: (typeof RESEARCH_CARDS)[number]; i
         data-reveal
         data-reveal-delay={String(idx + 1)}
       >
-        <PistonIcon />
+        <CrankMechanism />
         <div className="grid md:grid-cols-[auto_1fr_auto] gap-4 md:gap-10 items-start">
           <div className="shrink-0 pt-1">
             <p className="font-mono text-[9px] uppercase tracking-[0.22em] e-vital text-vital">{card.index}</p>
@@ -1810,9 +1938,9 @@ export default function App() {
 
   return (
     <div className="relative">
-      <GearWatermark />
+      <GearTrain />
       <BlueprintParallax />
-      <CustomCursor />
+      <SpringCursor />
       <PaperGrain />
       <ScrollProgress />
       <BackToTop />
