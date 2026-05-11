@@ -538,3 +538,144 @@ tr:hover .tolerance-note { opacity: 1; }
   .gauge-arc { transition: none !important; }
   .scan-line { animation: none !important; display: none; }
 }
+
+/* ══════════════════════════════════════════════════════════════════
+   COMPLEX MECHANICAL ANIMATIONS — v2
+   ══════════════════════════════════════════════════════════════════ */
+
+/* ── Multi-gear train ────────────────────────────────────────────── */
+.gear-train-wrap {
+  position: fixed; inset: 0; z-index: 1; pointer-events: none;
+  overflow: hidden;
+}
+.gear-train-svg {
+  position: absolute;
+  opacity: 0.032;
+  will-change: transform;
+}
+
+/* ── Crankshaft mechanism ────────────────────────────────────────── */
+.crank-wrap {
+  position: absolute; bottom: 12px; right: 12px;
+  pointer-events: none; opacity: 0.22;
+  transition: opacity 0.2s ease;
+}
+.research-card-wrap:hover .crank-wrap { opacity: 0.55; }
+.crank-svg { overflow: visible; }
+
+/* ── Spring cursor ring ──────────────────────────────────────────── */
+.cursor-ring-spring {
+  position: fixed; top: 0; left: 0; z-index: 9999; pointer-events: none;
+  width: 28px; height: 28px; border-radius: 50%;
+  border: 1px solid rgba(13,13,13,0.5);
+  transform: translate(-50%, -50%);
+  will-change: transform;
+  transition: width 0.2s ease, height 0.2s ease, border-color 0.2s ease;
+}
+.cursor-ring-spring.is-active {
+  width: 44px; height: 44px; border-color: #c8102e;
+}
+
+/* ── Spark trail particle ────────────────────────────────────────── */
+.spark-particle {
+  position: fixed; z-index: 9997; pointer-events: none;
+  width: 3px; height: 3px; border-radius: 50%;
+  background: #c8102e;
+  animation: spark-fade 0.5s ease-out both;
+}
+@keyframes spark-fade {
+  0%   { opacity: 1; transform: translate(-50%,-50%) scale(1); }
+  100% { opacity: 0; transform: translate(-50%,-50%) scale(0); }
+}
+
+/* ── Shockwave ───────────────────────────────────────────────────── */
+.shockwave {
+  position: fixed; z-index: 190; pointer-events: none;
+  width: 60px; height: 60px; border-radius: 50%;
+  border: 2px solid rgba(200,16,46,0.6);
+  top: 50%; left: 50%;
+  animation: shockwave-expand 0.6s ease-out both;
+}
+@keyframes shockwave-expand {
+  0%   { transform: translate(-50%,-50%) scale(0); opacity: 0.8; }
+  100% { transform: translate(-50%,-50%) scale(20); opacity: 0; }
+}
+
+/* ── Blood flow particle ─────────────────────────────────────────── */
+.blood-particle {
+  position: absolute;
+  width: 4px; height: 4px; border-radius: 50%;
+  background: #c8102e;
+  pointer-events: none;
+  opacity: 0.7;
+}
+
+/* ── Live oscilloscope canvas ────────────────────────────────────── */
+.osc-canvas-wrap {
+  position: relative; width: 100%; overflow: hidden;
+  border-top: 1px solid rgba(244,242,238,0.1);
+  margin-top: 8px;
+}
+.osc-canvas { display: block; width: 100%; }
+
+/* ── 3D card tilt ────────────────────────────────────────────────── */
+.tilt-card {
+  transform-style: preserve-3d;
+  transition: transform 0.08s ease-out, box-shadow 0.08s ease-out;
+  will-change: transform;
+}
+
+/* ── Mouse parallax layers ───────────────────────────────────────── */
+.parallax-layer {
+  will-change: transform;
+  transition: transform 0.12s ease-out;
+}
+
+/* ── Dimension lines (engineering annotations) ───────────────────── */
+.dim-line-wrap {
+  position: absolute; inset: 0; pointer-events: none; z-index: 3;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+.research-card-wrap:hover .dim-line-wrap { opacity: 1; }
+.dim-line {
+  stroke: rgba(26,58,92,0.5); fill: none; stroke-width: 0.5;
+  stroke-dasharray: 3 2;
+}
+.dim-text {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 7px; fill: rgba(26,58,92,0.6);
+  letter-spacing: 0.1em;
+}
+
+/* ── Heartbeat rate counter ──────────────────────────────────────── */
+.bpm-display {
+  position: absolute; top: 12px; right: 12px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px; letter-spacing: 0.14em;
+  color: #00c8a0; opacity: 0.6;
+  pointer-events: none;
+}
+
+/* ── Gear mesh indicator (teeth contact flash) ───────────────────── */
+@keyframes mesh-flash {
+  0%, 100% { opacity: 0; }
+  50%       { opacity: 0.6; }
+}
+
+/* ── Worm gear ───────────────────────────────────────────────────── */
+@keyframes worm-scroll {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-40px); }
+}
+.worm-thread { animation: worm-scroll 2s linear infinite; }
+
+/* ── Additional reduced-motion overrides for new elements ────────── */
+@media (prefers-reduced-motion: reduce) {
+  .spark-particle { display: none; }
+  .shockwave { display: none; }
+  .tilt-card { transform: none !important; transition: none !important; }
+  .parallax-layer { transform: none !important; transition: none !important; }
+  .worm-thread { animation: none !important; }
+  .cursor-ring-spring { display: none; }
+}
