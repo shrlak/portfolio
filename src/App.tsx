@@ -531,6 +531,164 @@ function Navbar({ onHome = false }: { onHome?: boolean }) {
 
 /* ── Hero ─────────────────────────────────────────────────────────── */
 
+function LiveOscilloscope() {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const phaseRef  = useRef(0);
+  const rafRef    = useRef(0);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const W = canvas.width  = canvas.offsetWidth  * (window.devicePixelRatio || 1);
+    const H = canvas.height = canvas.offsetHeight * (window.devicePixelRatio || 1);
+
+    let bpm = 72;
+    let t = 0;
+
+    function ecgSample(x: number): number {
+      // P wave, QRS complex, T wave
+      const p   = 0.15 * Math.exp(-((x - 0.2) ** 2) / 0.004);
+      const qrs = x > 0.45 && x < 0.55
+        ? -0.05 + 2.2 * Math.exp(-((x - 0.5) ** 2) / 0.0004) - 0.5 * Math.exp(-((x - 0.47) ** 2) / 0.0006)
+        : 0;
+      const twave = 0.3 * Math.exp(-((x - 0.72) ** 2) / 0.012);
+      return p + qrs + twave;
+    }
+
+    const loop = () => {
+      ctx.clearRect(0, 0, W, H);
+      const period = 60 / bpm; // seconds per beat
+      const speed  = 1 / period; // beats per second
+      phaseRef.current = (phaseRef.current + 0.008 * speed * 60) % 1;
+
+      ctx.strokeStyle = 'rgba(0,200,160,0.7)';
+      ctx.lineWidth = 1.5 * (window.devicePixelRatio || 1);
+      ctx.shadowColor = '#00c8a0';
+      ctx.shadowBlur = 4;
+      ctx.beginPath();
+
+      for (let px = 0; px < W; px++) {
+        const frac = (px / W + phaseRef.current) % 1;
+        const amp  = ecgSample(frac);
+        const y    = H / 2 - amp * H * 0.38;
+        px === 0 ? ctx.moveTo(px, y) : ctx.lineTo(px, y);
+      }
+      ctx.stroke();
+
+      // Scanline cursor
+      const cursorX = ((1 - phaseRef.current) * W + W * 0.05) % W;
+      ctx.strokeStyle = 'rgba(0,200,160,0.25)';
+      ctx.lineWidth = 1;
+      ctx.shadowBlur = 0;
+      ctx.beginPath();
+      ctx.moveTo(cursorX, 0);
+      ctx.lineTo(cursorX, H);
+      ctx.stroke();
+
+      t++;
+      if (t % 180 === 0) bpm = 60 + Math.floor(Math.random() * 40); // vary BPM
+
+      rafRef.current = requestAnimationFrame(loop);
+    };
+    rafRef.current = requestAnimationFrame(loop);
+    return () => cancelAnimationFrame(rafRef.current);
+  }, []);
+
+  return (
+    <div className="osc-canvas-wrap" style={{ height: '40px' }}>
+      <canvas ref={canvasRef} className="osc-canvas" style={{ height: '40px' }} />
+    </div>
+  );
+}
+
+function BloodFlowParticles() {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const particlesRef = useRef<Array<{ el: HTMLDivElement; x: number; y: number; vx: number; vy: number; life: number; maxLife: number }>>([]);
+  const rafRef = useRef(0);
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    function spawn() {
+      if (!container) return;
+      const el = document.createElement('div');
+      el.className = 'blood-particle';
+      const startX = Math.random() * 100; // percentage
+      el.style.left = `${startX}%`;
+      el.style.top = '0%';
+      container.appendChild(el);
+      const maxLife = 80 + Math.random() * 60;
+      particlesRef.current.push({
+        el, x: startX, y: 0,
+        vx: (Math.random() - 0.5) * 0.3,
+        vy: 0.8 + Math.random() * 0.6,
+        life: 0, maxLife,
+      });
+    }
+
+    let frame = 0;
+    const loop = () => {
+      frame++;
+      if (frame % 12 === 0 && particlesRef.current.length < 18) spawn();
+
+      particlesRef.current = particlesRef.current.filter(p => {
+        p.x += p.vx;
+        p.y += p.vy;
+        p.life++;
+        const fade = 1 - p.life / p.maxLife;
+        p.el.style.left = `${p.x}%`;
+        p.el.style.top  = `${p.y}%`;
+        p.el.style.opacity = String(Math.max(0, fade * 0.7));
+        if (p.life >= p.maxLife || p.y > 105) {
+          container.removeChild(p.el);
+          return false;
+        }
+        return true;
+      });
+
+      rafRef.current = requestAnimationFrame(loop);
+    };
+    rafRef.current = requestAnimationFrame(loop);
+    return () => {
+      cancelAnimationFrame(rafRef.current);
+      particlesRef.current.forEach(p => { try { container.removeChild(p.el); } catch {} });
+      particlesRef.current = [];
+    };
+  }, []);
+
+  return (
+    <div
+      ref={containerRef}
+      aria-hidden="true"
+      style={{
+        position: 'absolute', inset: 0, overflow: 'hidden',
+        pointerEvents: 'none', zIndex: 0,
+      }}
+    />
+  );
+}
+
+function MouseParallaxHero({ children, depth = 1 }: { children: React.ReactNode; depth?: number }) {
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    subscribe(`parallax-hero-${depth}`, ({ mouseX, mouseY }: { mouseX: number; mouseY: number }) => {
+      const cx = window.innerWidth / 2;
+      const cy = window.innerHeight / 2;
+      const dx = (mouseX - cx) / cx;
+      const dy = (mouseY - cy) / cy;
+      el.style.transform = `translate(${dx * depth * 6}px, ${dy * depth * 4}px)`;
+    });
+    return () => unsubscribe(`parallax-hero-${depth}`);
+  }, [depth]);
+  return <div ref={ref} className="parallax-layer">{children}</div>;
+}
+
 function CornerBrackets() {
   return (
     <>
@@ -569,6 +727,7 @@ function HeroSection() {
     <section id="home" className="relative bg-graphite overflow-hidden">
       <HeroCrosshair />
       <CornerBrackets />
+      <BloodFlowParticles />
       {/* Folio line */}
       <div className="mx-auto max-w-container px-6 md:px-10 lg:px-14 xl:px-16 pt-10 md:pt-14">
         <p className="comp-folio font-mono text-[8.5px] uppercase tracking-[0.28em] text-muted leading-none">
@@ -583,20 +742,24 @@ function HeroSection() {
         {/* Left: type */}
         <div className="pr-0 md:pr-14">
           {/* Accent phrase */}
-          <div className="comp-accent mb-6 md:mb-8">
-            <span className="font-serif-italic text-bone text-2xl sm:text-3xl md:text-4xl leading-[1.15]">
-              {HERO.accent}
-            </span>
-          </div>
+          <MouseParallaxHero depth={1}>
+            <div className="comp-accent mb-6 md:mb-8">
+              <span className="font-serif-italic text-bone text-2xl sm:text-3xl md:text-4xl leading-[1.15]">
+                {HERO.accent}
+              </span>
+            </div>
+          </MouseParallaxHero>
 
           {/* Massive heading */}
-          <h1 className="font-grotesk uppercase text-bone leading-[0.88] tracking-tightest" style={{ fontSize: 'clamp(64px, 11vw, 148px)' }}>
-            {HERO.heading.map((line, i) => (
-              <div key={i} className={`comp-hl-${i + 1}`}>
-                <span>{line}</span>
-              </div>
-            ))}
-          </h1>
+          <MouseParallaxHero depth={2}>
+            <h1 className="font-grotesk uppercase text-bone leading-[0.88] tracking-tightest" style={{ fontSize: 'clamp(64px, 11vw, 148px)' }}>
+              {HERO.heading.map((line, i) => (
+                <div key={i} className={`comp-hl-${i + 1}`}>
+                  <span>{line}</span>
+                </div>
+              ))}
+            </h1>
+          </MouseParallaxHero>
         </div>
 
         {/* Right: printed data panel — desktop only */}
@@ -629,6 +792,7 @@ function HeroSection() {
                 </div>
               </div>
             ))}
+            <LiveOscilloscope />
           </div>
 
           {/* Research index mini-list */}
@@ -1076,9 +1240,18 @@ function ResearchEntry({ card, idx }: { card: (typeof RESEARCH_CARDS)[number]; i
       <a
         href={`#/research/${card.slug}`}
         onClick={handleClick}
-        className="research-card-wrap ed-entry block px-0 py-10 md:py-14 relative"
+        className="research-card-wrap ed-entry tilt-card block px-0 py-10 md:py-14 relative"
         data-reveal
         data-reveal-delay={String(idx + 1)}
+        onMouseMove={(e) => {
+          const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+          const x = (e.clientX - rect.left) / rect.width - 0.5;
+          const y = (e.clientY - rect.top) / rect.height - 0.5;
+          (e.currentTarget as HTMLElement).style.transform = `perspective(800px) rotateY(${x * 4}deg) rotateX(${-y * 2}deg) translateZ(4px)`;
+        }}
+        onMouseLeave={(e) => {
+          (e.currentTarget as HTMLElement).style.transform = '';
+        }}
       >
         <CrankMechanism />
         <div className="grid md:grid-cols-[auto_1fr_auto] gap-4 md:gap-10 items-start">
