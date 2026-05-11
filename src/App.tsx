@@ -180,69 +180,362 @@ function PaperGrain() {
   return <div className="paper-grain" aria-hidden="true" />;
 }
 
-function GearTrain() {
+function PlanetaryGearSystem() {
   const svgRef = useRef<SVGSVGElement>(null);
-  const anglesRef = useRef([0, 0, 0]); // 3 gears
+  const anglesRef = useRef({ sun: 0, planets: [0, 0, 0], ring: 0 });
 
-  // Gear specs: [teeth, pitchRadius, cx, cy]
-  const GEARS = [
-    { teeth: 16, r1: 52, r2: 64, cx: 110, cy: 110, holeR: 14 },
-    { teeth: 10, r1: 32, r2: 40, cx: 185, cy: 110, holeR: 9 },
-    { teeth: 24, r1: 78, r2: 95, cx: 110, cy: 220, holeR: 20 },
-  ];
-  // Ratio of gear 0 to gear 1: teeth[0]/teeth[1] = 16/10 (counter-rotate)
-  // Ratio of gear 0 to gear 2: teeth[0]/teeth[2] = 16/24 (counter-rotate)
-  const RATIOS = [1, -16/10, -16/24];
+  // Epicyclic gear: N_sun=14, N_planet=9, N_ring=32
+  const N_SUN = 14, N_PLANET = 9, N_RING = 32;
+  const CARRIER = N_SUN / (N_SUN + N_RING);
+  const PLANET_ABS = CARRIER - (N_SUN / N_PLANET) * (1 - CARRIER);
+  const RING_RATIO = -N_SUN / N_RING;
 
-  const gearPaths = GEARS.map(g => gearPath(g.cx, g.cy, g.r1, g.r2, g.teeth));
+  const CX = 130, CY = 130; // center of system
+  const R_SUN_PITCH = 42;   // sun gear pitch radius
+  const R_PLANET_PITCH = 27; // planet pitch radius
+  const R_RING_PITCH = 96;  // ring gear pitch radius
+  const CARRIER_RADIUS = R_SUN_PITCH + R_PLANET_PITCH; // planet orbit radius
+
+  // Gear visual radii
+  const R_SUN_INNER = R_SUN_PITCH - 6;
+  const R_SUN_OUTER = R_SUN_PITCH + 6;
+  const R_PL_INNER  = R_PLANET_PITCH - 5;
+  const R_PL_OUTER  = R_PLANET_PITCH + 5;
+
+  // Pre-compute planet positions (120° apart)
+  const PLANET_BASE_ANGLES = [0, 120, 240];
+
+  const sunPath = gearPath(CX, CY, R_SUN_INNER, R_SUN_OUTER, N_SUN);
+  const planetPaths = PLANET_BASE_ANGLES.map(ba => {
+    const a = ba * Math.PI / 180;
+    return gearPath(
+      CX + Math.cos(a) * CARRIER_RADIUS,
+      CY + Math.sin(a) * CARRIER_RADIUS,
+      R_PL_INNER, R_PL_OUTER, N_PLANET
+    );
+  });
 
   useEffect(() => {
     const stop = startEngine();
-    const gearEls = svgRef.current ? Array.from(svgRef.current.querySelectorAll<SVGGElement>('.gear-g')) : [];
-    subscribe('geartrain', ({ velocity }) => {
-      const rpm = Math.max(0.2, Math.min(80, 0.8 + Math.abs(velocity) * 2));
-      const delta = rpm / 60 * 6; // degrees per frame at this RPM
-      anglesRef.current = anglesRef.current.map((a, i) => (a + delta * RATIOS[i] + 360) % 360);
-      gearEls.forEach((el, i) => {
-        if (el) el.style.transform = `rotate(${anglesRef.current[i]}deg)`;
+    subscribe('planetary', ({ velocity }) => {
+      const rpm = Math.max(0.3, Math.min(90, 1 + Math.abs(velocity) * 2.2));
+      const delta = rpm / 60 * 6; // degrees per frame
+
+      anglesRef.current.sun = (anglesRef.current.sun + delta) % 360;
+      anglesRef.current.ring = (anglesRef.current.ring + delta * RING_RATIO + 360) % 360;
+
+      anglesRef.current.planets = anglesRef.current.planets.map(
+        (a) => (a + delta * PLANET_ABS) % 360
+      );
+
+      const svg = svgRef.current;
+      if (!svg) return;
+
+      // Sun gear
+      const sunEl = svg.querySelector<SVGGElement>('.pg-sun');
+      if (sunEl) sunEl.style.transform = `rotate(${anglesRef.current.sun}deg)`;
+
+      // Ring gear (rotate the whole ring group)
+      const ringEl = svg.querySelector<SVGGElement>('.pg-ring');
+      if (ringEl) ringEl.style.transform = `rotate(${anglesRef.current.ring}deg)`;
+
+      // Planets: each planet orbits + rotates
+      const carrierAngle = (anglesRef.current.sun * CARRIER + 360 * 100) % 360;
+      PLANET_BASE_ANGLES.forEach((ba, i) => {
+        const el = svg.querySelector<SVGGElement>(`.pg-planet-${i}`);
+        if (!el) return;
+        const orbitAngle = (ba + carrierAngle) * Math.PI / 180;
+        const px = CX + Math.cos(orbitAngle) * CARRIER_RADIUS;
+        const py = CY + Math.sin(orbitAngle) * CARRIER_RADIUS;
+        el.style.transform = `translate(${(px - (CX + Math.cos(ba * Math.PI / 180) * CARRIER_RADIUS)).toFixed(2)}px, ${(py - (CY + Math.sin(ba * Math.PI / 180) * CARRIER_RADIUS)).toFixed(2)}px) rotate(${anglesRef.current.planets[i]}deg)`;
       });
     });
-    return () => { unsubscribe('geartrain'); stop(); };
+    return () => { unsubscribe('planetary'); stop(); };
   }, []);
+
+  // Ring gear internal teeth path (drawn as a circle with notches)
+  const ringD = (() => {
+    const pts: string[] = [];
+    for (let i = 0; i < N_RING; i++) {
+      const a0 = (i / N_RING) * Math.PI * 2;
+      const a1 = a0 + Math.PI / N_RING * 0.35;
+      const a2 = a0 + Math.PI / N_RING * 0.65;
+      const a3 = a0 + Math.PI / N_RING;
+      const ro = R_RING_PITCH + 8;
+      const ri = R_RING_PITCH - 6;
+      pts.push(
+        `L${(Math.cos(a0) * ro + CX).toFixed(2)},${(Math.sin(a0) * ro + CY).toFixed(2)}`,
+        `L${(Math.cos(a1) * ri + CX).toFixed(2)},${(Math.sin(a1) * ri + CY).toFixed(2)}`,
+        `L${(Math.cos(a2) * ri + CX).toFixed(2)},${(Math.sin(a2) * ri + CY).toFixed(2)}`,
+        `L${(Math.cos(a3) * ro + CX).toFixed(2)},${(Math.sin(a3) * ro + CY).toFixed(2)}`,
+      );
+    }
+    return `M${(Math.cos(0) * (R_RING_PITCH + 8) + CX).toFixed(2)},${(Math.sin(0) * (R_RING_PITCH + 8) + CY).toFixed(2)} ${pts.join(' ')} Z`;
+  })();
 
   return (
     <div className="gear-train-wrap" aria-hidden="true">
       <svg
         ref={svgRef}
-        viewBox="0 0 320 330"
+        viewBox="0 0 260 260"
         className="gear-train-svg"
-        style={{ width: 'clamp(280px,35vw,520px)', bottom: '5%', right: '3%', position: 'absolute' }}
+        style={{ width: 'clamp(240px, 32vw, 480px)', bottom: '2%', right: '1%', position: 'absolute' }}
       >
-        {GEARS.map((g, i) => (
-          <g key={i} className="gear-g" style={{ transformOrigin: `${g.cx}px ${g.cy}px` }}>
-            <path d={gearPaths[i]} fill="currentColor" opacity="0.9" />
-            <circle cx={g.cx} cy={g.cy} r={g.holeR} fill="#f4f2ee" />
-            <circle cx={g.cx} cy={g.cy} r={g.holeR * 0.35} fill="currentColor" />
-            {/* Spoke lines */}
-            {[0, 60, 120, 180, 240, 300].map(a => {
-              const rad = a * Math.PI / 180;
-              return <line key={a}
-                x1={(Math.cos(rad) * g.holeR + g.cx).toFixed(1)}
-                y1={(Math.sin(rad) * g.holeR + g.cy).toFixed(1)}
-                x2={(Math.cos(rad) * (g.r1 * 0.78) + g.cx).toFixed(1)}
-                y2={(Math.sin(rad) * (g.r1 * 0.78) + g.cy).toFixed(1)}
-                stroke="#f4f2ee" strokeWidth="2.5"
-              />;
-            })}
-          </g>
-        ))}
-        {/* Axle dots */}
-        {GEARS.map((g, i) => (
-          <circle key={`axle-${i}`} cx={g.cx} cy={g.cy} r="2.5" fill="rgba(200,16,46,0.6)" />
-        ))}
-        {/* Mesh lines between gears */}
-        <line x1="162" y1="110" x2="153" y2="110" stroke="rgba(200,16,46,0.2)" strokeWidth="1" strokeDasharray="2 2" />
+        {/* Ring gear (outermost) */}
+        <g className="pg-ring" style={{ transformOrigin: `${CX}px ${CY}px` }}>
+          <path d={ringD} fill="currentColor" opacity="0.18" />
+          <circle cx={CX} cy={CY} r={R_RING_PITCH + 10} fill="none" stroke="currentColor" strokeWidth="1" opacity="0.12" />
+        </g>
+
+        {/* Carrier arms */}
+        {PLANET_BASE_ANGLES.map((ba, i) => {
+          const a = ba * Math.PI / 180;
+          const px = CX + Math.cos(a) * CARRIER_RADIUS;
+          const py = CY + Math.sin(a) * CARRIER_RADIUS;
+          return (
+            <line key={`arm-${i}`} className="pg-carrier-arm"
+              x1={CX} y1={CY} x2={px.toFixed(1)} y2={py.toFixed(1)}
+              stroke="currentColor" strokeWidth="1.5" opacity="0.2"
+            />
+          );
+        })}
+
+        {/* Planet gears */}
+        {PLANET_BASE_ANGLES.map((ba, i) => {
+          const a = ba * Math.PI / 180;
+          const px = CX + Math.cos(a) * CARRIER_RADIUS;
+          const py = CY + Math.sin(a) * CARRIER_RADIUS;
+          return (
+            <g key={`planet-${i}`} className={`pg-planet-${i}`}
+              style={{ transformOrigin: `${px}px ${py}px` }}
+            >
+              <path d={planetPaths[i]} fill="currentColor" opacity="0.85" />
+              <circle cx={px} cy={py} r={R_PL_INNER * 0.4} fill="#f4f2ee" />
+              <circle cx={px} cy={py} r="2" fill="currentColor" opacity="0.7" />
+              {/* Spokes */}
+              {[0, 120, 240].map(sa => {
+                const sr = sa * Math.PI / 180;
+                return <line key={sa}
+                  x1={(Math.cos(sr) * R_PL_INNER * 0.4 + px).toFixed(1)}
+                  y1={(Math.sin(sr) * R_PL_INNER * 0.4 + py).toFixed(1)}
+                  x2={(Math.cos(sr) * (R_PL_INNER * 0.82) + px).toFixed(1)}
+                  y2={(Math.sin(sr) * (R_PL_INNER * 0.82) + py).toFixed(1)}
+                  stroke="#f4f2ee" strokeWidth="1.5" />;
+              })}
+            </g>
+          );
+        })}
+
+        {/* Sun gear */}
+        <g className="pg-sun" style={{ transformOrigin: `${CX}px ${CY}px` }}>
+          <path d={sunPath} fill="currentColor" opacity="0.95" />
+          <circle cx={CX} cy={CY} r={R_SUN_INNER * 0.45} fill="#f4f2ee" />
+          <circle cx={CX} cy={CY} r={R_SUN_INNER * 0.15} fill="currentColor" />
+          {[0, 60, 120, 180, 240, 300].map(a => {
+            const rad = a * Math.PI / 180;
+            return <line key={a}
+              x1={(Math.cos(rad) * R_SUN_INNER * 0.45 + CX).toFixed(1)}
+              y1={(Math.sin(rad) * R_SUN_INNER * 0.45 + CY).toFixed(1)}
+              x2={(Math.cos(rad) * (R_SUN_INNER * 0.82) + CX).toFixed(1)}
+              y2={(Math.sin(rad) * (R_SUN_INNER * 0.82) + CY).toFixed(1)}
+              stroke="#f4f2ee" strokeWidth="2" />;
+          })}
+        </g>
+
+        {/* Center axle dot */}
+        <circle cx={CX} cy={CY} r="4" fill="rgba(200,16,46,0.7)" />
+
+        {/* Planet axle dots */}
+        {PLANET_BASE_ANGLES.map((ba, i) => {
+          const a = ba * Math.PI / 180;
+          return <circle key={`axle-${i}`}
+            cx={(CX + Math.cos(a) * CARRIER_RADIUS).toFixed(1)}
+            cy={(CY + Math.sin(a) * CARRIER_RADIUS).toFixed(1)}
+            r="2.5" fill="rgba(200,16,46,0.5)" />;
+        })}
+
+        {/* Pitch circle (reference) */}
+        <circle cx={CX} cy={CY} r={R_RING_PITCH} fill="none" stroke="rgba(200,16,46,0.08)" strokeWidth="0.5" strokeDasharray="3 4" />
       </svg>
+    </div>
+  );
+}
+
+function FourBarLinkage() {
+  const svgRef = useRef<SVGSVGElement>(null);
+  const angleRef = useRef(0);
+  const traceRef = useRef<Array<[number, number]>>([]);
+  const rafRef = useRef(0);
+
+  // 4-bar Grashof crank-rocker linkage
+  const L_CRANK = 30, L_COUPLER = 70, L_ROCKER = 55, L_GROUND = 80;
+  const A_X = 20, A_Y = 100; // fixed pivot A
+  const D_X = A_X + L_GROUND, D_Y = A_Y; // fixed pivot D
+
+  useEffect(() => {
+    const animate = () => {
+      angleRef.current = (angleRef.current + 1.2) % 360;
+      const theta = angleRef.current * Math.PI / 180;
+
+      // B = tip of crank
+      const BX = A_X + L_CRANK * Math.cos(theta);
+      const BY = A_Y - L_CRANK * Math.sin(theta);
+
+      // Solve for C: intersection of circle(B, L_COUPLER) and circle(D, L_ROCKER)
+      const dx = D_X - BX, dy = D_Y - BY;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      if (dist < Math.abs(L_COUPLER - L_ROCKER) || dist > L_COUPLER + L_ROCKER) {
+        rafRef.current = requestAnimationFrame(animate);
+        return;
+      }
+      const a = (L_COUPLER * L_COUPLER - L_ROCKER * L_ROCKER + dist * dist) / (2 * dist);
+      const h = Math.sqrt(Math.max(0, L_COUPLER * L_COUPLER - a * a));
+      const mx = BX + a * dx / dist;
+      const my = BY + a * dy / dist;
+      const CX_val = mx + h * dy / dist;
+      const CY_val = my - h * dx / dist;
+
+      // Coupler point P (midpoint of coupler + perpendicular offset)
+      const cpx = (BX + CX_val) / 2 + (CY_val - BY) * 0.4;
+      const cpy = (BY + CY_val) / 2 - (CX_val - BX) * 0.4;
+
+      // Accumulate trace
+      traceRef.current.push([cpx, cpy]);
+      if (traceRef.current.length > 120) traceRef.current.shift();
+
+      const svg = svgRef.current;
+      if (!svg) { rafRef.current = requestAnimationFrame(animate); return; }
+
+      // Coupler trace path
+      const traceEl = svg.querySelector<SVGPathElement>('.fb-trace');
+      if (traceEl && traceRef.current.length > 2) {
+        const pts = traceRef.current.map(([x, y], i) => `${i === 0 ? 'M' : 'L'}${x.toFixed(1)},${y.toFixed(1)}`).join(' ');
+        traceEl.setAttribute('d', pts);
+      }
+
+      // Links
+      const crank = svg.querySelector<SVGLineElement>('.fb-crank');
+      const coupler = svg.querySelector<SVGLineElement>('.fb-coupler');
+      const rocker = svg.querySelector<SVGLineElement>('.fb-rocker');
+      const couplePoint = svg.querySelector<SVGCircleElement>('.fb-cp');
+
+      crank?.setAttribute('x2', BX.toFixed(1));
+      crank?.setAttribute('y2', BY.toFixed(1));
+      coupler?.setAttribute('x1', BX.toFixed(1));
+      coupler?.setAttribute('y1', BY.toFixed(1));
+      coupler?.setAttribute('x2', CX_val.toFixed(1));
+      coupler?.setAttribute('y2', CY_val.toFixed(1));
+      rocker?.setAttribute('x1', CX_val.toFixed(1));
+      rocker?.setAttribute('y1', CY_val.toFixed(1));
+      couplePoint?.setAttribute('cx', cpx.toFixed(1));
+      couplePoint?.setAttribute('cy', cpy.toFixed(1));
+
+      rafRef.current = requestAnimationFrame(animate);
+    };
+    rafRef.current = requestAnimationFrame(animate);
+    return () => cancelAnimationFrame(rafRef.current);
+  }, []);
+
+  return (
+    <div
+      aria-hidden="true"
+      style={{
+        position: 'absolute', top: '8%', right: '2%',
+        width: 'clamp(140px, 18vw, 240px)',
+        opacity: 0.22,
+        pointerEvents: 'none',
+        display: 'none',
+      }}
+      className="md:block"
+    >
+      <svg ref={svgRef} viewBox="0 10 200 130" width="100%" fill="none" stroke="#e8e4dd" strokeWidth="1.5">
+        {/* Ground link */}
+        <line x1={A_X} y1={A_Y} x2={D_X} y2={D_Y} stroke="#e8e4dd" strokeWidth="1" opacity="0.4" />
+        {/* Fixed pivot markers */}
+        <polygon points={`${A_X},${A_Y} ${A_X - 5},${A_Y + 8} ${A_X + 5},${A_Y + 8}`} fill="#e8e4dd" opacity="0.5" />
+        <polygon points={`${D_X},${D_Y} ${D_X - 5},${D_Y + 8} ${D_X + 5},${D_Y + 8}`} fill="#e8e4dd" opacity="0.5" />
+        {/* Crank circle reference */}
+        <circle cx={A_X} cy={A_Y} r={L_CRANK} stroke="#e8e4dd" strokeWidth="0.4" strokeDasharray="3 4" opacity="0.3" />
+        {/* Coupler trace */}
+        <path className="fb-trace" stroke="#00c8a0" strokeWidth="0.8" opacity="0.7" />
+        {/* Crank link */}
+        <line className="fb-crank" x1={A_X} y1={A_Y} x2={A_X + L_CRANK} y2={A_Y} strokeWidth="2" />
+        {/* Coupler */}
+        <line className="fb-coupler" x1={A_X + L_CRANK} y1={A_Y} x2={D_X} y2={A_Y} strokeWidth="1.5" />
+        {/* Rocker */}
+        <line className="fb-rocker" x1={D_X} y1={A_Y} x2={D_X} y2={A_Y - L_ROCKER} strokeWidth="2" />
+        {/* Joint circles */}
+        <circle cx={A_X} cy={A_Y} r="3" fill="#e8e4dd" />
+        <circle cx={D_X} cy={D_Y} r="3" fill="#e8e4dd" />
+        {/* Moving joints */}
+        <circle className="fb-b" cx={A_X + L_CRANK} cy={A_Y} r="2.5" fill="#c8102e" />
+        <circle className="fb-c" cx={D_X} cy={A_Y} r="2.5" fill="#c8102e" />
+        {/* Coupler point */}
+        <circle className="fb-cp" cx={A_X + L_CRANK} cy={A_Y} r="3" fill="#00c8a0" opacity="0.9" />
+      </svg>
+    </div>
+  );
+}
+
+function ScrollRPMGauge() {
+  const needleRef = useRef<SVGLineElement>(null);
+  const readoutRef = useRef<HTMLSpanElement>(null);
+  const rpmRef = useRef(0);
+
+  useEffect(() => {
+    subscribe('rpm-gauge', ({ velocitySmooth }) => {
+      const target = Math.max(0, Math.min(100, Math.abs(velocitySmooth) * 2.5));
+      rpmRef.current = rpmRef.current * 0.88 + target * 0.12;
+      const angle = -90 + rpmRef.current * 1.8; // -90° to +90°
+      if (needleRef.current) {
+        needleRef.current.style.transform = `rotate(${angle}deg)`;
+      }
+      if (readoutRef.current) {
+        readoutRef.current.textContent = String(Math.round(rpmRef.current)).padStart(3, '0');
+      }
+    });
+    return () => unsubscribe('rpm-gauge');
+  }, []);
+
+  return (
+    <div
+      aria-hidden="true"
+      style={{
+        position: 'fixed', bottom: '20px', left: '16px',
+        zIndex: 100, pointerEvents: 'none',
+        opacity: 0.72,
+      }}
+      className="hidden md:block"
+    >
+      <svg width="72" height="46" viewBox="0 0 72 46" fill="none" stroke="rgba(232,228,221,0.5)" strokeWidth="0.8">
+        {/* Gauge arc background */}
+        <path d="M6,40 A30,30 0 0,1 66,40" strokeWidth="2" opacity="0.2" />
+        {/* Tick marks */}
+        {[0, 25, 50, 75, 100].map(p => {
+          const a = (-90 + p * 1.8) * Math.PI / 180;
+          const cx = 36, cy = 40, r1 = 26, r2 = 30;
+          return (
+            <line key={p}
+              x1={(cx + Math.cos(a) * r1).toFixed(1)} y1={(cy + Math.sin(a) * r1).toFixed(1)}
+              x2={(cx + Math.cos(a) * r2).toFixed(1)} y2={(cy + Math.sin(a) * r2).toFixed(1)}
+              stroke="rgba(232,228,221,0.4)" strokeWidth="1"
+            />
+          );
+        })}
+        {/* Needle */}
+        <line
+          ref={needleRef}
+          x1="36" y1="40" x2="36" y2="14"
+          stroke="#c8102e" strokeWidth="1.5" strokeLinecap="round"
+          style={{ transformOrigin: '36px 40px', transform: 'rotate(-90deg)' }}
+        />
+        {/* Pivot */}
+        <circle cx="36" cy="40" r="3" fill="rgba(232,228,221,0.6)" />
+      </svg>
+      <div style={{ textAlign: 'center', marginTop: '-4px' }}>
+        <span ref={readoutRef} style={{ fontFamily: 'monospace', fontSize: '8px', color: 'rgba(232,228,221,0.5)', letterSpacing: '0.15em' }}>000</span>
+        <span style={{ fontFamily: 'monospace', fontSize: '7px', color: 'rgba(232,228,221,0.3)', letterSpacing: '0.12em', display: 'block' }}>RPM</span>
+      </div>
     </div>
   );
 }
@@ -261,11 +554,11 @@ function BlueprintParallax() {
 function SpringCursor() {
   const ringRef  = useRef<HTMLDivElement>(null);
   const dotRef   = useRef<HTMLDivElement>(null);
+  const fieldRef = useRef<SVGSVGElement>(null);
   const posRef   = useRef({ x: 0, y: 0, vx: 0, vy: 0 });
   const targetRef = useRef({ x: 0, y: 0 });
   const [bursts, setBursts] = useState<Array<{x:number;y:number;id:number;color:string}>>([]);
   const [sparks, setSparks]  = useState<Array<{x:number;y:number;id:number}>>([]);
-  const [shockwave, setShockwave] = useState(0);
   const rafRef = useRef(0);
   const isActiveRef = useRef(false);
 
@@ -311,13 +604,24 @@ function SpringCursor() {
         setSparks(prev => [...prev.slice(-12), { x: nx, y: ny, id: Date.now() + Math.random() }]);
       }
 
+      // Update field lines
+      if (fieldRef.current && dist > 2) {
+        const svg = fieldRef.current;
+        const lines = Array.from({ length: 8 }).map((_, k) => {
+          const angle = (k / 8) * Math.PI * 2;
+          const strength = Math.min(1, dist / 60);
+          const len = 14 + strength * 22;
+          const x1 = nx + Math.cos(angle) * 5;
+          const y1 = ny + Math.sin(angle) * 5;
+          const x2 = nx + Math.cos(angle) * (5 + len);
+          const y2 = ny + Math.sin(angle) * (5 + len);
+          return `<line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}" stroke="#1a3a5c" stroke-width="0.8" stroke-opacity="${(0.06 + strength * 0.12).toFixed(2)}" />`;
+        }).join('');
+        svg.innerHTML = lines;
+      }
+
       rafRef.current = requestAnimationFrame(loop);
     };
-
-    // Subscribe to animation engine for shockwave on velocity spike
-    subscribe('cursor-shock', ({ jerk }) => {
-      if (Math.abs(jerk) > 8) setShockwave(Date.now());
-    });
 
     window.addEventListener('mousemove', onMove, { passive: true });
     window.addEventListener('mousedown', onDown);
@@ -327,7 +631,6 @@ function SpringCursor() {
     return () => {
       document.body.classList.remove('has-custom-cursor');
       cancelAnimationFrame(rafRef.current);
-      unsubscribe('cursor-shock');
       window.removeEventListener('mousemove', onMove);
       window.removeEventListener('mousedown', onDown);
       document.removeEventListener('mouseover', onEnter);
@@ -362,11 +665,13 @@ function SpringCursor() {
           </svg>
         </div>
       ))}
-      {shockwave > 0 && (
-        <div key={shockwave} className="shockwave" aria-hidden="true"
-          onAnimationEnd={() => setShockwave(0)}
-        />
-      )}
+      {/* Magnetic field lines radiating from cursor dot */}
+      <svg
+        ref={fieldRef}
+        className="cursor-field-svg"
+        aria-hidden="true"
+        style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', pointerEvents: 'none', zIndex: 9997 }}
+      />
     </>
   );
 }
@@ -534,7 +839,10 @@ function Navbar({ onHome = false }: { onHome?: boolean }) {
 function LiveOscilloscope() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const phaseRef  = useRef(0);
+  const artPhaseRef = useRef(0);
   const rafRef    = useRef(0);
+  const bpmRef    = useRef(72);
+  const tRef      = useRef(0);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -542,14 +850,14 @@ function LiveOscilloscope() {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    const W = canvas.width  = canvas.offsetWidth  * (window.devicePixelRatio || 1);
-    const H = canvas.height = canvas.offsetHeight * (window.devicePixelRatio || 1);
-
-    let bpm = 72;
-    let t = 0;
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width  = canvas.offsetWidth  * dpr;
+    canvas.height = canvas.offsetHeight * dpr;
+    const W = canvas.width;
+    const H = canvas.height;
+    const MID = H / 2; // dividing line between channels
 
     function ecgSample(x: number): number {
-      // P wave, QRS complex, T wave
       const p   = 0.15 * Math.exp(-((x - 0.2) ** 2) / 0.004);
       const qrs = x > 0.45 && x < 0.55
         ? -0.05 + 2.2 * Math.exp(-((x - 0.5) ** 2) / 0.0004) - 0.5 * Math.exp(-((x - 0.47) ** 2) / 0.0006)
@@ -558,38 +866,77 @@ function LiveOscilloscope() {
       return p + qrs + twave;
     }
 
+    // Arterial pressure waveform: rapid systolic rise, dicrotic notch at ~0.35, gradual diastolic decay
+    function artSample(x: number): number {
+      if (x < 0.05) return x / 0.05 * 0.9; // rapid upstroke
+      if (x < 0.25) return 0.9 - (x - 0.05) / 0.2 * 0.35; // systolic decay
+      if (x < 0.30) return 0.55 + ((x - 0.25) / 0.05 * 0.12 - 0.06); // dicrotic notch bump
+      return 0.55 * Math.exp(-((x - 0.30) / 0.7)); // diastolic runoff
+    }
+
     const loop = () => {
       ctx.clearRect(0, 0, W, H);
-      const period = 60 / bpm; // seconds per beat
-      const speed  = 1 / period; // beats per second
-      phaseRef.current = (phaseRef.current + 0.008 * speed * 60) % 1;
 
-      ctx.strokeStyle = 'rgba(0,200,160,0.7)';
-      ctx.lineWidth = 1.5 * (window.devicePixelRatio || 1);
-      ctx.shadowColor = '#00c8a0';
-      ctx.shadowBlur = 4;
+      const period = 60 / bpmRef.current;
+      const speed  = 1 / period;
+      phaseRef.current    = (phaseRef.current    + 0.008 * speed * 60) % 1;
+      artPhaseRef.current = (artPhaseRef.current + 0.008 * speed * 60) % 1;
+
+      // ── Channel divider ──
+      ctx.strokeStyle = 'rgba(232,228,221,0.06)';
+      ctx.lineWidth = 0.5;
       ctx.beginPath();
+      ctx.moveTo(0, MID);
+      ctx.lineTo(W, MID);
+      ctx.stroke();
 
+      // ── Channel labels ──
+      ctx.fillStyle = 'rgba(0,200,160,0.35)';
+      ctx.font = `${Math.round(8 * dpr)}px monospace`;
+      ctx.fillText('ECG  II', 4 * dpr, 9 * dpr);
+      ctx.fillStyle = 'rgba(0,200,160,0.25)';
+      ctx.fillText('ART  mmHg', 4 * dpr, MID + 9 * dpr);
+
+      // ── ECG trace (top half) ──
+      ctx.strokeStyle = 'rgba(0,200,160,0.75)';
+      ctx.lineWidth = 1.4 * dpr;
+      ctx.shadowColor = '#00c8a0';
+      ctx.shadowBlur = 3;
+      ctx.beginPath();
       for (let px = 0; px < W; px++) {
         const frac = (px / W + phaseRef.current) % 1;
         const amp  = ecgSample(frac);
-        const y    = H / 2 - amp * H * 0.38;
+        const y    = MID * 0.5 - amp * MID * 0.38;
         px === 0 ? ctx.moveTo(px, y) : ctx.lineTo(px, y);
       }
       ctx.stroke();
 
-      // Scanline cursor
-      const cursorX = ((1 - phaseRef.current) * W + W * 0.05) % W;
-      ctx.strokeStyle = 'rgba(0,200,160,0.25)';
-      ctx.lineWidth = 1;
+      // ── Arterial pressure trace (bottom half) ──
+      ctx.strokeStyle = 'rgba(0,200,160,0.45)';
+      ctx.lineWidth = 1.2 * dpr;
+      ctx.shadowColor = '#00c8a0';
+      ctx.shadowBlur = 2;
+      ctx.beginPath();
+      for (let px = 0; px < W; px++) {
+        const frac = (px / W + artPhaseRef.current) % 1;
+        const amp  = artSample(frac);
+        const y    = MID + MID * 0.15 + (1 - amp) * MID * 0.55;
+        px === 0 ? ctx.moveTo(px, y) : ctx.lineTo(px, y);
+      }
+      ctx.stroke();
       ctx.shadowBlur = 0;
+
+      // ── ECG scanline cursor ──
+      const cursorX = ((1 - phaseRef.current) * W + W * 0.05) % W;
+      ctx.strokeStyle = 'rgba(0,200,160,0.15)';
+      ctx.lineWidth = 1;
       ctx.beginPath();
       ctx.moveTo(cursorX, 0);
       ctx.lineTo(cursorX, H);
       ctx.stroke();
 
-      t++;
-      if (t % 180 === 0) bpm = 60 + Math.floor(Math.random() * 40); // vary BPM
+      tRef.current++;
+      if (tRef.current % 180 === 0) bpmRef.current = 60 + Math.floor(Math.random() * 40);
 
       rafRef.current = requestAnimationFrame(loop);
     };
@@ -598,8 +945,8 @@ function LiveOscilloscope() {
   }, []);
 
   return (
-    <div className="osc-canvas-wrap" style={{ height: '40px' }}>
-      <canvas ref={canvasRef} className="osc-canvas" style={{ height: '40px' }} />
+    <div className="osc-canvas-wrap" style={{ height: '64px' }}>
+      <canvas ref={canvasRef} className="osc-canvas" style={{ height: '64px', width: '100%' }} />
     </div>
   );
 }
@@ -727,6 +1074,8 @@ function HeroSection() {
     <section id="home" className="relative bg-graphite overflow-hidden">
       <HeroCrosshair />
       <CornerBrackets />
+      <FourBarLinkage />
+      <PlanetaryGearSystem />
       <BloodFlowParticles />
       {/* Folio line */}
       <div className="mx-auto max-w-container px-6 md:px-10 lg:px-14 xl:px-16 pt-10 md:pt-14">
@@ -1001,6 +1350,126 @@ function EcgBackground({ fast, flat }: { fast: boolean; flat: boolean }) {
   );
 }
 
+function LaminarFlowViz() {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const mouseYRef = useRef(0.5); // 0..1 normalized (0=top, 1=bottom)
+  const rafRef = useRef(0);
+  const phaseRef = useRef(0);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width  = canvas.offsetWidth  * dpr;
+    canvas.height = canvas.offsetHeight * dpr;
+    const W = canvas.width;
+    const H = canvas.height;
+
+    // Mouse Y within the canvas controls flow rate
+    const onMouseMove = (e: MouseEvent) => {
+      const rect = canvas.getBoundingClientRect();
+      mouseYRef.current = Math.max(0, Math.min(1, (e.clientY - rect.top) / rect.height));
+    };
+    canvas.addEventListener('mousemove', onMouseMove);
+
+    // Hook into animation engine for scroll-driven fallback
+    subscribe('laminar-flow', (_data: unknown) => {
+      // Also react to global mouse Y position
+    });
+
+    const NUM_LAYERS = 6;
+    const R = H / 2; // tube radius in px
+
+    const loop = () => {
+      ctx.clearRect(0, 0, W, H);
+
+      // Flow rate: mouse Y position inverted (top = fast, bottom = slow)
+      const flowRate = 0.3 + (1 - mouseYRef.current) * 0.7;
+      phaseRef.current += 0.012 * flowRate;
+
+      // Draw streamlines for each layer
+      for (let i = 0; i < NUM_LAYERS; i++) {
+        const r = ((i + 0.5) / NUM_LAYERS) * R; // radial position
+        // Parabolic velocity: v(r) = vmax * (1 - (r/R)^2)
+        const vNorm = 1 - (r / R) ** 2;
+        const v = flowRate * vNorm;
+        const alpha = 0.08 + vNorm * 0.2;
+        const lineY_top = H / 2 - r;
+        const lineY_bot = H / 2 + r;
+
+        // Bio-green to teal gradient by layer
+        const g = Math.floor(200 + vNorm * 55);
+        ctx.strokeStyle = `rgba(0, ${g}, 160, ${alpha.toFixed(2)})`;
+        ctx.lineWidth = (0.7 + vNorm * 1.0) * dpr;
+        ctx.shadowBlur = 0;
+
+        // Draw undulating streamline (top)
+        ctx.beginPath();
+        for (let px = 0; px < W; px++) {
+          const phase = phaseRef.current - px / W * 4;
+          const y = lineY_top + Math.sin(phase + i * 0.8) * (2 * dpr);
+          px === 0 ? ctx.moveTo(px, y) : ctx.lineTo(px, y);
+        }
+        ctx.stroke();
+
+        // Draw undulating streamline (bottom, mirrored)
+        ctx.beginPath();
+        for (let px = 0; px < W; px++) {
+          const phase = phaseRef.current - px / W * 4;
+          const y = lineY_bot - Math.sin(phase + i * 0.8) * (2 * dpr);
+          px === 0 ? ctx.moveTo(px, y) : ctx.lineTo(px, y);
+        }
+        ctx.stroke();
+
+        // Suppress unused variable warning
+        void v;
+      }
+
+      // Tube wall
+      ctx.strokeStyle = 'rgba(232,228,221,0.12)';
+      ctx.lineWidth = 1 * dpr;
+      ctx.beginPath();
+      ctx.moveTo(0, 0); ctx.lineTo(W, 0);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(0, H); ctx.lineTo(W, H);
+      ctx.stroke();
+
+      // Labels
+      ctx.fillStyle = 'rgba(0,200,160,0.3)';
+      ctx.font = `${Math.round(7 * dpr)}px monospace`;
+      ctx.fillText('LAMINAR  Re<2100', 4 * dpr, H - 4 * dpr);
+      const rpmPct = Math.round(flowRate * 100);
+      ctx.fillStyle = 'rgba(0,200,160,0.25)';
+      ctx.fillText(`Q  ${rpmPct}%`, W - 28 * dpr, H - 4 * dpr);
+
+      rafRef.current = requestAnimationFrame(loop);
+    };
+    rafRef.current = requestAnimationFrame(loop);
+
+    return () => {
+      cancelAnimationFrame(rafRef.current);
+      canvas.removeEventListener('mousemove', onMouseMove);
+      unsubscribe('laminar-flow');
+    };
+  }, []);
+
+  return (
+    <div style={{ position: 'relative', width: '100%', marginTop: '24px', marginBottom: '8px' }} data-reveal>
+      <p style={{ fontFamily: 'monospace', fontSize: '9px', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(232,228,221,0.3)', marginBottom: '6px' }}>
+        POISEUILLE FLOW · HOVER TO ADJUST Re
+      </p>
+      <canvas
+        ref={canvasRef}
+        style={{ display: 'block', width: '100%', height: '52px', cursor: 'crosshair' }}
+      />
+    </div>
+  );
+}
+
 function AboutSection() {
   const [fast, setFast] = useState(false);
   const [flat, setFlat] = useState(false);
@@ -1057,6 +1526,8 @@ function AboutSection() {
             </div>
           </div>
         </div>
+
+        <LaminarFlowViz />
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-0 md:divide-x md:divide-bone/10" data-reveal data-reveal-delay="2">
           {[
@@ -1227,70 +1698,113 @@ function SkillsSection() {
 
 /* ── Research ────────────────────────────────────────────────────── */
 
-function CrankMechanism() {
+function HydraulicActuator() {
   const svgRef = useRef<SVGSVGElement>(null);
-  const cranks  = useRef<SVGLineElement | null>(null);
-  const rod     = useRef<SVGLineElement | null>(null);
-  const piston  = useRef<SVGRectElement | null>(null);
-  const angleRef = useRef(0);
+  const extRef = useRef(0);          // extension 0..1
+  const velRef = useRef(0);
+  const particlesRef = useRef<Array<{ x: number; y: number; vy: number; life: number; maxLife: number }>>([]);
+  const frameRef = useRef(0);
 
   useEffect(() => {
-    subscribe('crank', ({ velocity }) => {
-      const rpm = Math.max(0.5, Math.min(120, 2 + Math.abs(velocity) * 3));
-      angleRef.current = (angleRef.current + rpm / 60 * 6) % 360;
-      const a = angleRef.current * Math.PI / 180;
-      // Crankshaft geometry
-      const crankR = 12;
-      const rodLen = 28;
-      const cx = 22, cy = 22; // crank center
-      const crankX = cx + Math.cos(a) * crankR;
-      const crankY = cy + Math.sin(a) * crankR;
-      // Piston constrained to vertical axis at cx
-      const dy = crankY - cy;
-      const pistonY = cy + Math.sqrt(rodLen * rodLen - (crankX - cx) * (crankX - cx)) * Math.sign(Math.cos(a)) + dy;
-
-      if (cranks.current) {
-        cranks.current.setAttribute('x1', String(cx));
-        cranks.current.setAttribute('y1', String(cy));
-        cranks.current.setAttribute('x2', String(crankX.toFixed(2)));
-        cranks.current.setAttribute('y2', String(crankY.toFixed(2)));
-      }
-      if (rod.current) {
-        rod.current.setAttribute('x1', String(crankX.toFixed(2)));
-        rod.current.setAttribute('y1', String(crankY.toFixed(2)));
-        rod.current.setAttribute('x2', String(cx));
-        rod.current.setAttribute('y2', String(Math.max(2, Math.min(42, pistonY)).toFixed(2)));
-      }
-      if (piston.current) {
-        const py = Math.max(2, Math.min(38, pistonY)) - 5;
-        piston.current.setAttribute('y', String(py.toFixed(2)));
-      }
+    let targetExt = 0.4;
+    subscribe('hydraulic', ({ velocity }) => {
+      targetExt = 0.2 + Math.min(0.8, Math.abs(velocity) * 0.06);
     });
-    return () => unsubscribe('crank');
+
+    const loop = () => {
+      // Spring toward target extension
+      const [newExt, newVel] = springStep(extRef.current, targetExt, velRef.current, 0.08, 0.80);
+      extRef.current = Math.max(0, Math.min(1, newExt));
+      velRef.current = newVel;
+
+      const svg = svgRef.current;
+      if (svg) {
+        const ext = extRef.current;
+
+        // Rod: extends from y=36 down to y=36+ext*22
+        const rodBottom = 36 + ext * 22;
+        const rod = svg.querySelector<SVGRectElement>('.hyd-rod');
+        if (rod) rod.setAttribute('height', String((ext * 22 + 4).toFixed(1)));
+
+        // Piston cap moves with rod
+        const cap = svg.querySelector<SVGRectElement>('.hyd-cap');
+        if (cap) cap.setAttribute('y', String((rodBottom - 3).toFixed(1)));
+
+        // Fluid fill inside cylinder: inversely proportional to extension
+        const fluidH = 26 - ext * 20;
+        const fluid = svg.querySelector<SVGRectElement>('.hyd-fluid');
+        if (fluid) {
+          fluid.setAttribute('y', String((10 + ext * 20).toFixed(1)));
+          fluid.setAttribute('height', String(Math.max(0, fluidH).toFixed(1)));
+        }
+
+        // Pressure indicator: opacity proportional to extension
+        const pressEl = svg.querySelector<SVGCircleElement>('.hyd-pressure');
+        if (pressEl) pressEl.style.opacity = String((0.3 + ext * 0.6).toFixed(2));
+
+        // Spawn fluid particles when extending fast
+        if (Math.abs(velRef.current) > 0.015 && frameRef.current % 4 === 0) {
+          particlesRef.current.push({
+            x: 16 + (Math.random() - 0.5) * 8,
+            y: 36 + ext * 22,
+            vy: 0.4 + Math.random() * 0.6,
+            life: 0, maxLife: 20 + Math.floor(Math.random() * 15),
+          });
+        }
+        particlesRef.current = particlesRef.current.filter(p => {
+          p.y += p.vy;
+          p.life++;
+          return p.life < p.maxLife && p.y < 65;
+        });
+
+        // Draw particles as small dots
+        const pGroup = svg.querySelector<SVGGElement>('.hyd-particles');
+        if (pGroup) {
+          pGroup.innerHTML = particlesRef.current.map(p => {
+            const fade = 1 - p.life / p.maxLife;
+            return `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="1" fill="#00c8a0" opacity="${(fade * 0.6).toFixed(2)}" />`;
+          }).join('');
+        }
+      }
+
+      frameRef.current++;
+      requestAnimationFrame(loop);
+    };
+    const rid = requestAnimationFrame(loop);
+
+    return () => {
+      unsubscribe('hydraulic');
+      cancelAnimationFrame(rid);
+    };
   }, []);
 
   return (
     <div className="crank-wrap" aria-hidden="true">
-      <svg ref={svgRef} className="crank-svg" width="44" height="52" viewBox="0 0 44 52" fill="none" stroke="currentColor" strokeWidth="1.5">
-        {/* Cylinder walls */}
-        <line x1="14" y1="0" x2="14" y2="40" strokeOpacity="0.4" />
-        <line x1="30" y1="0" x2="30" y2="40" strokeOpacity="0.4" />
-        {/* Cylinder cap */}
-        <rect x="13" y="0" width="18" height="3" fill="currentColor" fillOpacity="0.3" />
-        {/* Crankshaft circle */}
-        <circle cx="22" cy="22" r="14" strokeOpacity="0.3" strokeDasharray="2 2" />
-        <circle cx="22" cy="22" r="2" fill="currentColor" />
-        {/* Crank arm */}
-        <line ref={cranks} x1="22" y1="22" x2="34" y2="22" strokeWidth="2" />
-        {/* Crank pin */}
-        <circle cx="34" cy="22" r="2.5" fill="currentColor" />
-        {/* Connecting rod */}
-        <line ref={rod} x1="34" y1="22" x2="22" y2="8" strokeWidth="1.5" />
-        {/* Piston */}
-        <rect ref={piston} x="15" y="3" width="14" height="8" rx="1" fill="currentColor" fillOpacity="0.5" />
-        {/* Crankshaft output */}
-        <line x1="22" y1="36" x2="22" y2="52" strokeWidth="2" strokeOpacity="0.5" />
-        <line x1="14" y1="44" x2="30" y2="44" strokeOpacity="0.4" />
+      <svg ref={svgRef} className="crank-svg" width="44" height="68" viewBox="0 0 44 68" fill="none" stroke="currentColor" strokeWidth="1.2">
+        {/* Cylinder body */}
+        <rect x="8" y="8" width="16" height="30" rx="1" strokeOpacity="0.5" />
+        {/* Cylinder cap (top) */}
+        <rect x="7" y="6" width="18" height="4" rx="1" fill="currentColor" fillOpacity="0.35" />
+        {/* Fluid fill */}
+        <rect className="hyd-fluid" x="9" y="10" width="14" height="16" fill="#00c8a0" opacity="0.22" />
+        {/* Piston seals (2 rings) */}
+        <line x1="9" y1="26" x2="23" y2="26" stroke="currentColor" strokeOpacity="0.5" />
+        <line x1="9" y1="29" x2="23" y2="29" stroke="currentColor" strokeOpacity="0.5" />
+        {/* Rod (extends down) */}
+        <rect className="hyd-rod" x="14" y="36" width="4" height="12" fill="currentColor" fillOpacity="0.6" />
+        {/* Piston cap (bottom of rod) */}
+        <rect className="hyd-cap" x="11" y="44" width="10" height="4" rx="1" fill="currentColor" fillOpacity="0.5" />
+        {/* Pressure indicator dot */}
+        <circle className="hyd-pressure" cx="32" cy="16" r="3" fill="#00c8a0" opacity="0.4" />
+        <line x1="24" y1="16" x2="29" y2="16" stroke="#00c8a0" strokeWidth="0.8" opacity="0.4" />
+        {/* Particles group */}
+        <g className="hyd-particles" />
+        {/* Mounting bracket (top) */}
+        <line x1="4" y1="8" x2="8" y2="8" strokeOpacity="0.4" />
+        <line x1="24" y1="8" x2="28" y2="8" strokeOpacity="0.4" />
+        {/* Port lines */}
+        <line x1="0" y1="14" x2="8" y2="14" strokeWidth="0.8" strokeOpacity="0.3" strokeDasharray="2 1" />
+        <line x1="0" y1="24" x2="8" y2="24" strokeWidth="0.8" strokeOpacity="0.3" strokeDasharray="2 1" />
       </svg>
     </div>
   );
@@ -1327,7 +1841,7 @@ function ResearchEntry({ card, idx }: { card: (typeof RESEARCH_CARDS)[number]; i
           (e.currentTarget as HTMLElement).style.transform = '';
         }}
       >
-        <CrankMechanism />
+        <HydraulicActuator />
         <div className="grid md:grid-cols-[auto_1fr_auto] gap-4 md:gap-10 items-start">
           <div className="shrink-0 pt-1">
             <p className="font-mono text-[9px] uppercase tracking-[0.22em] e-vital text-vital">{card.index}</p>
@@ -2185,9 +2699,10 @@ export default function App() {
 
   return (
     <div className="relative">
-      <GearTrain />
+      <PlanetaryGearSystem />
       <BlueprintParallax />
       <SpringCursor />
+      <ScrollRPMGauge />
       <PaperGrain />
       <ScrollProgress />
       <BackToTop />

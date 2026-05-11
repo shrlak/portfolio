@@ -679,3 +679,49 @@ tr:hover .tolerance-note { opacity: 1; }
   .worm-thread { animation: none !important; }
   .cursor-ring-spring { display: none; }
 }
+
+/* ── Planetary gear system ────────────────────────────────────────── */
+.pg-sun, .pg-ring, .pg-planet-0, .pg-planet-1, .pg-planet-2 {
+  will-change: transform;
+  transition: none;
+}
+
+/* ── Four-bar linkage ─────────────────────────────────────────────── */
+.fb-trace {
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  fill: none;
+}
+
+/* ── Scroll RPM gauge ─────────────────────────────────────────────── */
+/* (inline styles handle positioning) */
+
+/* ── Cursor field lines ───────────────────────────────────────────── */
+.cursor-field-svg {
+  will-change: contents;
+  pointer-events: none;
+}
+
+/* ── Dual-channel oscilloscope ────────────────────────────────────── */
+.osc-canvas-wrap {
+  position: relative;
+  width: 100%;
+  background: rgba(13, 13, 13, 0.4);
+  border-top: 1px solid rgba(232, 228, 221, 0.08);
+}
+.osc-canvas {
+  display: block;
+  width: 100%;
+}
+
+/* ── Hydraulic actuator ───────────────────────────────────────────── */
+.hyd-rod, .hyd-cap, .hyd-fluid, .hyd-pressure {
+  will-change: transform, height, y, opacity;
+}
+
+/* ── Laminar flow canvas ──────────────────────────────────────────── */
+.laminar-canvas {
+  display: block;
+  width: 100%;
+  cursor: crosshair;
+}
