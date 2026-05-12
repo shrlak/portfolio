@@ -144,17 +144,107 @@ function useTimelineScroll(containerRef: React.RefObject<HTMLDivElement>) {
 
 /* ── Global chrome ────────────────────────────────────────────────── */
 
-function ScrollProgress() {
-  const ref = useRef<HTMLDivElement>(null);
+// Full-page elevator scroll indicator — replaces the old thin red bar
+function ElevatorScrollbar() {
+  const cabinRef = useRef<HTMLDivElement>(null);
+  const pctRef   = useRef<HTMLSpanElement>(null);
+  const rafRef   = useRef(0);
+  const posRef   = useRef({ y: 8, vy: 0 });
+
   useEffect(() => {
-    const update = () => {
-      const pct = (window.scrollY / (document.body.scrollHeight - window.innerHeight)) * 100;
-      if (ref.current) ref.current.style.height = `${Math.min(pct, 100)}%`;
+    const CAB_H  = 56;
+    const MARGIN = 10;
+
+    const tick = () => {
+      const maxScroll = Math.max(1, document.body.scrollHeight - window.innerHeight);
+      const frac      = Math.min(1, window.scrollY / maxScroll);
+      const travel    = window.innerHeight - CAB_H - MARGIN * 2;
+      const target    = MARGIN + frac * travel;
+
+      const [ny, nv]  = springStep(posRef.current.y, target, posRef.current.vy, 0.10, 0.74);
+      posRef.current  = { y: ny, vy: nv };
+
+      if (cabinRef.current) cabinRef.current.style.transform = `translateY(${ny.toFixed(2)}px)`;
+      if (pctRef.current)   pctRef.current.textContent = String(Math.round(frac * 100));
+      rafRef.current = requestAnimationFrame(tick);
     };
-    window.addEventListener('scroll', update, { passive: true });
-    return () => window.removeEventListener('scroll', update);
+
+    rafRef.current = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(rafRef.current);
   }, []);
-  return <div ref={ref} className="scroll-progress-ed" aria-hidden="true" />;
+
+  const FLOORS = ['G', '4', '3', '2', '1', 'B'];
+
+  return (
+    <div
+      aria-hidden="true"
+      style={{
+        position: 'fixed', right: 0, top: 0, bottom: 0,
+        width: 38, zIndex: 20, pointerEvents: 'none',
+      }}
+    >
+      {/* Left guide rail */}
+      <div style={{
+        position: 'absolute', left: 9, top: 0, bottom: 0, width: 1,
+        background: 'repeating-linear-gradient(to bottom, rgba(100,100,100,0.28) 0px, rgba(100,100,100,0.28) 3px, transparent 3px, transparent 12px)',
+      }} />
+      {/* Right guide rail */}
+      <div style={{
+        position: 'absolute', right: 9, top: 0, bottom: 0, width: 1,
+        background: 'repeating-linear-gradient(to bottom, rgba(100,100,100,0.28) 0px, rgba(100,100,100,0.28) 3px, transparent 3px, transparent 12px)',
+      }} />
+
+      {/* Floor markers */}
+      {FLOORS.map((lbl, i) => {
+        const pct = (i / (FLOORS.length - 1)) * 100;
+        return (
+          <div key={i} style={{
+            position: 'absolute', left: 0, right: 0, top: `${pct}%`,
+            display: 'flex', alignItems: 'center',
+            transform: 'translateY(-50%)',
+          }}>
+            <div style={{ flex: 1, height: 1, background: 'rgba(100,100,100,0.20)' }} />
+            <span style={{
+              fontFamily: 'monospace', fontSize: 6, lineHeight: 1,
+              width: 10, textAlign: 'center',
+              color: 'rgba(100,100,100,0.38)',
+            }}>{lbl}</span>
+          </div>
+        );
+      })}
+
+      {/* Cabin */}
+      <div ref={cabinRef} style={{
+        position: 'absolute', top: 0, left: 4, right: 4, height: 56,
+        border: '1px solid rgba(200,16,46,0.48)',
+        background: 'rgba(200,16,46,0.05)',
+        borderRadius: 2,
+        display: 'flex', flexDirection: 'column',
+        alignItems: 'center', justifyContent: 'center',
+        gap: 2,
+      }}>
+        {/* Sheave attachment circles */}
+        <div style={{ display: 'flex', gap: 8, marginBottom: 2 }}>
+          {[0, 1].map(j => (
+            <div key={j} style={{
+              width: 7, height: 7, borderRadius: '50%',
+              border: '1px solid rgba(200,16,46,0.50)',
+            }} />
+          ))}
+        </div>
+        {/* Cabin divider */}
+        <div style={{ width: '65%', height: 1, background: 'rgba(200,16,46,0.18)', marginBottom: 1 }} />
+        {/* Scroll % */}
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: 1 }}>
+          <span ref={pctRef} style={{
+            fontFamily: 'monospace', fontSize: 9, fontWeight: 700, lineHeight: 1,
+            color: 'rgba(200,16,46,0.75)',
+          }}>0</span>
+          <span style={{ fontFamily: 'monospace', fontSize: 6, lineHeight: 1, color: 'rgba(200,16,46,0.42)' }}>%</span>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 function BackToTop() {
@@ -3485,7 +3575,7 @@ export default function App() {
       <SpringCursor />
       <ScrollRPMGauge />
       <PaperGrain />
-      <ScrollProgress />
+      <ElevatorScrollbar />
       <BackToTop />
       <Navbar onHome />
       <main>

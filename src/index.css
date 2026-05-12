@@ -11,22 +11,15 @@
     font-family: 'JetBrains Mono', ui-monospace, monospace;
   }
   body { overflow-x: hidden; }
+  /* Hide native scrollbar — elevator component replaces it */
+  html { scrollbar-width: none; }
+  ::-webkit-scrollbar { display: none; }
   * { -webkit-tap-highlight-color: transparent; }
   ::selection { background-color: #c8102e; color: #f4f2ee; }
 }
 
 @layer components {
 
-  /* ── Scroll progress — vertical left edge ─────────────────────── */
-  .scroll-progress-ed {
-    position: fixed;
-    left: 0; top: 0;
-    width: 3px; height: 0%;
-    background: #c8102e;
-    z-index: 999;
-    pointer-events: none;
-    transition: height 0.06s linear;
-  }
 
   /* ── Paper grain overlay ──────────────────────────────────────── */
   .paper-grain {
