@@ -180,182 +180,352 @@ function PaperGrain() {
   return <div className="paper-grain" aria-hidden="true" />;
 }
 
-function PlanetaryGearSystem() {
-  const svgRef = useRef<SVGSVGElement>(null);
-  const anglesRef = useRef({ sun: 0, planets: [0, 0, 0], ring: 0 });
-
-  // Epicyclic gear: N_sun=14, N_planet=9, N_ring=32
-  const N_SUN = 14, N_PLANET = 9, N_RING = 32;
-  const CARRIER = N_SUN / (N_SUN + N_RING);
-  const PLANET_ABS = CARRIER - (N_SUN / N_PLANET) * (1 - CARRIER);
-  const RING_RATIO = -N_SUN / N_RING;
-
-  const CX = 130, CY = 130; // center of system
-  const R_SUN_PITCH = 42;   // sun gear pitch radius
-  const R_PLANET_PITCH = 27; // planet pitch radius
-  const R_RING_PITCH = 96;  // ring gear pitch radius
-  const CARRIER_RADIUS = R_SUN_PITCH + R_PLANET_PITCH; // planet orbit radius
-
-  // Gear visual radii
-  const R_SUN_INNER = R_SUN_PITCH - 6;
-  const R_SUN_OUTER = R_SUN_PITCH + 6;
-  const R_PL_INNER  = R_PLANET_PITCH - 5;
-  const R_PL_OUTER  = R_PLANET_PITCH + 5;
-
-  // Pre-compute planet positions (120° apart)
-  const PLANET_BASE_ANGLES = [0, 120, 240];
-
-  const sunPath = gearPath(CX, CY, R_SUN_INNER, R_SUN_OUTER, N_SUN);
-  const planetPaths = PLANET_BASE_ANGLES.map(ba => {
-    const a = ba * Math.PI / 180;
-    return gearPath(
-      CX + Math.cos(a) * CARRIER_RADIUS,
-      CY + Math.sin(a) * CARRIER_RADIUS,
-      R_PL_INNER, R_PL_OUTER, N_PLANET
+// Build internal-tooth ring gear path centered at (cx,cy)
+function ringGearPath(cx: number, cy: number, ro: number, ri: number, teeth: number): string {
+  const pts: string[] = [];
+  for (let i = 0; i < teeth; i++) {
+    const a0 = (i / teeth) * Math.PI * 2;
+    const a1 = a0 + Math.PI / teeth * 0.35;
+    const a2 = a0 + Math.PI / teeth * 0.65;
+    const a3 = a0 + Math.PI / teeth;
+    pts.push(
+      `L${(Math.cos(a0) * ro + cx).toFixed(2)},${(Math.sin(a0) * ro + cy).toFixed(2)}`,
+      `L${(Math.cos(a1) * ri + cx).toFixed(2)},${(Math.sin(a1) * ri + cy).toFixed(2)}`,
+      `L${(Math.cos(a2) * ri + cx).toFixed(2)},${(Math.sin(a2) * ri + cy).toFixed(2)}`,
+      `L${(Math.cos(a3) * ro + cx).toFixed(2)},${(Math.sin(a3) * ro + cy).toFixed(2)}`,
     );
+  }
+  return `M${(Math.cos(0) * ro + cx).toFixed(2)},${(Math.sin(0) * ro + cy).toFixed(2)} ${pts.join(' ')} Z`;
+}
+
+function CompoundGearSystem() {
+  const svgRef = useRef<SVGSVGElement>(null);
+
+  // Stage 1: 4-planet epicyclic, ring fixed. Ratio = 1 + N_R1/N_S1 = 3×
+  const N_S1 = 16, N_P1 = 8, N_R1 = 32;
+  const R_S1 = 26, R_P1 = 13; // pitch radii (R_R1 = R_S1 + 2*R_P1 = 52)
+  const CAR_R1 = R_S1 + R_P1; // planet orbit radius = 39
+  const CX1 = 108, CY1 = 112;
+  const PLANET_ANGLES_1 = [0, 90, 180, 270]; // 4 planets
+
+  // Stage 2: 3-planet epicyclic, ring fixed. Ratio = 1 + N_R2/N_S2 ≈ 3.33×
+  const N_S2 = 18, N_P2 = 12, N_R2 = 42; // R_R2 check: 18+2*12=42 ✓ (using R_S2=21,R_P2=14 → pitch)
+  const R_S2 = 18, R_P2 = 12;
+  const CAR_R2 = R_S2 + R_P2; // = 30
+  const CX2 = 318, CY2 = 112;
+  const PLANET_ANGLES_2 = [0, 120, 240]; // 3 planets
+
+  // Angular velocity relationships (per frame delta d):
+  // Stage 1: sun1=+d, carrier1=+d/3, planet1_self=-d (ring fixed)
+  // Stage 2 input=carrier1 → sun2=+d/3, carrier2=+d/10, planet2_self=-d/4
+  const angRef = useRef({
+    sun1: 0, carrier1: 0, pl1: [0, 0, 0, 0],
+    sun2: 0, carrier2: 0, pl2: [0, 0, 0],
   });
+
+  // Pre-compute static gear paths
+  const sun1Path = gearPath(CX1, CY1, R_S1 - 5, R_S1 + 5, N_S1);
+  const pl1Paths = PLANET_ANGLES_1.map(ba => {
+    const a = ba * Math.PI / 180;
+    return gearPath(CX1 + Math.cos(a) * CAR_R1, CY1 + Math.sin(a) * CAR_R1, R_P1 - 4, R_P1 + 4, N_P1);
+  });
+  const ring1D = ringGearPath(CX1, CY1, R_S1 + 2 * R_P1 + 8, R_S1 + 2 * R_P1 - 4, N_R1);
+
+  const sun2Path = gearPath(CX2, CY2, R_S2 - 4, R_S2 + 4, N_S2);
+  const pl2Paths = PLANET_ANGLES_2.map(ba => {
+    const a = ba * Math.PI / 180;
+    return gearPath(CX2 + Math.cos(a) * CAR_R2, CY2 + Math.sin(a) * CAR_R2, R_P2 - 4, R_P2 + 4, N_P2);
+  });
+  const ring2D = ringGearPath(CX2, CY2, R_S2 + 2 * R_P2 + 7, R_S2 + 2 * R_P2 - 3, N_R2);
 
   useEffect(() => {
     const stop = startEngine();
-    subscribe('planetary', ({ velocity }) => {
-      const rpm = Math.max(0.3, Math.min(90, 1 + Math.abs(velocity) * 2.2));
-      const delta = rpm / 60 * 6; // degrees per frame
+    subscribe('compound-gear', ({ velocity }) => {
+      const rpm = Math.max(0.4, Math.min(100, 1.2 + Math.abs(velocity) * 2.5));
+      const d = rpm / 60 * 5.5;
 
-      anglesRef.current.sun = (anglesRef.current.sun + delta) % 360;
-      anglesRef.current.ring = (anglesRef.current.ring + delta * RING_RATIO + 360) % 360;
-
-      anglesRef.current.planets = anglesRef.current.planets.map(
-        (a) => (a + delta * PLANET_ABS) % 360
-      );
+      const ag = angRef.current;
+      ag.sun1    = (ag.sun1    + d)      % 360;
+      ag.carrier1 = (ag.carrier1 + d / 3)  % 360;
+      ag.pl1      = ag.pl1.map(a => (a - d + 360) % 360);
+      ag.sun2    = (ag.sun2    + d / 3)  % 360;
+      ag.carrier2 = (ag.carrier2 + d / 10) % 360;
+      ag.pl2      = ag.pl2.map(a => (a - d / 4 + 360) % 360);
 
       const svg = svgRef.current;
       if (!svg) return;
 
-      // Sun gear
-      const sunEl = svg.querySelector<SVGGElement>('.pg-sun');
-      if (sunEl) sunEl.style.transform = `rotate(${anglesRef.current.sun}deg)`;
+      const set = (cls: string, tx: string) => {
+        const el = svg.querySelector<SVGGElement>(cls);
+        if (el) el.style.transform = tx;
+      };
 
-      // Ring gear (rotate the whole ring group)
-      const ringEl = svg.querySelector<SVGGElement>('.pg-ring');
-      if (ringEl) ringEl.style.transform = `rotate(${anglesRef.current.ring}deg)`;
+      set('.cg-sun1',  `rotate(${ag.sun1}deg)`);
+      set('.cg-sun2',  `rotate(${ag.sun2}deg)`);
 
-      // Planets: each planet orbits + rotates
-      const carrierAngle = (anglesRef.current.sun * CARRIER + 360 * 100) % 360;
-      PLANET_BASE_ANGLES.forEach((ba, i) => {
-        const el = svg.querySelector<SVGGElement>(`.pg-planet-${i}`);
-        if (!el) return;
-        const orbitAngle = (ba + carrierAngle) * Math.PI / 180;
-        const px = CX + Math.cos(orbitAngle) * CARRIER_RADIUS;
-        const py = CY + Math.sin(orbitAngle) * CARRIER_RADIUS;
-        el.style.transform = `translate(${(px - (CX + Math.cos(ba * Math.PI / 180) * CARRIER_RADIUS)).toFixed(2)}px, ${(py - (CY + Math.sin(ba * Math.PI / 180) * CARRIER_RADIUS)).toFixed(2)}px) rotate(${anglesRef.current.planets[i]}deg)`;
+      PLANET_ANGLES_1.forEach((ba, i) => {
+        const a = ba * Math.PI / 180;
+        const orbitA = (ba + ag.carrier1) * Math.PI / 180;
+        const px0 = CX1 + Math.cos(a) * CAR_R1;
+        const py0 = CY1 + Math.sin(a) * CAR_R1;
+        const px  = CX1 + Math.cos(orbitA) * CAR_R1;
+        const py  = CY1 + Math.sin(orbitA) * CAR_R1;
+        const el = svg.querySelector<SVGGElement>(`.cg-pl1-${i}`);
+        if (el) el.style.transform = `translate(${(px - px0).toFixed(2)}px,${(py - py0).toFixed(2)}px) rotate(${ag.pl1[i]}deg)`;
+      });
+
+      PLANET_ANGLES_2.forEach((ba, i) => {
+        const a = ba * Math.PI / 180;
+        const orbitA = (ba + ag.carrier2) * Math.PI / 180;
+        const px0 = CX2 + Math.cos(a) * CAR_R2;
+        const py0 = CY2 + Math.sin(a) * CAR_R2;
+        const px  = CX2 + Math.cos(orbitA) * CAR_R2;
+        const py  = CY2 + Math.sin(orbitA) * CAR_R2;
+        const el = svg.querySelector<SVGGElement>(`.cg-pl2-${i}`);
+        if (el) el.style.transform = `translate(${(px - px0).toFixed(2)}px,${(py - py0).toFixed(2)}px) rotate(${ag.pl2[i]}deg)`;
       });
     });
-    return () => { unsubscribe('planetary'); stop(); };
+    return () => { unsubscribe('compound-gear'); stop(); };
   }, []);
 
-  // Ring gear internal teeth path (drawn as a circle with notches)
-  const ringD = (() => {
-    const pts: string[] = [];
-    for (let i = 0; i < N_RING; i++) {
-      const a0 = (i / N_RING) * Math.PI * 2;
-      const a1 = a0 + Math.PI / N_RING * 0.35;
-      const a2 = a0 + Math.PI / N_RING * 0.65;
-      const a3 = a0 + Math.PI / N_RING;
-      const ro = R_RING_PITCH + 8;
-      const ri = R_RING_PITCH - 6;
-      pts.push(
-        `L${(Math.cos(a0) * ro + CX).toFixed(2)},${(Math.sin(a0) * ro + CY).toFixed(2)}`,
-        `L${(Math.cos(a1) * ri + CX).toFixed(2)},${(Math.sin(a1) * ri + CY).toFixed(2)}`,
-        `L${(Math.cos(a2) * ri + CX).toFixed(2)},${(Math.sin(a2) * ri + CY).toFixed(2)}`,
-        `L${(Math.cos(a3) * ro + CX).toFixed(2)},${(Math.sin(a3) * ro + CY).toFixed(2)}`,
-      );
-    }
-    return `M${(Math.cos(0) * (R_RING_PITCH + 8) + CX).toFixed(2)},${(Math.sin(0) * (R_RING_PITCH + 8) + CY).toFixed(2)} ${pts.join(' ')} Z`;
-  })();
+  const beltY1 = CY1 - 2; // belt attach Y on stage1 output shaft
+  const beltY2 = CY2 - 2;
+  const beltX1 = CX1 + R_S1 + 2 * R_P1 + 12;
+  const beltX2 = CX2 - R_S2 - 2 * R_P2 - 12;
+  const shaftMidX = (beltX1 + beltX2) / 2;
 
   return (
     <div className="gear-train-wrap" aria-hidden="true">
       <svg
         ref={svgRef}
-        viewBox="0 0 260 260"
+        viewBox="0 0 440 224"
         className="gear-train-svg"
-        style={{ width: 'clamp(240px, 32vw, 480px)', bottom: '2%', right: '1%', position: 'absolute' }}
+        style={{ width: 'clamp(280px, 38vw, 560px)', bottom: '2%', right: '0.5%', position: 'absolute' }}
       >
-        {/* Ring gear (outermost) */}
-        <g className="pg-ring" style={{ transformOrigin: `${CX}px ${CY}px` }}>
-          <path d={ringD} fill="currentColor" opacity="0.18" />
-          <circle cx={CX} cy={CY} r={R_RING_PITCH + 10} fill="none" stroke="currentColor" strokeWidth="1" opacity="0.12" />
-        </g>
+        {/* ── Label ── */}
+        <text x="220" y="13" textAnchor="middle" fontFamily="monospace" fontSize="7" fill="currentColor" opacity="0.25" letterSpacing="2">COMPOUND EPICYCLIC — 10× REDUCTION</text>
+
+        {/* ── Coupling shaft between stages ── */}
+        <line x1={beltX1} y1={beltY1} x2={shaftMidX} y2={beltY1} stroke="currentColor" strokeWidth="2.5" opacity="0.18" strokeDasharray="5 3" />
+        <line x1={shaftMidX} y1={beltY2} x2={beltX2} y2={beltY2} stroke="currentColor" strokeWidth="2.5" opacity="0.18" strokeDasharray="5 3" />
+        <line x1={shaftMidX} y1={Math.min(beltY1,beltY2)-4} x2={shaftMidX} y2={Math.max(beltY1,beltY2)+4} stroke="currentColor" strokeWidth="1.5" opacity="0.15" />
+        <circle cx={shaftMidX} cy={CY1} r="5" fill="none" stroke="currentColor" strokeWidth="1.2" opacity="0.22" />
+        <text x={shaftMidX} y={CY1 + 14} textAnchor="middle" fontFamily="monospace" fontSize="6" fill="currentColor" opacity="0.2">3×</text>
+
+        {/* ══ STAGE 1 ══ */}
+        {/* Ring gear housing */}
+        <circle cx={CX1} cy={CY1} r={R_S1 + 2 * R_P1 + 14} fill="none" stroke="currentColor" strokeWidth="1.2" opacity="0.14" />
+        <path d={ring1D} fill="currentColor" opacity="0.16" />
 
         {/* Carrier arms */}
-        {PLANET_BASE_ANGLES.map((ba, i) => {
+        {PLANET_ANGLES_1.map((ba, i) => {
           const a = ba * Math.PI / 180;
-          const px = CX + Math.cos(a) * CARRIER_RADIUS;
-          const py = CY + Math.sin(a) * CARRIER_RADIUS;
-          return (
-            <line key={`arm-${i}`} className="pg-carrier-arm"
-              x1={CX} y1={CY} x2={px.toFixed(1)} y2={py.toFixed(1)}
-              stroke="currentColor" strokeWidth="1.5" opacity="0.2"
-            />
-          );
+          return <line key={`ca1-${i}`}
+            x1={CX1} y1={CY1}
+            x2={(CX1 + Math.cos(a) * CAR_R1).toFixed(1)}
+            y2={(CY1 + Math.sin(a) * CAR_R1).toFixed(1)}
+            stroke="currentColor" strokeWidth="1.2" opacity="0.18"
+          />;
         })}
 
-        {/* Planet gears */}
-        {PLANET_BASE_ANGLES.map((ba, i) => {
+        {/* Planet gears stage 1 */}
+        {PLANET_ANGLES_1.map((ba, i) => {
           const a = ba * Math.PI / 180;
-          const px = CX + Math.cos(a) * CARRIER_RADIUS;
-          const py = CY + Math.sin(a) * CARRIER_RADIUS;
+          const px = CX1 + Math.cos(a) * CAR_R1;
+          const py = CY1 + Math.sin(a) * CAR_R1;
           return (
-            <g key={`planet-${i}`} className={`pg-planet-${i}`}
-              style={{ transformOrigin: `${px}px ${py}px` }}
-            >
-              <path d={planetPaths[i]} fill="currentColor" opacity="0.85" />
-              <circle cx={px} cy={py} r={R_PL_INNER * 0.4} fill="#f4f2ee" />
-              <circle cx={px} cy={py} r="2" fill="currentColor" opacity="0.7" />
-              {/* Spokes */}
-              {[0, 120, 240].map(sa => {
-                const sr = sa * Math.PI / 180;
-                return <line key={sa}
-                  x1={(Math.cos(sr) * R_PL_INNER * 0.4 + px).toFixed(1)}
-                  y1={(Math.sin(sr) * R_PL_INNER * 0.4 + py).toFixed(1)}
-                  x2={(Math.cos(sr) * (R_PL_INNER * 0.82) + px).toFixed(1)}
-                  y2={(Math.sin(sr) * (R_PL_INNER * 0.82) + py).toFixed(1)}
-                  stroke="#f4f2ee" strokeWidth="1.5" />;
-              })}
+            <g key={`pl1-${i}`} className={`cg-pl1-${i}`} style={{ transformOrigin: `${px.toFixed(1)}px ${py.toFixed(1)}px` }}>
+              <path d={pl1Paths[i]} fill="currentColor" opacity="0.80" />
+              <circle cx={px} cy={py} r={R_P1 * 0.38} fill="#f4f2ee" />
+              <circle cx={px} cy={py} r="1.8" fill="currentColor" opacity="0.7" />
             </g>
           );
         })}
 
-        {/* Sun gear */}
-        <g className="pg-sun" style={{ transformOrigin: `${CX}px ${CY}px` }}>
-          <path d={sunPath} fill="currentColor" opacity="0.95" />
-          <circle cx={CX} cy={CY} r={R_SUN_INNER * 0.45} fill="#f4f2ee" />
-          <circle cx={CX} cy={CY} r={R_SUN_INNER * 0.15} fill="currentColor" />
-          {[0, 60, 120, 180, 240, 300].map(a => {
-            const rad = a * Math.PI / 180;
+        {/* Sun gear stage 1 */}
+        <g className="cg-sun1" style={{ transformOrigin: `${CX1}px ${CY1}px` }}>
+          <path d={sun1Path} fill="currentColor" opacity="0.95" />
+          <circle cx={CX1} cy={CY1} r={R_S1 * 0.42} fill="#f4f2ee" />
+          <circle cx={CX1} cy={CY1} r="3" fill="rgba(200,16,46,0.8)" />
+          {[0,72,144,216,288].map(a => {
+            const r = a * Math.PI / 180;
             return <line key={a}
-              x1={(Math.cos(rad) * R_SUN_INNER * 0.45 + CX).toFixed(1)}
-              y1={(Math.sin(rad) * R_SUN_INNER * 0.45 + CY).toFixed(1)}
-              x2={(Math.cos(rad) * (R_SUN_INNER * 0.82) + CX).toFixed(1)}
-              y2={(Math.sin(rad) * (R_SUN_INNER * 0.82) + CY).toFixed(1)}
-              stroke="#f4f2ee" strokeWidth="2" />;
+              x1={(Math.cos(r)*R_S1*0.42+CX1).toFixed(1)} y1={(Math.sin(r)*R_S1*0.42+CY1).toFixed(1)}
+              x2={(Math.cos(r)*R_S1*0.80+CX1).toFixed(1)} y2={(Math.sin(r)*R_S1*0.80+CY1).toFixed(1)}
+              stroke="#f4f2ee" strokeWidth="1.8" />;
           })}
         </g>
 
-        {/* Center axle dot */}
-        <circle cx={CX} cy={CY} r="4" fill="rgba(200,16,46,0.7)" />
-
-        {/* Planet axle dots */}
-        {PLANET_BASE_ANGLES.map((ba, i) => {
+        {/* Stage 1 axle dots */}
+        {PLANET_ANGLES_1.map((ba, i) => {
           const a = ba * Math.PI / 180;
-          return <circle key={`axle-${i}`}
-            cx={(CX + Math.cos(a) * CARRIER_RADIUS).toFixed(1)}
-            cy={(CY + Math.sin(a) * CARRIER_RADIUS).toFixed(1)}
-            r="2.5" fill="rgba(200,16,46,0.5)" />;
+          return <circle key={`ax1-${i}`}
+            cx={(CX1+Math.cos(a)*CAR_R1).toFixed(1)} cy={(CY1+Math.sin(a)*CAR_R1).toFixed(1)}
+            r="2" fill="rgba(200,16,46,0.45)" />;
+        })}
+        <text x={CX1} y={CY1 + R_S1 + 2*R_P1 + 22} textAnchor="middle" fontFamily="monospace" fontSize="6.5" fill="currentColor" opacity="0.22">STAGE I</text>
+
+        {/* ══ STAGE 2 ══ */}
+        <circle cx={CX2} cy={CY2} r={R_S2 + 2 * R_P2 + 13} fill="none" stroke="currentColor" strokeWidth="1.2" opacity="0.14" />
+        <path d={ring2D} fill="currentColor" opacity="0.16" />
+
+        {PLANET_ANGLES_2.map((ba, i) => {
+          const a = ba * Math.PI / 180;
+          return <line key={`ca2-${i}`}
+            x1={CX2} y1={CY2}
+            x2={(CX2 + Math.cos(a) * CAR_R2).toFixed(1)}
+            y2={(CY2 + Math.sin(a) * CAR_R2).toFixed(1)}
+            stroke="currentColor" strokeWidth="1.2" opacity="0.18"
+          />;
         })}
 
-        {/* Pitch circle (reference) */}
-        <circle cx={CX} cy={CY} r={R_RING_PITCH} fill="none" stroke="rgba(200,16,46,0.08)" strokeWidth="0.5" strokeDasharray="3 4" />
+        {PLANET_ANGLES_2.map((ba, i) => {
+          const a = ba * Math.PI / 180;
+          const px = CX2 + Math.cos(a) * CAR_R2;
+          const py = CY2 + Math.sin(a) * CAR_R2;
+          return (
+            <g key={`pl2-${i}`} className={`cg-pl2-${i}`} style={{ transformOrigin: `${px.toFixed(1)}px ${py.toFixed(1)}px` }}>
+              <path d={pl2Paths[i]} fill="currentColor" opacity="0.80" />
+              <circle cx={px} cy={py} r={R_P2 * 0.38} fill="#f4f2ee" />
+              <circle cx={px} cy={py} r="1.8" fill="currentColor" opacity="0.7" />
+            </g>
+          );
+        })}
+
+        <g className="cg-sun2" style={{ transformOrigin: `${CX2}px ${CY2}px` }}>
+          <path d={sun2Path} fill="currentColor" opacity="0.95" />
+          <circle cx={CX2} cy={CY2} r={R_S2 * 0.42} fill="#f4f2ee" />
+          <circle cx={CX2} cy={CY2} r="3" fill="rgba(200,16,46,0.8)" />
+          {[0,60,120,180,240,300].map(a => {
+            const r = a * Math.PI / 180;
+            return <line key={a}
+              x1={(Math.cos(r)*R_S2*0.42+CX2).toFixed(1)} y1={(Math.sin(r)*R_S2*0.42+CY2).toFixed(1)}
+              x2={(Math.cos(r)*R_S2*0.80+CX2).toFixed(1)} y2={(Math.sin(r)*R_S2*0.80+CY2).toFixed(1)}
+              stroke="#f4f2ee" strokeWidth="1.5" />;
+          })}
+        </g>
+
+        {PLANET_ANGLES_2.map((ba, i) => {
+          const a = ba * Math.PI / 180;
+          return <circle key={`ax2-${i}`}
+            cx={(CX2+Math.cos(a)*CAR_R2).toFixed(1)} cy={(CY2+Math.sin(a)*CAR_R2).toFixed(1)}
+            r="2" fill="rgba(200,16,46,0.45)" />;
+        })}
+        <text x={CX2} y={CY2 + R_S2 + 2*R_P2 + 21} textAnchor="middle" fontFamily="monospace" fontSize="6.5" fill="currentColor" opacity="0.22">STAGE II</text>
+        <text x={CX2 + R_S2 + 2*R_P2 + 6} y={CY2 + 2} fontFamily="monospace" fontSize="6" fill="currentColor" opacity="0.18">10×</text>
+      </svg>
+    </div>
+  );
+}
+
+function PulleySystem() {
+  const svgRef = useRef<SVGSVGElement>(null);
+  const loadRef = useRef({ y: 52, vy: 0 });
+
+  // Block-and-tackle: 2 sheaves per block, 4:1 mechanical advantage
+  const CX_A = 22, CX_B = 50; // sheave X positions
+  const FIXED_Y = 20;           // fixed block Y
+  const SHEAVE_R = 9;
+  const LOAD_TRAVEL = 76;       // how far movable block can descend
+
+  useEffect(() => {
+    const stop = startEngine();
+    subscribe('pulley-sys', ({ velocity, scrollY }) => {
+      const target = 52 + (scrollY % 300) / 300 * LOAD_TRAVEL * 0.6;
+      const [ny, nv] = springStep(loadRef.current.y, target, loadRef.current.vy, 0.04, 0.82);
+      loadRef.current = { y: ny, vy: nv };
+      const mY = loadRef.current.y;
+
+      const svg = svgRef.current;
+      if (!svg) return;
+
+      const movBlock = svg.querySelector<SVGGElement>('.pb-mov');
+      if (movBlock) movBlock.style.transform = `translateY(${(mY - 52).toFixed(1)}px)`;
+
+      // Update rope segments
+      const ropes = svg.querySelectorAll<SVGLineElement>('.pb-rope');
+      const yM = mY;
+      // 5 rope strands for 4:1 MA
+      const positions = [
+        [CX_A, FIXED_Y + SHEAVE_R, CX_A, yM - SHEAVE_R],    // strand 0
+        [CX_A, yM - SHEAVE_R, CX_B, FIXED_Y + SHEAVE_R],    // strand 1 (diagonal)
+        [CX_B, FIXED_Y + SHEAVE_R, CX_B, yM - SHEAVE_R],    // strand 2
+        [CX_B, yM - SHEAVE_R, CX_A + 6, FIXED_Y + SHEAVE_R],// strand 3 (diagonal)
+        [CX_A + 6, FIXED_Y + SHEAVE_R, CX_A + 6, yM + 22],  // effort strand going down
+      ];
+      ropes.forEach((r, i) => {
+        const p = positions[i];
+        if (!p) return;
+        r.setAttribute('x1', p[0].toFixed(1));
+        r.setAttribute('y1', p[1].toFixed(1));
+        r.setAttribute('x2', p[2].toFixed(1));
+        r.setAttribute('y2', p[3].toFixed(1));
+      });
+
+      // Rotate sheaves
+      const sheaves = svg.querySelectorAll<SVGGElement>('.pb-sheave');
+      sheaves.forEach((s, i) => {
+        const rot = (mY / 10) * (i % 2 === 0 ? 1 : -1) * 30;
+        const cx = s.getAttribute('data-cx') || '0';
+        const cy = s.getAttribute('data-cy') || '0';
+        s.style.transform = `rotate(${rot % 360}deg)`;
+        s.style.transformOrigin = `${cx}px ${cy}px`;
+      });
+    });
+    return () => { unsubscribe('pulley-sys'); stop(); };
+  }, []);
+
+  const initY = 52;
+
+  return (
+    <div aria-hidden="true" style={{
+      position: 'absolute', top: '10%', left: '1%',
+      width: 'clamp(64px, 5.5vw, 100px)', opacity: 0.20,
+      pointerEvents: 'none',
+    }}>
+      <svg ref={svgRef} viewBox="0 0 72 230" style={{ width: '100%', height: 'auto' }}>
+        {/* Fixed overhead bar */}
+        <rect x="8" y="8" width="56" height="5" rx="1.5" fill="currentColor" opacity="0.5" />
+        <line x1="36" y1="13" x2="36" y2="18" stroke="currentColor" strokeWidth="2" opacity="0.4" />
+
+        {/* Rope strands (updated in RAF) */}
+        {[0,1,2,3,4].map(i => (
+          <line key={i} className="pb-rope"
+            x1={CX_A} y1={FIXED_Y + SHEAVE_R}
+            x2={CX_A} y2={initY - SHEAVE_R}
+            stroke="currentColor" strokeWidth="1" opacity="0.55"
+          />
+        ))}
+
+        {/* Fixed block sheaves */}
+        {[CX_A, CX_B].map((cx, i) => (
+          <g key={`fs-${i}`} className="pb-sheave" data-cx={cx} data-cy={FIXED_Y}>
+            <circle cx={cx} cy={FIXED_Y} r={SHEAVE_R} fill="none" stroke="currentColor" strokeWidth="1.2" />
+            <circle cx={cx} cy={FIXED_Y} r={SHEAVE_R * 0.35} fill="none" stroke="currentColor" strokeWidth="0.8" opacity="0.5" />
+            <line x1={cx} y1={FIXED_Y - SHEAVE_R * 0.35} x2={cx} y2={FIXED_Y + SHEAVE_R * 0.35} stroke="currentColor" strokeWidth="0.8" opacity="0.5" />
+            <line x1={cx - SHEAVE_R * 0.35} y1={FIXED_Y} x2={cx + SHEAVE_R * 0.35} y2={FIXED_Y} stroke="currentColor" strokeWidth="0.8" opacity="0.5" />
+          </g>
+        ))}
+
+        {/* Movable block (translated in RAF) */}
+        <g className="pb-mov">
+          {[CX_A, CX_B].map((cx, i) => (
+            <g key={`ms-${i}`} className="pb-sheave" data-cx={cx} data-cy={initY}>
+              <circle cx={cx} cy={initY} r={SHEAVE_R} fill="none" stroke="currentColor" strokeWidth="1.2" />
+              <circle cx={cx} cy={initY} r={SHEAVE_R * 0.35} fill="none" stroke="currentColor" strokeWidth="0.8" opacity="0.5" />
+              <line x1={cx} y1={initY - SHEAVE_R*0.35} x2={cx} y2={initY + SHEAVE_R*0.35} stroke="currentColor" strokeWidth="0.8" opacity="0.5" />
+              <line x1={cx-SHEAVE_R*0.35} y1={initY} x2={cx+SHEAVE_R*0.35} y2={initY} stroke="currentColor" strokeWidth="0.8" opacity="0.5" />
+            </g>
+          ))}
+          {/* Load block body */}
+          <rect x="13" y={initY + SHEAVE_R} width="46" height="14" rx="2" fill="currentColor" opacity="0.22" />
+          <line x1="36" y1={initY + SHEAVE_R} x2="36" y2={initY + SHEAVE_R + 14} stroke="currentColor" strokeWidth="0.8" opacity="0.3" />
+          {/* MA label */}
+          <text x="36" y={initY + SHEAVE_R + 22} textAnchor="middle" fontFamily="monospace" fontSize="5" fill="currentColor" opacity="0.5">4:1 MA</text>
+        </g>
+
+        {/* Ground label */}
+        <text x="36" y="226" textAnchor="middle" fontFamily="monospace" fontSize="5" fill="currentColor" opacity="0.3">PULLEY</text>
       </svg>
     </div>
   );
@@ -1075,7 +1245,8 @@ function HeroSection() {
       <HeroCrosshair />
       <CornerBrackets />
       <FourBarLinkage />
-      <PlanetaryGearSystem />
+      <PulleySystem />
+      <CompoundGearSystem />
       <BloodFlowParticles />
       {/* Folio line */}
       <div className="mx-auto max-w-container px-6 md:px-10 lg:px-14 xl:px-16 pt-10 md:pt-14">
@@ -1302,51 +1473,256 @@ function CredentialsSection() {
 
 /* ── About ───────────────────────────────────────────────────────── */
 
-const ECG_PATH = 'M0,60 L20,60 L25,55 L30,60 L45,60 L60,30 L65,110 L70,40 L80,60 L95,65 L110,60 L200,60 L220,60 L225,55 L230,60 L245,60 L260,30 L265,110 L270,40 L280,60 L295,65 L310,60 L800,60';
+function ECGMonitor({ fast, flat }: { fast: boolean; flat: boolean }) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const rafRef    = useRef(0);
+  const phaseRef  = useRef(0);
+  const flatRef2  = useRef(flat);
+  const fastRef2  = useRef(fast);
 
-function EcgBackground({ fast, flat }: { fast: boolean; flat: boolean }) {
-  const pathRef = useRef<SVGPathElement>(null);
-  useEffect(() => {
-    const p = pathRef.current;
-    if (!p) return;
-    if (flat) {
-      p.classList.remove('is-tracing', 'is-looping');
-      p.classList.add('is-flatline');
-      setTimeout(() => {
-        if (!pathRef.current) return;
-        pathRef.current.classList.remove('is-flatline');
-        pathRef.current.classList.add('is-looping');
-      }, 900);
-    }
-  }, [flat]);
+  useEffect(() => { fastRef2.current = fast; }, [fast]);
+  useEffect(() => { flatRef2.current = flat; }, [flat]);
 
   useEffect(() => {
-    const p = pathRef.current;
-    if (!p) return;
-    const obs = new IntersectionObserver(([entry]) => {
-      if (!entry.isIntersecting) return;
-      obs.disconnect();
-      p.classList.add('is-tracing');
-      setTimeout(() => {
-        if (pathRef.current) {
-          pathRef.current.classList.remove('is-tracing');
-          pathRef.current.classList.add('is-looping');
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const dpr = window.devicePixelRatio || 1;
+    const resize = () => {
+      canvas.width  = canvas.offsetWidth  * dpr;
+      canvas.height = canvas.offsetHeight * dpr;
+    };
+    resize();
+    const ro = new ResizeObserver(resize);
+    ro.observe(canvas);
+
+    // ECG waveform: P wave, QRS complex, T wave — normalized 0..1 time
+    const ecgSample = (t: number): number => {
+      const ph = ((t % 1) + 1) % 1;
+      // P wave: Gaussian at 0.15
+      const p = 0.18 * Math.exp(-Math.pow((ph - 0.15) / 0.035, 2));
+      // Q dip
+      const q = ph > 0.28 && ph < 0.32 ? -0.06 : 0;
+      // R spike
+      const r = 0.85 * Math.exp(-Math.pow((ph - 0.32) / 0.018, 2));
+      // S dip
+      const s = ph > 0.34 && ph < 0.38 ? -0.18 : 0;
+      // T wave: Gaussian at 0.55
+      const tw = 0.22 * Math.exp(-Math.pow((ph - 0.55) / 0.06, 2));
+      return p + q + r + s + tw;
+    };
+
+    // SpO2 pleth: smooth sine-ish
+    const spo2Sample = (t: number): number => {
+      const ph = ((t % 1) + 1) % 1;
+      return 0.5 + 0.42 * Math.sin(ph * Math.PI * 2) * (1 - 0.12 * Math.sin(ph * Math.PI * 4));
+    };
+
+    // Arterial pressure: sharp systolic rise, dicrotic notch, diastolic
+    const artSample = (t: number): number => {
+      const ph = ((t % 1) + 1) % 1;
+      const sys = 0.78 * Math.exp(-Math.pow((ph - 0.18) / 0.06, 2));
+      const dic = 0.12 * Math.exp(-Math.pow((ph - 0.38) / 0.03, 2));
+      const dia = 0.28 * (1 - ph);
+      return sys + dic + dia;
+    };
+
+    const SWEEP_SEC = 6; // seconds to sweep full width
+
+    const draw = () => {
+      const W = canvas.width, H = canvas.height;
+      const isFast = fastRef2.current;
+      const isFlat = flatRef2.current;
+      const speed = isFast ? 1.8 : 1.0;
+      phaseRef.current += (speed / SWEEP_SEC) * (1 / 60);
+
+      ctx.clearRect(0, 0, W, H);
+
+      // Background
+      ctx.fillStyle = 'rgba(8,12,10,0.92)';
+      ctx.fillRect(0, 0, W, H);
+
+      // Grid
+      const PANEL_W = 115 * dpr;
+      const CHART_W = W - PANEL_W;
+      const GRID_MINOR = 8 * dpr;
+      const GRID_MAJOR = 40 * dpr;
+
+      ctx.strokeStyle = 'rgba(0,200,80,0.08)';
+      ctx.lineWidth = 0.5;
+      for (let x = 0; x < CHART_W; x += GRID_MINOR) {
+        ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke();
+      }
+      for (let y = 0; y < H; y += GRID_MINOR) {
+        ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(CHART_W, y); ctx.stroke();
+      }
+      ctx.strokeStyle = 'rgba(0,200,80,0.16)';
+      ctx.lineWidth = 0.8;
+      for (let x = 0; x < CHART_W; x += GRID_MAJOR) {
+        ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke();
+      }
+      for (let y = 0; y < H; y += GRID_MAJOR) {
+        ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(CHART_W, y); ctx.stroke();
+      }
+
+      // Channel dividers
+      const CH_TOPS = [0, H * 0.38, H * 0.68];
+      const CH_HTS  = [H * 0.38, H * 0.30, H * 0.32];
+      ctx.strokeStyle = 'rgba(0,180,60,0.18)';
+      ctx.lineWidth = 1;
+      CH_TOPS.slice(1).forEach(y => {
+        ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(CHART_W, y); ctx.stroke();
+      });
+
+      // Channel labels
+      ctx.font = `${6 * dpr}px monospace`;
+      ctx.fillStyle = 'rgba(0,255,120,0.30)';
+      ['ECG  II', 'SpO2', 'ART'].forEach((lbl, i) => {
+        ctx.fillText(lbl, 4 * dpr, CH_TOPS[i] + 10 * dpr);
+      });
+
+      // Sweep cursor position
+      const cursorX = (phaseRef.current % 1) * CHART_W;
+
+      // Draw waveform channel
+      const drawCh = (
+        sampleFn: (t: number) => number,
+        basePhase: number,
+        top: number, ht: number,
+        colorGlow: string, colorCore: string,
+        amp: number,
+        beatFreq: number,
+      ) => {
+        const baseline = top + ht * 0.55;
+        const N = Math.floor(CHART_W);
+
+        for (let pass = 0; pass < 2; pass++) {
+          ctx.beginPath();
+          ctx.shadowBlur = pass === 0 ? 9 * dpr : 2 * dpr;
+          ctx.shadowColor = pass === 0 ? colorGlow : colorCore;
+          ctx.strokeStyle = pass === 0 ? colorGlow : colorCore;
+          ctx.lineWidth   = pass === 0 ? 2.4 : 1.1;
+          ctx.lineJoin = 'round';
+
+          let started = false;
+          for (let px = 0; px < N; px++) {
+            const frac = px / CHART_W;
+            // Only draw behind the sweep cursor (already drawn portion)
+            const dist = (frac - phaseRef.current % 1 + 1) % 1;
+            if (dist < 0.03) continue; // erase zone near cursor
+
+            const t = basePhase + frac / beatFreq;
+            const raw = isFlat ? 0 : sampleFn(t);
+            const y = baseline - raw * ht * amp;
+
+            if (!started) { ctx.moveTo(px, y); started = true; }
+            else ctx.lineTo(px, y);
+          }
+          ctx.stroke();
+          ctx.shadowBlur = 0;
         }
-      }, 1500);
-    }, { threshold: 0.2 });
-    obs.observe(p);
-    return () => obs.disconnect();
+
+        // Sweep cursor erase gradient
+        const grad = ctx.createLinearGradient(cursorX - 18 * dpr, 0, cursorX + 6 * dpr, 0);
+        grad.addColorStop(0, 'rgba(8,12,10,0)');
+        grad.addColorStop(1, 'rgba(8,12,10,1)');
+        ctx.fillStyle = grad;
+        ctx.fillRect(cursorX - 18 * dpr, top, 24 * dpr, ht);
+
+        // Cursor line
+        ctx.strokeStyle = 'rgba(0,255,100,0.22)';
+        ctx.lineWidth = 1;
+        ctx.shadowBlur = 0;
+        ctx.beginPath(); ctx.moveTo(cursorX, top); ctx.lineTo(cursorX, top + ht); ctx.stroke();
+      };
+
+      const bfreq = isFast ? 1.6 : 1.0;
+      drawCh(ecgSample,  phaseRef.current, CH_TOPS[0], CH_HTS[0], 'rgba(0,255,120,0.55)', 'rgba(180,255,200,0.92)', 0.78, bfreq);
+      drawCh(spo2Sample, phaseRef.current + 0.5, CH_TOPS[1], CH_HTS[1], 'rgba(0,220,255,0.45)', 'rgba(150,240,255,0.88)', 0.62, bfreq * 1.02);
+      drawCh(artSample,  phaseRef.current + 0.1, CH_TOPS[2], CH_HTS[2], 'rgba(255,220,30,0.40)', 'rgba(255,240,140,0.88)', 0.70, bfreq);
+
+      // ── Right stats panel ──
+      const PX = CHART_W + 6 * dpr;
+      ctx.fillStyle = 'rgba(8,14,11,0.94)';
+      ctx.fillRect(CHART_W, 0, PANEL_W, H);
+      ctx.strokeStyle = 'rgba(0,180,60,0.20)';
+      ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(CHART_W, 0); ctx.lineTo(CHART_W, H); ctx.stroke();
+
+      const HR  = isFast ? 110 + Math.floor(Math.sin(Date.now() / 800) * 12) : 72 + Math.floor(Math.sin(Date.now() / 1200) * 4);
+      const SPO = isFlat ? 88 : 98 + (Math.sin(Date.now() / 2000) > 0 ? 1 : 0);
+      const MAP = isFlat ? 45 : 82 + Math.floor(Math.sin(Date.now() / 900) * 5);
+
+      // HR
+      ctx.font = `bold ${Math.floor(26 * dpr)}px monospace`;
+      ctx.fillStyle = isFlat ? 'rgba(255,60,60,0.95)' : 'rgba(0,255,136,0.95)';
+      ctx.shadowBlur = 10; ctx.shadowColor = ctx.fillStyle;
+      ctx.fillText(`${HR}`, PX, 36 * dpr);
+      ctx.shadowBlur = 0;
+      ctx.font = `${Math.floor(7 * dpr)}px monospace`;
+      ctx.fillStyle = 'rgba(0,200,100,0.55)';
+      ctx.fillText('HR  bpm', PX, 48 * dpr);
+
+      // SpO2
+      ctx.font = `${Math.floor(18 * dpr)}px monospace`;
+      ctx.fillStyle = 'rgba(0,230,255,0.90)';
+      ctx.shadowBlur = 8; ctx.shadowColor = ctx.fillStyle;
+      ctx.fillText(`${SPO}%`, PX, H * 0.42 + 14 * dpr);
+      ctx.shadowBlur = 0;
+      ctx.font = `${Math.floor(7 * dpr)}px monospace`;
+      ctx.fillStyle = 'rgba(0,200,230,0.50)';
+      ctx.fillText('SpO₂', PX, H * 0.42 + 24 * dpr);
+
+      // MAP
+      ctx.font = `${Math.floor(16 * dpr)}px monospace`;
+      ctx.fillStyle = isFlat ? 'rgba(255,80,50,0.9)' : 'rgba(255,232,85,0.88)';
+      ctx.shadowBlur = 8; ctx.shadowColor = ctx.fillStyle;
+      ctx.fillText(`${MAP}`, PX, H * 0.72 + 14 * dpr);
+      ctx.shadowBlur = 0;
+      ctx.font = `${Math.floor(7 * dpr)}px monospace`;
+      ctx.fillStyle = 'rgba(200,180,60,0.50)';
+      ctx.fillText('MAP mmHg', PX, H * 0.72 + 24 * dpr);
+
+      // Alarm dot (pulsing red if flat)
+      if (isFlat) {
+        const pulse = (Math.sin(Date.now() / 180) + 1) / 2;
+        ctx.beginPath();
+        ctx.arc(W - 10 * dpr, 10 * dpr, 4 * dpr, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(255,50,50,${0.5 + pulse * 0.5})`;
+        ctx.shadowBlur = 10 * pulse; ctx.shadowColor = 'rgba(255,50,50,0.8)';
+        ctx.fill();
+        ctx.shadowBlur = 0;
+      } else {
+        const pulse = (Math.sin(Date.now() / 500) + 1) / 2;
+        ctx.beginPath();
+        ctx.arc(W - 10 * dpr, 10 * dpr, 3 * dpr, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(0,255,100,${0.3 + pulse * 0.5})`;
+        ctx.fill();
+      }
+
+      rafRef.current = requestAnimationFrame(draw);
+    };
+
+    rafRef.current = requestAnimationFrame(draw);
+    return () => {
+      cancelAnimationFrame(rafRef.current);
+      ro.disconnect();
+    };
   }, []);
 
   return (
-    <svg className="ecg-bg" viewBox="0 0 800 120" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
-      <path
-        ref={pathRef}
-        className="ecg-path"
-        d={ECG_PATH}
-        style={{ animationDuration: fast ? '1.2s' : '3s' }}
-      />
-    </svg>
+    <canvas
+      ref={canvasRef}
+      aria-hidden="true"
+      style={{
+        position: 'absolute', inset: 0,
+        width: '100%', height: '100%',
+        opacity: 0.62, display: 'block',
+        borderRadius: '2px',
+      }}
+    />
   );
 }
 
@@ -1491,7 +1867,7 @@ function AboutSection() {
       onMouseLeave={() => { setFast(false); setBpm(68 + Math.floor(Math.random() * 10)); }}
       onClick={handleClick}
     >
-      <EcgBackground fast={fast} flat={flat} />
+      <ECGMonitor fast={fast} flat={flat} />
       <div className="bpm-display" aria-hidden="true">{bpm} BPM</div>
       <div className="relative z-10 mx-auto max-w-container px-6 md:px-10 lg:px-14 xl:px-16 py-20 md:py-28">
 
@@ -2699,7 +3075,7 @@ export default function App() {
 
   return (
     <div className="relative">
-      <PlanetaryGearSystem />
+      <CompoundGearSystem />
       <BlueprintParallax />
       <SpringCursor />
       <ScrollRPMGauge />
