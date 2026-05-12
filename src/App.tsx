@@ -351,7 +351,7 @@ function GearboxPulleyDrive() {
         ref={svgRef}
         viewBox="0 0 560 232"
         className="gear-train-svg"
-        style={{ width: 'clamp(300px, 46vw, 660px)', bottom: '1%', right: '0.5%', position: 'absolute' }}
+        style={{ width: 'clamp(440px, 56vw, 840px)', bottom: '0%', right: '0%', position: 'absolute' }}
       >
         {/* ── Title ── */}
         <text x="280" y="11" textAnchor="middle" fontFamily="monospace" fontSize="6" fill="currentColor" opacity="0.22" letterSpacing="1.8">SPUR CASCADE → EPICYCLIC → CHAIN DRIVE → BLOCK & TACKLE</text>
@@ -1595,7 +1595,7 @@ function HeroSection() {
       <GearboxPulleyDrive />
       <BloodFlowParticles />
       {/* Folio line */}
-      <div className="mx-auto max-w-container px-6 md:px-10 lg:px-14 xl:px-16 pt-10 md:pt-14">
+      <div className="relative z-[2] mx-auto max-w-container px-6 md:px-10 lg:px-14 xl:px-16 pt-10 md:pt-14">
         <p className="comp-folio font-mono text-[8.5px] uppercase tracking-[0.28em] text-muted leading-none">
           {PERSON.fullName} &nbsp;·&nbsp; Cook Cardiopulmonary Engineering Lab &nbsp;·&nbsp; Carnegie Mellon &nbsp;·&nbsp; Pittsburgh PA &nbsp;·&nbsp; 40°N 79°W &nbsp;·&nbsp; 2026
         </p>
@@ -1603,7 +1603,7 @@ function HeroSection() {
       </div>
 
       {/* Main split */}
-      <div className="mx-auto max-w-container px-6 md:px-10 lg:px-14 xl:px-16 py-10 md:py-16 grid md:grid-cols-[60%_40%] gap-10 md:gap-0">
+      <div className="relative z-[2] mx-auto max-w-container px-6 md:px-10 lg:px-14 xl:px-16 py-10 md:py-16 grid md:grid-cols-[60%_40%] gap-10 md:gap-0">
 
         {/* Left: type */}
         <div className="pr-0 md:pr-14">
@@ -1681,8 +1681,8 @@ function HeroSection() {
       </div>
 
       {/* Bottom rule + stats */}
-      <div className="comp-rule-2 mx-auto max-w-container px-6 md:px-10 lg:px-14 xl:px-16 ed-rule" />
-      <div className="comp-stats mx-auto max-w-container px-6 md:px-10 lg:px-14 xl:px-16 py-6 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+      <div className="relative z-[2] comp-rule-2 mx-auto max-w-container px-6 md:px-10 lg:px-14 xl:px-16 ed-rule" />
+      <div className="relative z-[2] comp-stats mx-auto max-w-container px-6 md:px-10 lg:px-14 xl:px-16 py-6 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
         <div className="flex items-center gap-8 sm:gap-12">
           <SplitFlapStat target={30} digits={2} label="Day" sub="Ovine endpoint" />
           <SplitFlapStat target={1}  digits={2} label="Patent" sub="KR granted" />

@@ -550,8 +550,9 @@ tr:hover .tolerance-note { opacity: 1; }
 }
 .gear-train-svg {
   position: absolute;
-  opacity: 0.032;
+  opacity: 0.18;
   will-change: transform;
+  mix-blend-mode: multiply;
 }
 
 /* ── Crankshaft mechanism ────────────────────────────────────────── */
