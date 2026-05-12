@@ -1498,78 +1498,87 @@ function ECGMonitor({ fast, flat }: { fast: boolean; flat: boolean }) {
     const ro = new ResizeObserver(resize);
     ro.observe(canvas);
 
-    // ECG waveform: P wave, QRS complex, T wave — normalized 0..1 time
+    // Realistic ECG Lead II: P-QRS-T at clinical proportions
     const ecgSample = (t: number): number => {
       const ph = ((t % 1) + 1) % 1;
-      // P wave: Gaussian at 0.15
-      const p = 0.18 * Math.exp(-Math.pow((ph - 0.15) / 0.035, 2));
-      // Q dip
-      const q = ph > 0.28 && ph < 0.32 ? -0.06 : 0;
-      // R spike
-      const r = 0.85 * Math.exp(-Math.pow((ph - 0.32) / 0.018, 2));
-      // S dip
-      const s = ph > 0.34 && ph < 0.38 ? -0.18 : 0;
-      // T wave: Gaussian at 0.55
-      const tw = 0.22 * Math.exp(-Math.pow((ph - 0.55) / 0.06, 2));
+      const p  = 0.14 * Math.exp(-Math.pow((ph - 0.12) / 0.030, 2));
+      const q  = ph > 0.23 && ph < 0.27 ? -0.08 : 0;
+      const r  = 0.92 * Math.exp(-Math.pow((ph - 0.28) / 0.015, 2));
+      const s  = ph > 0.30 && ph < 0.34 ? -0.22 : 0;
+      const tw = 0.18 * Math.exp(-Math.pow((ph - 0.50) / 0.055, 2));
       return p + q + r + s + tw;
     };
 
-    // SpO2 pleth: smooth sine-ish
+    // SpO2 plethysmography
     const spo2Sample = (t: number): number => {
       const ph = ((t % 1) + 1) % 1;
-      return 0.5 + 0.42 * Math.sin(ph * Math.PI * 2) * (1 - 0.12 * Math.sin(ph * Math.PI * 4));
+      return 0.5 + 0.44 * Math.sin(ph * Math.PI * 2) * (1 - 0.10 * Math.sin(ph * Math.PI * 4));
     };
 
-    // Arterial pressure: sharp systolic rise, dicrotic notch, diastolic
+    // Arterial pressure waveform with dicrotic notch
     const artSample = (t: number): number => {
       const ph = ((t % 1) + 1) % 1;
-      const sys = 0.78 * Math.exp(-Math.pow((ph - 0.18) / 0.06, 2));
-      const dic = 0.12 * Math.exp(-Math.pow((ph - 0.38) / 0.03, 2));
-      const dia = 0.28 * (1 - ph);
+      const sys = 0.82 * Math.exp(-Math.pow((ph - 0.15) / 0.055, 2));
+      const dic = 0.14 * Math.exp(-Math.pow((ph - 0.35) / 0.025, 2));
+      const dia = 0.26 * Math.exp(-ph * 2.8);
       return sys + dic + dia;
     };
 
-    const SWEEP_SEC = 6; // seconds to sweep full width
+    // Real ICU monitors sweep in ~8–12 s for a standard trace
+    const SWEEP_SEC = 12;
 
     const draw = () => {
       const W = canvas.width, H = canvas.height;
       const isFast = fastRef2.current;
       const isFlat = flatRef2.current;
-      const speed = isFast ? 1.8 : 1.0;
+      // Normal HR ~72bpm; elevated ~110bpm on hover
+      const speed = isFast ? 1.52 : 1.0;
       phaseRef.current += (speed / SWEEP_SEC) * (1 / 60);
 
       ctx.clearRect(0, 0, W, H);
 
-      // Background
-      ctx.fillStyle = 'rgba(8,12,10,0.92)';
+      // Deep black ICU monitor background
+      ctx.fillStyle = '#050c07';
       ctx.fillRect(0, 0, W, H);
 
-      // Grid
-      const PANEL_W = 115 * dpr;
+      // Outer bezel feel — very dark border
+      ctx.strokeStyle = 'rgba(0,180,70,0.12)';
+      ctx.lineWidth = 1 * dpr;
+      ctx.strokeRect(0.5, 0.5, W - 1, H - 1);
+
+      const PANEL_W = 120 * dpr;
       const CHART_W = W - PANEL_W;
-      const GRID_MINOR = 8 * dpr;
-      const GRID_MAJOR = 40 * dpr;
 
-      ctx.strokeStyle = 'rgba(0,200,80,0.08)';
+      // ECG paper grid (classic green-on-black, 5mm squares at 25mm/s)
+      const MINOR = 10 * dpr; // ~1mm
+      const MAJOR = 50 * dpr; // ~5mm (major square)
+
       ctx.lineWidth = 0.5;
-      for (let x = 0; x < CHART_W; x += GRID_MINOR) {
+      ctx.strokeStyle = 'rgba(0,180,60,0.07)';
+      for (let x = 0; x < CHART_W; x += MINOR) {
         ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke();
       }
-      for (let y = 0; y < H; y += GRID_MINOR) {
+      for (let y = 0; y < H; y += MINOR) {
         ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(CHART_W, y); ctx.stroke();
       }
-      ctx.strokeStyle = 'rgba(0,200,80,0.16)';
+      ctx.strokeStyle = 'rgba(0,200,80,0.13)';
       ctx.lineWidth = 0.8;
-      for (let x = 0; x < CHART_W; x += GRID_MAJOR) {
+      for (let x = 0; x < CHART_W; x += MAJOR) {
         ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke();
       }
-      for (let y = 0; y < H; y += GRID_MAJOR) {
+      for (let y = 0; y < H; y += MAJOR) {
         ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(CHART_W, y); ctx.stroke();
       }
 
-      // Channel dividers
-      const CH_TOPS = [0, H * 0.38, H * 0.68];
-      const CH_HTS  = [H * 0.38, H * 0.30, H * 0.32];
+      // Three channels: ECG 50%, SpO2 25%, ART 25%
+      const CH_TOPS = [0,           H * 0.50,   H * 0.75  ];
+      const CH_HTS  = [H * 0.50,    H * 0.25,   H * 0.25  ];
+      const CH_CLRS = [
+        { glow: 'rgba(0,255,130,0.55)',  core: 'rgba(180,255,210,0.95)' },
+        { glow: 'rgba(0,210,255,0.50)',  core: 'rgba(160,240,255,0.92)' },
+        { glow: 'rgba(255,210,30,0.45)', core: 'rgba(255,238,140,0.92)' },
+      ];
+
       ctx.strokeStyle = 'rgba(0,180,60,0.18)';
       ctx.lineWidth = 1;
       CH_TOPS.slice(1).forEach(y => {
@@ -1577,151 +1586,157 @@ function ECGMonitor({ fast, flat }: { fast: boolean; flat: boolean }) {
       });
 
       // Channel labels
-      ctx.font = `${6 * dpr}px monospace`;
-      ctx.fillStyle = 'rgba(0,255,120,0.30)';
-      ['ECG  II', 'SpO2', 'ART'].forEach((lbl, i) => {
-        ctx.fillText(lbl, 4 * dpr, CH_TOPS[i] + 10 * dpr);
+      ['ECG II', 'SpO₂', 'ART'].forEach((lbl, i) => {
+        ctx.font = `${Math.floor(7 * dpr)}px monospace`;
+        ctx.fillStyle = CH_CLRS[i].glow;
+        ctx.fillText(lbl, 5 * dpr, CH_TOPS[i] + 12 * dpr);
       });
 
-      // Sweep cursor position
       const cursorX = (phaseRef.current % 1) * CHART_W;
 
-      // Draw waveform channel
       const drawCh = (
         sampleFn: (t: number) => number,
-        basePhase: number,
-        top: number, ht: number,
-        colorGlow: string, colorCore: string,
+        idx: number,
         amp: number,
         beatFreq: number,
       ) => {
-        const baseline = top + ht * 0.55;
+        const top = CH_TOPS[idx], ht = CH_HTS[idx];
+        const baseline = top + ht * 0.58;
+        const { glow, core } = CH_CLRS[idx];
         const N = Math.floor(CHART_W);
 
         for (let pass = 0; pass < 2; pass++) {
           ctx.beginPath();
-          ctx.shadowBlur = pass === 0 ? 9 * dpr : 2 * dpr;
-          ctx.shadowColor = pass === 0 ? colorGlow : colorCore;
-          ctx.strokeStyle = pass === 0 ? colorGlow : colorCore;
-          ctx.lineWidth   = pass === 0 ? 2.4 : 1.1;
+          ctx.shadowBlur = pass === 0 ? 11 * dpr : 2.5 * dpr;
+          ctx.shadowColor = pass === 0 ? glow : core;
+          ctx.strokeStyle  = pass === 0 ? glow : core;
+          ctx.lineWidth    = pass === 0 ? 2.8 : 1.2;
           ctx.lineJoin = 'round';
+          ctx.lineCap  = 'round';
 
-          let started = false;
+          let pen = false;
           for (let px = 0; px < N; px++) {
             const frac = px / CHART_W;
-            // Only draw behind the sweep cursor (already drawn portion)
             const dist = (frac - phaseRef.current % 1 + 1) % 1;
-            if (dist < 0.03) continue; // erase zone near cursor
+            if (dist < 0.025) continue; // erase band at cursor
 
-            const t = basePhase + frac / beatFreq;
+            const t   = phaseRef.current + frac / beatFreq;
             const raw = isFlat ? 0 : sampleFn(t);
-            const y = baseline - raw * ht * amp;
+            const y   = baseline - raw * ht * amp;
 
-            if (!started) { ctx.moveTo(px, y); started = true; }
+            if (!pen) { ctx.moveTo(px, y); pen = true; }
             else ctx.lineTo(px, y);
           }
           ctx.stroke();
           ctx.shadowBlur = 0;
         }
 
-        // Sweep cursor erase gradient
-        const grad = ctx.createLinearGradient(cursorX - 18 * dpr, 0, cursorX + 6 * dpr, 0);
-        grad.addColorStop(0, 'rgba(8,12,10,0)');
-        grad.addColorStop(1, 'rgba(8,12,10,1)');
-        ctx.fillStyle = grad;
-        ctx.fillRect(cursorX - 18 * dpr, top, 24 * dpr, ht);
+        // Erase gradient ahead of cursor
+        const g = ctx.createLinearGradient(cursorX - 20 * dpr, 0, cursorX + 8 * dpr, 0);
+        g.addColorStop(0, 'rgba(5,12,7,0)');
+        g.addColorStop(1, 'rgba(5,12,7,1)');
+        ctx.fillStyle = g;
+        ctx.fillRect(cursorX - 20 * dpr, top, 28 * dpr, ht);
 
-        // Cursor line
-        ctx.strokeStyle = 'rgba(0,255,100,0.22)';
+        // Bright cursor tick
+        ctx.strokeStyle = 'rgba(0,255,110,0.18)';
         ctx.lineWidth = 1;
-        ctx.shadowBlur = 0;
         ctx.beginPath(); ctx.moveTo(cursorX, top); ctx.lineTo(cursorX, top + ht); ctx.stroke();
       };
 
-      const bfreq = isFast ? 1.6 : 1.0;
-      drawCh(ecgSample,  phaseRef.current, CH_TOPS[0], CH_HTS[0], 'rgba(0,255,120,0.55)', 'rgba(180,255,200,0.92)', 0.78, bfreq);
-      drawCh(spo2Sample, phaseRef.current + 0.5, CH_TOPS[1], CH_HTS[1], 'rgba(0,220,255,0.45)', 'rgba(150,240,255,0.88)', 0.62, bfreq * 1.02);
-      drawCh(artSample,  phaseRef.current + 0.1, CH_TOPS[2], CH_HTS[2], 'rgba(255,220,30,0.40)', 'rgba(255,240,140,0.88)', 0.70, bfreq);
+      const bfreq = isFast ? 1.52 : 1.0;
+      drawCh(ecgSample,  0, 0.82, bfreq);
+      drawCh(spo2Sample, 1, 0.60, bfreq * 0.98);
+      drawCh(artSample,  2, 0.68, bfreq);
 
-      // ── Right stats panel ──
-      const PX = CHART_W + 6 * dpr;
-      ctx.fillStyle = 'rgba(8,14,11,0.94)';
+      // ── Right numeric panel ──
+      const PX = CHART_W + 7 * dpr;
+      ctx.fillStyle = 'rgba(3,9,5,0.97)';
       ctx.fillRect(CHART_W, 0, PANEL_W, H);
-      ctx.strokeStyle = 'rgba(0,180,60,0.20)';
+      ctx.strokeStyle = 'rgba(0,160,60,0.22)';
       ctx.lineWidth = 1;
       ctx.beginPath(); ctx.moveTo(CHART_W, 0); ctx.lineTo(CHART_W, H); ctx.stroke();
 
-      const HR  = isFast ? 110 + Math.floor(Math.sin(Date.now() / 800) * 12) : 72 + Math.floor(Math.sin(Date.now() / 1200) * 4);
-      const SPO = isFlat ? 88 : 98 + (Math.sin(Date.now() / 2000) > 0 ? 1 : 0);
-      const MAP = isFlat ? 45 : 82 + Math.floor(Math.sin(Date.now() / 900) * 5);
+      const HR  = isFast
+        ? 110 + Math.round(Math.sin(Date.now() / 700) * 8)
+        : 68  + Math.round(Math.sin(Date.now() / 1400) * 3);
+      const SPO = isFlat ? 87 : 98 + (Math.sin(Date.now() / 3000) > 0 ? 1 : 0);
+      const SYS = isFlat ? 72  : 118 + Math.round(Math.sin(Date.now() / 1100) * 4);
+      const DIA = isFlat ? 38  : 76  + Math.round(Math.sin(Date.now() / 1300) * 3);
 
-      // HR
-      ctx.font = `bold ${Math.floor(26 * dpr)}px monospace`;
-      ctx.fillStyle = isFlat ? 'rgba(255,60,60,0.95)' : 'rgba(0,255,136,0.95)';
-      ctx.shadowBlur = 10; ctx.shadowColor = ctx.fillStyle;
-      ctx.fillText(`${HR}`, PX, 36 * dpr);
+      // HR (green)
+      ctx.shadowBlur = 12; ctx.shadowColor = 'rgba(0,255,130,0.6)';
+      ctx.fillStyle  = isFlat ? 'rgba(255,55,55,0.95)' : 'rgba(0,255,130,0.96)';
+      ctx.font = `bold ${Math.floor(32 * dpr)}px monospace`;
+      ctx.fillText(`${HR}`, PX, H * 0.16);
       ctx.shadowBlur = 0;
-      ctx.font = `${Math.floor(7 * dpr)}px monospace`;
-      ctx.fillStyle = 'rgba(0,200,100,0.55)';
-      ctx.fillText('HR  bpm', PX, 48 * dpr);
+      ctx.font = `${Math.floor(7.5 * dpr)}px monospace`;
+      ctx.fillStyle = 'rgba(0,200,100,0.50)';
+      ctx.fillText('HR  bpm', PX, H * 0.16 + 14 * dpr);
 
-      // SpO2
+      // Divider
+      ctx.strokeStyle = 'rgba(0,150,60,0.18)';
+      ctx.lineWidth = 0.8;
+      ctx.beginPath(); ctx.moveTo(PX, H * 0.35); ctx.lineTo(W - 4 * dpr, H * 0.35); ctx.stroke();
+
+      // SpO2 (cyan)
+      ctx.shadowBlur = 10; ctx.shadowColor = 'rgba(0,220,255,0.55)';
+      ctx.fillStyle  = 'rgba(0,230,255,0.92)';
+      ctx.font = `${Math.floor(22 * dpr)}px monospace`;
+      ctx.fillText(`${SPO}%`, PX, H * 0.52);
+      ctx.shadowBlur = 0;
+      ctx.font = `${Math.floor(7.5 * dpr)}px monospace`;
+      ctx.fillStyle = 'rgba(0,190,220,0.48)';
+      ctx.fillText('SpO₂', PX, H * 0.52 + 13 * dpr);
+
+      ctx.strokeStyle = 'rgba(0,150,60,0.18)';
+      ctx.lineWidth = 0.8;
+      ctx.beginPath(); ctx.moveTo(PX, H * 0.65); ctx.lineTo(W - 4 * dpr, H * 0.65); ctx.stroke();
+
+      // ART (amber)
+      ctx.shadowBlur = 10; ctx.shadowColor = 'rgba(255,210,30,0.55)';
+      ctx.fillStyle  = isFlat ? 'rgba(255,80,50,0.9)' : 'rgba(255,222,60,0.92)';
       ctx.font = `${Math.floor(18 * dpr)}px monospace`;
-      ctx.fillStyle = 'rgba(0,230,255,0.90)';
-      ctx.shadowBlur = 8; ctx.shadowColor = ctx.fillStyle;
-      ctx.fillText(`${SPO}%`, PX, H * 0.42 + 14 * dpr);
+      ctx.fillText(`${SYS}/${DIA}`, PX, H * 0.79);
       ctx.shadowBlur = 0;
-      ctx.font = `${Math.floor(7 * dpr)}px monospace`;
-      ctx.fillStyle = 'rgba(0,200,230,0.50)';
-      ctx.fillText('SpO₂', PX, H * 0.42 + 24 * dpr);
+      ctx.font = `${Math.floor(7.5 * dpr)}px monospace`;
+      ctx.fillStyle = 'rgba(200,175,50,0.48)';
+      ctx.fillText('ART mmHg', PX, H * 0.79 + 13 * dpr);
 
-      // MAP
-      ctx.font = `${Math.floor(16 * dpr)}px monospace`;
-      ctx.fillStyle = isFlat ? 'rgba(255,80,50,0.9)' : 'rgba(255,232,85,0.88)';
-      ctx.shadowBlur = 8; ctx.shadowColor = ctx.fillStyle;
-      ctx.fillText(`${MAP}`, PX, H * 0.72 + 14 * dpr);
-      ctx.shadowBlur = 0;
-      ctx.font = `${Math.floor(7 * dpr)}px monospace`;
-      ctx.fillStyle = 'rgba(200,180,60,0.50)';
-      ctx.fillText('MAP mmHg', PX, H * 0.72 + 24 * dpr);
-
-      // Alarm dot (pulsing red if flat)
+      // Pulsing alarm dot top-right of panel
+      const now = Date.now();
       if (isFlat) {
-        const pulse = (Math.sin(Date.now() / 180) + 1) / 2;
+        const pulse = (Math.sin(now / 160) + 1) / 2;
         ctx.beginPath();
-        ctx.arc(W - 10 * dpr, 10 * dpr, 4 * dpr, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(255,50,50,${0.5 + pulse * 0.5})`;
-        ctx.shadowBlur = 10 * pulse; ctx.shadowColor = 'rgba(255,50,50,0.8)';
-        ctx.fill();
-        ctx.shadowBlur = 0;
+        ctx.arc(W - 10 * dpr, 10 * dpr, 5 * dpr, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(255,45,45,${0.5 + pulse * 0.5})`;
+        ctx.shadowBlur = 12 * pulse; ctx.shadowColor = 'rgba(255,45,45,0.9)';
+        ctx.fill(); ctx.shadowBlur = 0;
+        // ALARM text
+        ctx.font = `bold ${Math.floor(7 * dpr)}px monospace`;
+        ctx.fillStyle = `rgba(255,45,45,${0.6 + pulse * 0.4})`;
+        ctx.fillText('ALARM', PX, H * 0.93);
       } else {
-        const pulse = (Math.sin(Date.now() / 500) + 1) / 2;
+        const pulse = (Math.sin(now / 600) + 1) / 2;
         ctx.beginPath();
-        ctx.arc(W - 10 * dpr, 10 * dpr, 3 * dpr, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(0,255,100,${0.3 + pulse * 0.5})`;
-        ctx.fill();
+        ctx.arc(W - 10 * dpr, 10 * dpr, 3.5 * dpr, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(0,255,100,${0.3 + pulse * 0.55})`;
+        ctx.shadowBlur = 6 * pulse; ctx.shadowColor = 'rgba(0,255,100,0.7)';
+        ctx.fill(); ctx.shadowBlur = 0;
       }
 
       rafRef.current = requestAnimationFrame(draw);
     };
 
     rafRef.current = requestAnimationFrame(draw);
-    return () => {
-      cancelAnimationFrame(rafRef.current);
-      ro.disconnect();
-    };
+    return () => { cancelAnimationFrame(rafRef.current); ro.disconnect(); };
   }, []);
 
   return (
     <canvas
       ref={canvasRef}
       aria-hidden="true"
-      style={{
-        position: 'absolute', inset: 0,
-        width: '100%', height: '100%',
-        opacity: 0.62, display: 'block',
-        borderRadius: '2px',
-      }}
+      style={{ display: 'block', width: '100%', height: '100%', borderRadius: '4px' }}
     />
   );
 }
@@ -1862,40 +1877,53 @@ function AboutSection() {
   return (
     <section
       id="about"
-      className="relative bg-graphite overflow-hidden"
+      className="relative overflow-hidden"
+      style={{ background: '#0a0f0b' }}
       onMouseEnter={() => { setFast(true); setBpm(95 + Math.floor(Math.random() * 30)); }}
       onMouseLeave={() => { setFast(false); setBpm(68 + Math.floor(Math.random() * 10)); }}
       onClick={handleClick}
     >
-      <ECGMonitor fast={fast} flat={flat} />
-      <div className="bpm-display" aria-hidden="true">{bpm} BPM</div>
-      <div className="relative z-10 mx-auto max-w-container px-6 md:px-10 lg:px-14 xl:px-16 py-20 md:py-28">
+      <div className="mx-auto max-w-container px-6 md:px-10 lg:px-14 xl:px-16 py-20 md:py-28">
 
-        <div className="mb-14" data-reveal>
-          <FolioLabel text={ABOUT.tag} />
+        <div className="mb-12" data-reveal>
+          <p className="font-mono text-[8.5px] uppercase tracking-[0.28em] text-[#4a8a5a]">{ABOUT.tag}</p>
         </div>
 
-        <div className="grid md:grid-cols-[45%_55%] gap-10 md:gap-16 mb-16">
+        <div className="grid md:grid-cols-[45%_55%] gap-10 md:gap-16 mb-14">
           <div data-ink data-ink-delay="1">
-            <p className="font-serif-italic text-bone text-3xl sm:text-4xl md:text-5xl leading-[1.18]">
+            <p className="font-serif-italic text-[#e8e4dc] text-3xl sm:text-4xl md:text-5xl leading-[1.18]">
               "{ABOUT.accent}"
             </p>
           </div>
           <div data-reveal data-reveal-delay="2">
             <div className="ed-rule-red mb-6" style={{ width: '2.5rem' }} />
             {ABOUT.body.map((para, i) => (
-              <p key={i} className="font-mono text-[13px] md:text-[14px] leading-[1.85] text-muted mb-4 last:mb-0">
+              <p key={i} className="font-mono text-[13px] md:text-[14px] leading-[1.85] text-[#7a9a80] mb-4 last:mb-0">
                 {para}
               </p>
             ))}
           </div>
         </div>
 
-        <div className="mb-16 ed-rule-thin py-3 overflow-hidden" data-reveal>
+        {/* ECG Monitor — contained panel like a real bedside monitor */}
+        <div
+          className="mb-14 rounded-sm overflow-hidden"
+          style={{
+            height: 'clamp(200px, 28vw, 340px)',
+            border: '1px solid rgba(0,180,70,0.22)',
+            boxShadow: '0 0 32px rgba(0,200,80,0.06), inset 0 0 60px rgba(0,0,0,0.4)',
+            cursor: 'pointer',
+          }}
+          data-reveal
+        >
+          <ECGMonitor fast={fast} flat={flat} />
+        </div>
+
+        <div className="mb-14 py-3 overflow-hidden border-t border-[rgba(0,180,70,0.12)]" data-reveal>
           <div className="marquee-outer overflow-hidden">
             <div className="marquee-track inline-flex gap-0 whitespace-nowrap" style={{ '--marquee-speed': '40s' } as React.CSSProperties}>
               {[...ABOUT.keywordRows, ...ABOUT.keywordRows].map((item, i) => (
-                <span key={i} className="font-mono text-[9px] uppercase tracking-[0.22em] text-muted px-6">
+                <span key={i} className="font-mono text-[9px] uppercase tracking-[0.22em] text-[#4a7a56] px-6">
                   {item} <span className="text-vital mx-1">·</span>
                 </span>
               ))}
@@ -1903,9 +1931,11 @@ function AboutSection() {
           </div>
         </div>
 
-        <LaminarFlowViz />
+        <div className="mb-14">
+          <LaminarFlowViz />
+        </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-0 md:divide-x md:divide-bone/10" data-reveal data-reveal-delay="2">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-0 md:divide-x md:divide-[rgba(0,180,70,0.15)]" data-reveal data-reveal-delay="2">
           {[
             { value: '2',   label: 'Degrees',    sub: 'ME + BME' },
             { value: '6',   label: 'Ovine',      sub: 'Cohort animals' },
@@ -1914,10 +1944,16 @@ function AboutSection() {
           ].map((stat) => (
             <div key={stat.label} className="md:px-8 first:pl-0">
               <p className="font-grotesk text-vital leading-none text-5xl md:text-6xl tracking-tightest">{stat.value}</p>
-              <p className="font-mono text-[9px] uppercase tracking-[0.2em] text-bone mt-2">{stat.label}</p>
-              <p className="font-mono text-[8.5px] text-muted mt-0.5">{stat.sub}</p>
+              <p className="font-mono text-[9px] uppercase tracking-[0.2em] text-[#c8d4c8] mt-2">{stat.label}</p>
+              <p className="font-mono text-[8.5px] text-[#4a7a56] mt-0.5">{stat.sub}</p>
             </div>
           ))}
+        </div>
+
+        <div className="mt-6 pt-4 border-t border-[rgba(0,180,70,0.12)] flex items-center gap-3" aria-hidden="true">
+          <span className="font-mono text-[8px] uppercase tracking-[0.2em] text-[#4a7a56]">{bpm} BPM</span>
+          <span className="w-1.5 h-1.5 rounded-full bg-vital animate-pulse" />
+          <span className="font-mono text-[8px] uppercase tracking-[0.2em] text-[#4a7a56]">Click to simulate cardiac event</span>
         </div>
       </div>
     </section>
@@ -1926,15 +1962,12 @@ function AboutSection() {
 
 /* ── Skills ───────────────────────────────────────────────────────── */
 
-function SkillGauge({ name, pct }: { name: string; pct: number }) {
-  const arcRef   = useRef<SVGPathElement>(null);
-  const needleRef = useRef<SVGLineElement>(null);
+function SkillBar({ name, pct }: { name: string; pct: number }) {
+  const barRef   = useRef<HTMLDivElement>(null);
+  const pctRef   = useRef<HTMLSpanElement>(null);
   const posRef   = useRef({ val: 0, vel: 0 });
   const started  = useRef(false);
   const rafRef   = useRef(0);
-
-  const R   = 34;
-  const ARC = Math.PI * R; // ~106.8
 
   const rated =
     pct >= 80 ? 'Expert' :
@@ -1943,87 +1976,44 @@ function SkillGauge({ name, pct }: { name: string; pct: number }) {
     'Developing';
 
   useEffect(() => {
-    const el = arcRef.current;
-    if (!el) return;
+    const trigger = barRef.current;
+    if (!trigger) return;
     const obs = new IntersectionObserver(([entry]) => {
       if (!entry.isIntersecting || started.current) return;
       started.current = true;
       obs.disconnect();
 
-      // Spring animate toward target
       const target = pct / 100;
       const loop = () => {
-        const [nv, nvl] = springStep(posRef.current.val, target, posRef.current.vel, 0.07, 0.78);
+        const [nv, nvl] = springStep(posRef.current.val, target, posRef.current.vel, 0.06, 0.80);
         posRef.current = { val: nv, vel: nvl };
 
-        // Update arc strokeDashoffset
-        if (arcRef.current) {
-          arcRef.current.style.strokeDashoffset = String(ARC - nv * ARC);
-        }
-        // Update needle angle: -90deg = 0%, +90deg = 100%
-        if (needleRef.current) {
-          const deg = -90 + nv * 180;
-          needleRef.current.style.transform = `rotate(${deg}deg)`;
-        }
+        if (barRef.current) barRef.current.style.width = `${(nv * 100).toFixed(1)}%`;
+        if (pctRef.current) pctRef.current.textContent = `${Math.round(nv * 100)}%`;
 
-        if (Math.abs(target - nv) > 0.001 || Math.abs(nvl) > 0.001) {
+        if (Math.abs(target - nv) > 0.002 || Math.abs(nvl) > 0.001)
           rafRef.current = requestAnimationFrame(loop);
-        }
       };
       rafRef.current = requestAnimationFrame(loop);
-    }, { threshold: 0.4 });
-    obs.observe(el);
+    }, { threshold: 0.3 });
+    obs.observe(trigger);
     return () => { obs.disconnect(); cancelAnimationFrame(rafRef.current); };
-  }, [pct, ARC]);
-
-  // Needle geometry: pivot at (40, 40), points upward at rest
-  const needleCX = 40; // arc center x in viewBox
-  const needleCY = 40; // arc center y in viewBox
+  }, [pct]);
 
   return (
-    <div className="gauge-wrap flex flex-col items-center gap-1">
-      <div className="gauge-tooltip">Rated: {rated}</div>
-      <svg width="80" height="50" viewBox="0 0 80 50">
-        {/* Background arc */}
-        <path
-          className="gauge-arc-bg"
-          d={`M${needleCX - R},${needleCY} A${R},${R} 0 0,1 ${needleCX + R},${needleCY}`}
-          strokeDasharray={ARC}
-          strokeDashoffset="0"
+    <div className="skill-bar-item">
+      <div className="flex items-baseline justify-between mb-1.5">
+        <p className="font-mono text-[9.5px] uppercase tracking-[0.14em] text-bone leading-none">{name}</p>
+        <span ref={pctRef} className="font-grotesk text-vital text-sm leading-none tracking-tightest">0%</span>
+      </div>
+      <div className="relative h-[3px] w-full bg-[rgba(13,13,13,0.10)] rounded-full overflow-hidden">
+        <div
+          ref={barRef}
+          className="absolute inset-y-0 left-0 bg-vital rounded-full"
+          style={{ width: '0%' }}
         />
-        {/* Animated arc */}
-        <path
-          ref={arcRef}
-          className="gauge-arc"
-          d={`M${needleCX - R},${needleCY} A${R},${R} 0 0,1 ${needleCX + R},${needleCY}`}
-          strokeDasharray={ARC}
-          strokeDashoffset={ARC}
-        />
-        {/* Needle */}
-        <line
-          ref={needleRef}
-          x1={needleCX}
-          y1={needleCY}
-          x2={needleCX}
-          y2={needleCY - R + 4}
-          stroke="#c8102e"
-          strokeWidth="1.5"
-          strokeLinecap="round"
-          style={{ transformOrigin: `${needleCX}px ${needleCY}px`, transform: 'rotate(-90deg)' }}
-        />
-        {/* Pivot dot */}
-        <circle cx={needleCX} cy={needleCY} r="3" fill="#0d0d0d" />
-        {/* Tick marks */}
-        {[0, 25, 50, 75, 100].map(pctTick => {
-          const angle = (-90 + pctTick * 1.8) * Math.PI / 180;
-          const x1 = (needleCX + Math.cos(angle) * (R - 5)).toFixed(1);
-          const y1 = (needleCY + Math.sin(angle) * (R - 5)).toFixed(1);
-          const x2 = (needleCX + Math.cos(angle) * R).toFixed(1);
-          const y2 = (needleCY + Math.sin(angle) * R).toFixed(1);
-          return <line key={pctTick} x1={x1} y1={y1} x2={x2} y2={y2} stroke="rgba(13,13,13,0.3)" strokeWidth="1" />;
-        })}
-      </svg>
-      <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-bone text-center leading-tight">{name}</p>
+      </div>
+      <p className="mt-1 font-mono text-[7.5px] uppercase tracking-[0.14em] text-muted">{rated}</p>
     </div>
   );
 }
@@ -2055,13 +2045,13 @@ function SkillsSection() {
 
         <div ref={tableRef} className="grid md:grid-cols-2 gap-0 md:gap-px">
           {SKILLS.map((group, gi) => (
-            <div key={gi} className="border-t border-bone/10">
+            <div key={gi} className="border-t border-bone/10 md:px-8 first:pl-0 last:pr-0">
               <div className="py-4 border-b border-bone/10">
                 <p className="font-mono text-[9px] uppercase tracking-[0.24em] text-muted">{group.group}</p>
               </div>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-6 py-6">
+              <div className="flex flex-col gap-5 py-6">
                 {group.items.map((item) => (
-                  <SkillGauge key={item.name} name={item.name} pct={item.pct} />
+                  <SkillBar key={item.name} name={item.name} pct={item.pct} />
                 ))}
               </div>
             </div>
