@@ -195,7 +195,7 @@ function ElevatorScrollbar() {
   const posRef   = useRef({ y: 8, vy: 0 });
 
   useEffect(() => {
-    const CAB_H  = 56;
+    const CAB_H  = 120;
     const MARGIN = 10;
 
     const tick = () => {
@@ -226,7 +226,7 @@ function ElevatorScrollbar() {
     >
       {/* Cabin */}
       <div ref={cabinRef} style={{
-        position: 'absolute', top: 0, left: 4, right: 4, height: 56,
+        position: 'absolute', top: 0, left: 4, right: 4, height: 120,
         border: '1px solid rgba(200,16,46,0.48)',
         background: 'rgba(200,16,46,0.05)',
         borderRadius: 2,
@@ -234,21 +234,38 @@ function ElevatorScrollbar() {
         alignItems: 'center', justifyContent: 'center',
         gap: 2,
       }}>
-        <div style={{ display: 'flex', gap: 8, marginBottom: 2 }}>
+        {/* Cable attachment sheaves */}
+        <div style={{ display: 'flex', gap: 8, marginBottom: 6 }}>
           {[0, 1].map(j => (
             <div key={j} style={{
-              width: 7, height: 7, borderRadius: '50%',
-              border: '1px solid rgba(200,16,46,0.50)',
+              width: 8, height: 8, borderRadius: '50%',
+              border: '1px solid rgba(200,16,46,0.55)',
             }} />
           ))}
         </div>
-        <div style={{ width: '65%', height: 1, background: 'rgba(200,16,46,0.18)', marginBottom: 1 }} />
-        <div style={{ display: 'flex', alignItems: 'baseline', gap: 1 }}>
+        {/* Top divider */}
+        <div style={{ width: '70%', height: 1, background: 'rgba(200,16,46,0.20)' }} />
+        {/* Scroll % */}
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: 1, marginTop: 6, marginBottom: 6 }}>
           <span ref={pctRef} style={{
-            fontFamily: 'monospace', fontSize: 9, fontWeight: 700, lineHeight: 1,
-            color: 'rgba(200,16,46,0.75)',
+            fontFamily: 'monospace', fontSize: 11, fontWeight: 700, lineHeight: 1,
+            color: 'rgba(200,16,46,0.80)',
           }}>0</span>
-          <span style={{ fontFamily: 'monospace', fontSize: 6, lineHeight: 1, color: 'rgba(200,16,46,0.42)' }}>%</span>
+          <span style={{ fontFamily: 'monospace', fontSize: 7, lineHeight: 1, color: 'rgba(200,16,46,0.45)' }}>%</span>
+        </div>
+        {/* Mid divider */}
+        <div style={{ width: '70%', height: 1, background: 'rgba(200,16,46,0.20)' }} />
+        {/* ELEV label */}
+        <div style={{
+          marginTop: 6,
+          fontFamily: 'monospace', fontSize: 6, letterSpacing: '0.18em',
+          color: 'rgba(200,16,46,0.38)', lineHeight: 1,
+        }}>ELEV</div>
+        {/* Bottom decorative lines */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 3, marginTop: 6 }}>
+          {[0.35, 0.20].map((op, i) => (
+            <div key={i} style={{ width: 18, height: 1, background: `rgba(200,16,46,${op})` }} />
+          ))}
         </div>
       </div>
     </div>
