@@ -180,7 +180,6 @@ function PaperGrain() {
   return <div className="paper-grain" aria-hidden="true" />;
 }
 
-// Build internal-tooth ring gear path centered at (cx,cy)
 function ringGearPath(cx: number, cy: number, ro: number, ri: number, teeth: number): string {
   const pts: string[] = [];
   for (let i = 0; i < teeth; i++) {
@@ -198,6 +197,354 @@ function ringGearPath(cx: number, cy: number, ro: number, ri: number, teeth: num
   return `M${(Math.cos(0) * ro + cx).toFixed(2)},${(Math.sin(0) * ro + cy).toFixed(2)} ${pts.join(' ')} Z`;
 }
 
+// ─── Unified Gearbox + Pulley Drive ─────────────────────────────────────────
+// Layout: [4-gear zigzag spur cascade] → [5-planet epicyclic] → [chain+drum] → [rope] → [block-and-tackle + load]
+function GearboxPulleyDrive() {
+  const svgRef = useRef<SVGSVGElement>(null);
+
+  // ── Spur cascade geometry (verified mesh distances) ──
+  // G1 (input, large): cx=48, cy=148, R=19, N=20
+  // G2 (small, above): cx=74, cy=131, R=11, N=10  dist=sqrt(26²+17²)≈31≈30 ✓
+  // G2b compound (larger, same shaft): R=15, N=14
+  // G3 (mid, below): cx=107, cy=143, R=20, N=18  dist from G2b=sqrt(33²+12²)≈35=15+20 ✓
+  // G3b compound (small, same shaft): R=11, N=10
+  // G4 (medium, above): cx=131, cy=131, R=15, N=13  dist from G3b=sqrt(24²+12²)≈27=11+15 ✓
+  const GEARS = [
+    { cx: 48,  cy: 148, r: 19, n: 20, cls: 'gpd-g1',  omega:  1.000 },  // input
+    { cx: 74,  cy: 131, r: 11, n: 10, cls: 'gpd-g2',  omega: -2.000 },  // small idler
+    { cx: 74,  cy: 131, r: 15, n: 14, cls: 'gpd-g2b', omega: -2.000 },  // compound on G2
+    { cx: 107, cy: 143, r: 20, n: 18, cls: 'gpd-g3',  omega:  1.556 },  // driven by G2b
+    { cx: 107, cy: 143, r: 11, n: 10, cls: 'gpd-g3b', omega:  1.556 },  // compound on G3
+    { cx: 131, cy: 131, r: 15, n: 13, cls: 'gpd-g4',  omega: -1.040 },  // driven by G3b
+  ] as const;
+
+  // ── 5-planet epicyclic ──
+  const EPI = { cx: 218, cy: 145, RS: 18, RP: 9, NR: 32, NS: 16, NP: 8, planets: 5 };
+  const EPI_CARRIER_R = EPI.RS + EPI.RP; // planet orbit radius = 27
+  const EPI_RING_RO = EPI.RS + 2 * EPI.RP + 8; // ring outer = 44
+  const EPI_RING_RI = EPI.RS + 2 * EPI.RP - 3; // ring inner tooth tip = 33
+  // ω_sun = G4.omega = -1.040; ω_carrier = ω_sun × NS/(NS+NR) = -1.04 × 16/48 = -0.347
+  // ω_planet_abs = ω_carrier - (NS/NP)*(ω_sun-ω_carrier) = -0.347 - 2*(-1.04+0.347) = +1.039
+  const EPI_OMEGA_SUN     = -1.040;
+  const EPI_OMEGA_CARRIER = -0.347;
+  const EPI_OMEGA_PL_ABS  =  1.039;
+
+  const planetAngles5 = [0, 72, 144, 216, 288];
+
+  const epiRingPath = ringGearPath(EPI.cx, EPI.cy, EPI_RING_RO, EPI_RING_RI, EPI.NR);
+  const sunPath5    = gearPath(EPI.cx, EPI.cy, EPI.RS - 4, EPI.RS + 4, EPI.NS);
+  const plPaths5    = planetAngles5.map(ba => {
+    const a = ba * Math.PI / 180;
+    return gearPath(EPI.cx + Math.cos(a) * EPI_CARRIER_R, EPI.cy + Math.sin(a) * EPI_CARRIER_R,
+      EPI.RP - 3, EPI.RP + 3, EPI.NP);
+  });
+  const spurPaths = GEARS.map(g => gearPath(g.cx, g.cy, g.r - 3.5, g.r + 3.5, g.n));
+
+  // ── Chain sprocket + drum ──
+  const SPROCKET = { cx: 305, cy: 145, r: 12 };  // driven by epicyclic carrier shaft
+  const DRUM     = { cx: 356, cy: 145, r: 16 };  // winch drum, ω = -0.347×12/16 = -0.260
+
+  // ── Pulley block geometry ──
+  const PULLEY_X = 460;
+  const GUIDE_Y  = 80;    // guide sheave fixed top
+  const FIXED_Y  = 32;    // fixed pulley block top
+  const INIT_LOAD_Y = 140; // movable block initial Y
+
+  const angRef = useRef({
+    g: [0, 0, 0, 0, 0, 0] as number[],
+    sun: 0, carrier: 0, pl: [0, 0, 0, 0, 0] as number[],
+    drum: 0,
+  });
+  const loadRef = useRef({ y: INIT_LOAD_Y, vy: 0 });
+
+  useEffect(() => {
+    const stop = startEngine();
+    subscribe('gpd', ({ velocity, scrollY }) => {
+      const rpm = Math.max(0.4, Math.min(90, 1.1 + Math.abs(velocity) * 2.3));
+      const d   = rpm / 60 * 5.2;
+      const ag  = angRef.current;
+
+      // Spur cascade
+      GEARS.forEach((g, i) => { ag.g[i] = (ag.g[i] + d * g.omega + 360) % 360; });
+
+      // Epicyclic
+      ag.sun     = (ag.sun     + d * EPI_OMEGA_SUN     + 360) % 360;
+      ag.carrier = (ag.carrier + d * EPI_OMEGA_CARRIER + 360) % 360;
+      ag.pl      = ag.pl.map(a => (a + d * EPI_OMEGA_PL_ABS + 360) % 360);
+
+      // Drum
+      ag.drum = (ag.drum + d * 0.260 + 360) % 360;
+
+      // Spring physics for pulley load
+      const scrollFrac = ((scrollY % 400) / 400);
+      const targetY    = INIT_LOAD_Y + scrollFrac * 90;
+      const [ny, nv]   = springStep(loadRef.current.y, targetY, loadRef.current.vy, 0.04, 0.82);
+      loadRef.current  = { y: ny, vy: nv };
+      const mY = loadRef.current.y;
+
+      const svg = svgRef.current;
+      if (!svg) return;
+
+      // Apply spur rotations
+      GEARS.forEach((g, i) => {
+        const el = svg.querySelector<SVGGElement>(`.${g.cls}`);
+        if (el) el.style.transform = `rotate(${ag.g[i]}deg)`;
+      });
+
+      // Epicyclic sun
+      const sunEl = svg.querySelector<SVGGElement>('.gpd-epi-sun');
+      if (sunEl) sunEl.style.transform = `rotate(${ag.sun}deg)`;
+
+      // Epicyclic planets (orbit + self-spin)
+      planetAngles5.forEach((ba, i) => {
+        const el = svg.querySelector<SVGGElement>(`.gpd-epi-pl-${i}`);
+        if (!el) return;
+        const a      = ba * Math.PI / 180;
+        const orbitA = (ba + ag.carrier) * Math.PI / 180;
+        const px0    = EPI.cx + Math.cos(a) * EPI_CARRIER_R;
+        const py0    = EPI.cy + Math.sin(a) * EPI_CARRIER_R;
+        const px     = EPI.cx + Math.cos(orbitA) * EPI_CARRIER_R;
+        const py     = EPI.cy + Math.sin(orbitA) * EPI_CARRIER_R;
+        el.style.transform = `translate(${(px - px0).toFixed(2)}px,${(py - py0).toFixed(2)}px) rotate(${ag.pl[i]}deg)`;
+      });
+
+      // Drum rotation
+      const drumEl = svg.querySelector<SVGGElement>('.gpd-drum');
+      if (drumEl) drumEl.style.transform = `rotate(${ag.drum}deg)`;
+
+      // Movable block
+      const movEl = svg.querySelector<SVGGElement>('.gpd-mov-block');
+      if (movEl) movEl.style.transform = `translateY(${(mY - INIT_LOAD_Y).toFixed(1)}px)`;
+
+      // Update rope strands
+      const ropes = svg.querySelectorAll<SVGLineElement>('.gpd-rope');
+      // Rope exits drum at top, goes left to guide, then up to fixed block, weaves between blocks
+      const ropeSegs = [
+        // drum top → guide sheave top
+        [DRUM.cx, DRUM.cy - DRUM.r, PULLEY_X - 30, GUIDE_Y],
+        // guide → fixed block left sheave
+        [PULLEY_X - 30, GUIDE_Y - 10, PULLEY_X - 10, FIXED_Y + 9],
+        // fixed block left → movable left
+        [PULLEY_X - 10, FIXED_Y + 9, PULLEY_X - 10, mY - 9],
+        // movable left → fixed block right
+        [PULLEY_X - 10, mY - 9, PULLEY_X + 10, FIXED_Y + 9],
+        // fixed block right → movable right → anchor bottom
+        [PULLEY_X + 10, FIXED_Y + 9, PULLEY_X + 10, mY - 9],
+        // anchor: movable right bottom → dead end
+        [PULLEY_X + 10, mY - 9, PULLEY_X + 10, mY + 14],
+      ];
+      ropes.forEach((r, i) => {
+        const s = ropeSegs[i];
+        if (!s) return;
+        r.setAttribute('x1', s[0].toFixed(1)); r.setAttribute('y1', s[1].toFixed(1));
+        r.setAttribute('x2', s[2].toFixed(1)); r.setAttribute('y2', s[3].toFixed(1));
+      });
+    });
+    return () => { unsubscribe('gpd'); stop(); };
+  }, []);
+
+  const SHEAVE_R = 9;
+
+  return (
+    <div className="gear-train-wrap" aria-hidden="true">
+      <svg
+        ref={svgRef}
+        viewBox="0 0 560 232"
+        className="gear-train-svg"
+        style={{ width: 'clamp(300px, 46vw, 660px)', bottom: '1%', right: '0.5%', position: 'absolute' }}
+      >
+        {/* ── Title ── */}
+        <text x="280" y="11" textAnchor="middle" fontFamily="monospace" fontSize="6" fill="currentColor" opacity="0.22" letterSpacing="1.8">SPUR CASCADE → EPICYCLIC → CHAIN DRIVE → BLOCK & TACKLE</text>
+
+        {/* ══ SPUR CASCADE ══ */}
+        {/* Shaft lines (compound gears share a shaft) */}
+        <line x1={GEARS[1].cx} y1={GEARS[1].cy - GEARS[1].r + 1} x2={GEARS[1].cx} y2={GEARS[1].cy + GEARS[1].r - 1}
+          stroke="currentColor" strokeWidth="2" opacity="0.15" />
+        <line x1={GEARS[3].cx} y1={GEARS[3].cy - GEARS[3].r + 1} x2={GEARS[3].cx} y2={GEARS[3].cy + GEARS[3].r - 1}
+          stroke="currentColor" strokeWidth="2" opacity="0.15" />
+
+        {/* Spur gears: draw G2/G3 compound (inner smaller) then outer, then G1 G4 */}
+        {/* G2b (compound inner) */}
+        <g className="gpd-g2b" style={{ transformOrigin: `${GEARS[2].cx}px ${GEARS[2].cy}px` }}>
+          <path d={spurPaths[2]} fill="currentColor" opacity="0.70" />
+        </g>
+        {/* G3b (compound inner) */}
+        <g className="gpd-g3b" style={{ transformOrigin: `${GEARS[4].cx}px ${GEARS[4].cy}px` }}>
+          <path d={spurPaths[4]} fill="currentColor" opacity="0.70" />
+        </g>
+        {/* G2 (outer) */}
+        <g className="gpd-g2" style={{ transformOrigin: `${GEARS[1].cx}px ${GEARS[1].cy}px` }}>
+          <path d={spurPaths[1]} fill="currentColor" opacity="0.88" />
+          <circle cx={GEARS[1].cx} cy={GEARS[1].cy} r={GEARS[1].r * 0.35} fill="#f4f2ee" />
+          <circle cx={GEARS[1].cx} cy={GEARS[1].cy} r="1.8" fill="rgba(200,16,46,0.7)" />
+        </g>
+        {/* G3 (outer) */}
+        <g className="gpd-g3" style={{ transformOrigin: `${GEARS[3].cx}px ${GEARS[3].cy}px` }}>
+          <path d={spurPaths[3]} fill="currentColor" opacity="0.88" />
+          <circle cx={GEARS[3].cx} cy={GEARS[3].cy} r={GEARS[3].r * 0.30} fill="#f4f2ee" />
+          <circle cx={GEARS[3].cx} cy={GEARS[3].cy} r="1.8" fill="rgba(200,16,46,0.7)" />
+        </g>
+        {/* G1 input */}
+        <g className="gpd-g1" style={{ transformOrigin: `${GEARS[0].cx}px ${GEARS[0].cy}px` }}>
+          <path d={spurPaths[0]} fill="currentColor" opacity="0.95" />
+          <circle cx={GEARS[0].cx} cy={GEARS[0].cy} r={GEARS[0].r * 0.38} fill="#f4f2ee" />
+          <circle cx={GEARS[0].cx} cy={GEARS[0].cy} r="3" fill="rgba(200,16,46,0.85)" />
+          {[0,60,120,180,240,300].map(a => {
+            const rad = a * Math.PI / 180;
+            return <line key={a}
+              x1={(Math.cos(rad)*GEARS[0].r*0.38+GEARS[0].cx).toFixed(1)} y1={(Math.sin(rad)*GEARS[0].r*0.38+GEARS[0].cy).toFixed(1)}
+              x2={(Math.cos(rad)*GEARS[0].r*0.80+GEARS[0].cx).toFixed(1)} y2={(Math.sin(rad)*GEARS[0].r*0.80+GEARS[0].cy).toFixed(1)}
+              stroke="#f4f2ee" strokeWidth="1.8" />;
+          })}
+        </g>
+        {/* G4 output of cascade */}
+        <g className="gpd-g4" style={{ transformOrigin: `${GEARS[5].cx}px ${GEARS[5].cy}px` }}>
+          <path d={spurPaths[5]} fill="currentColor" opacity="0.88" />
+          <circle cx={GEARS[5].cx} cy={GEARS[5].cy} r={GEARS[5].r * 0.35} fill="#f4f2ee" />
+          <circle cx={GEARS[5].cx} cy={GEARS[5].cy} r="1.8" fill="rgba(200,16,46,0.7)" />
+        </g>
+        {/* Shaft from G4 to epicyclic input */}
+        <line x1={GEARS[5].cx + GEARS[5].r} y1={GEARS[5].cy}
+          x2={EPI.cx - EPI.RS - 5} y2={EPI.cy}
+          stroke="currentColor" strokeWidth="2" opacity="0.15" strokeDasharray="4 3" />
+        <text x={(GEARS[0].cx + GEARS[5].cx)/2} y="220" textAnchor="middle" fontFamily="monospace" fontSize="5.5" fill="currentColor" opacity="0.20">SPUR CASCADE  1.04× REDUCTION</text>
+
+        {/* ══ EPICYCLIC (5 planets) ══ */}
+        {/* Housing circle */}
+        <circle cx={EPI.cx} cy={EPI.cy} r={EPI_RING_RO + 6} fill="none" stroke="currentColor" strokeWidth="1" opacity="0.12" />
+        <path d={epiRingPath} fill="currentColor" opacity="0.14" />
+
+        {/* Carrier arms */}
+        {planetAngles5.map((ba, i) => {
+          const a = ba * Math.PI / 180;
+          return <line key={`ecar-${i}`}
+            x1={EPI.cx} y1={EPI.cy}
+            x2={(EPI.cx + Math.cos(a) * EPI_CARRIER_R).toFixed(1)}
+            y2={(EPI.cy + Math.sin(a) * EPI_CARRIER_R).toFixed(1)}
+            stroke="currentColor" strokeWidth="1" opacity="0.16" />;
+        })}
+
+        {/* 5 planets */}
+        {planetAngles5.map((ba, i) => {
+          const a = ba * Math.PI / 180;
+          const px = EPI.cx + Math.cos(a) * EPI_CARRIER_R;
+          const py = EPI.cy + Math.sin(a) * EPI_CARRIER_R;
+          return (
+            <g key={`epl-${i}`} className={`gpd-epi-pl-${i}`} style={{ transformOrigin: `${px.toFixed(1)}px ${py.toFixed(1)}px` }}>
+              <path d={plPaths5[i]} fill="currentColor" opacity="0.82" />
+              <circle cx={px} cy={py} r={EPI.RP * 0.4} fill="#f4f2ee" />
+              <circle cx={px} cy={py} r="1.5" fill="rgba(200,16,46,0.6)" />
+            </g>
+          );
+        })}
+
+        {/* Sun gear */}
+        <g className="gpd-epi-sun" style={{ transformOrigin: `${EPI.cx}px ${EPI.cy}px` }}>
+          <path d={sunPath5} fill="currentColor" opacity="0.96" />
+          <circle cx={EPI.cx} cy={EPI.cy} r={EPI.RS * 0.40} fill="#f4f2ee" />
+          <circle cx={EPI.cx} cy={EPI.cy} r="2.8" fill="rgba(200,16,46,0.85)" />
+          {[0,72,144,216,288].map(a => {
+            const rad = a * Math.PI / 180;
+            return <line key={a}
+              x1={(Math.cos(rad)*EPI.RS*0.40+EPI.cx).toFixed(1)} y1={(Math.sin(rad)*EPI.RS*0.40+EPI.cy).toFixed(1)}
+              x2={(Math.cos(rad)*EPI.RS*0.82+EPI.cx).toFixed(1)} y2={(Math.sin(rad)*EPI.RS*0.82+EPI.cy).toFixed(1)}
+              stroke="#f4f2ee" strokeWidth="1.5" />;
+          })}
+        </g>
+        {planetAngles5.map((ba, i) => {
+          const a = ba * Math.PI / 180;
+          return <circle key={`eax-${i}`}
+            cx={(EPI.cx + Math.cos(a) * EPI_CARRIER_R).toFixed(1)}
+            cy={(EPI.cy + Math.sin(a) * EPI_CARRIER_R).toFixed(1)}
+            r="1.8" fill="rgba(200,16,46,0.40)" />;
+        })}
+        <text x={EPI.cx} y={EPI.cy + EPI_RING_RO + 14} textAnchor="middle" fontFamily="monospace" fontSize="5.5" fill="currentColor" opacity="0.20">5-PLANET EPICYCLIC  3× REDUCTION</text>
+
+        {/* ══ CHAIN + DRUM ══ */}
+        {/* Shaft from epicyclic output to drive sprocket */}
+        <line x1={EPI.cx + EPI_RING_RO + 7} y1={EPI.cy}
+          x2={SPROCKET.cx - SPROCKET.r} y2={SPROCKET.cy}
+          stroke="currentColor" strokeWidth="2" opacity="0.15" strokeDasharray="4 3" />
+
+        {/* Drive sprocket */}
+        <g className="gpd-g4" style={{ transformOrigin: `${SPROCKET.cx}px ${SPROCKET.cy}px` }}>
+          <path d={gearPath(SPROCKET.cx, SPROCKET.cy, SPROCKET.r - 3, SPROCKET.r + 3, 12)} fill="currentColor" opacity="0.80" />
+          <circle cx={SPROCKET.cx} cy={SPROCKET.cy} r={SPROCKET.r * 0.38} fill="#f4f2ee" />
+          <circle cx={SPROCKET.cx} cy={SPROCKET.cy} r="2" fill="rgba(200,16,46,0.7)" />
+        </g>
+
+        {/* Chain belt (dashed rect between sprocket and drum) */}
+        <rect x={SPROCKET.cx} y={SPROCKET.cy - 6}
+          width={DRUM.cx - SPROCKET.cx} height="12"
+          fill="none" stroke="currentColor" strokeWidth="1.5" opacity="0.14"
+          strokeDasharray="5 3" rx="1" />
+
+        {/* Winch drum */}
+        <g className="gpd-drum" style={{ transformOrigin: `${DRUM.cx}px ${DRUM.cy}px` }}>
+          <circle cx={DRUM.cx} cy={DRUM.cy} r={DRUM.r} fill="none" stroke="currentColor" strokeWidth="2.5" opacity="0.80" />
+          <circle cx={DRUM.cx} cy={DRUM.cy} r={DRUM.r * 0.55} fill="none" stroke="currentColor" strokeWidth="1" opacity="0.35" />
+          {[0,45,90,135,180,225,270,315].map(a => {
+            const rad = a * Math.PI / 180;
+            return <line key={a}
+              x1={(Math.cos(rad)*DRUM.r*0.55+DRUM.cx).toFixed(1)} y1={(Math.sin(rad)*DRUM.r*0.55+DRUM.cy).toFixed(1)}
+              x2={(Math.cos(rad)*DRUM.r*0.88+DRUM.cx).toFixed(1)} y2={(Math.sin(rad)*DRUM.r*0.88+DRUM.cy).toFixed(1)}
+              stroke="currentColor" strokeWidth="1" opacity="0.40" />;
+          })}
+          <circle cx={DRUM.cx} cy={DRUM.cy} r="3" fill="rgba(200,16,46,0.8)" />
+        </g>
+        <text x={DRUM.cx} y={DRUM.cy + DRUM.r + 12} textAnchor="middle" fontFamily="monospace" fontSize="5.5" fill="currentColor" opacity="0.20">WINCH DRUM</text>
+
+        {/* ══ ROPE + PULLEY BLOCK-AND-TACKLE ══ */}
+        {/* Overhead anchor bar */}
+        <rect x={PULLEY_X - 22} y="18" width="44" height="5" rx="1.5" fill="currentColor" opacity="0.40" />
+        <line x1={PULLEY_X} y1="23" x2={PULLEY_X} y2={FIXED_Y - SHEAVE_R} stroke="currentColor" strokeWidth="1.5" opacity="0.30" />
+
+        {/* Rope strands (updated in RAF) */}
+        {[0, 1, 2, 3, 4, 5].map(i => (
+          <line key={i} className="gpd-rope"
+            x1={DRUM.cx} y1={DRUM.cy - DRUM.r}
+            x2={PULLEY_X} y2={FIXED_Y}
+            stroke="currentColor" strokeWidth="1.1" opacity="0.50" />
+        ))}
+
+        {/* Guide sheave (fixed) */}
+        <circle cx={PULLEY_X - 30} cy={GUIDE_Y} r="8" fill="none" stroke="currentColor" strokeWidth="1.2" opacity="0.55" />
+        <circle cx={PULLEY_X - 30} cy={GUIDE_Y} r="3" fill="none" stroke="currentColor" strokeWidth="0.8" opacity="0.35" />
+        <line x1={PULLEY_X - 30} y1={GUIDE_Y - 3} x2={PULLEY_X - 30} y2={GUIDE_Y + 3} stroke="currentColor" strokeWidth="0.8" opacity="0.35" />
+
+        {/* Fixed block (2 sheaves) */}
+        {[-10, 10].map((ox, i) => (
+          <g key={`fps-${i}`}>
+            <circle cx={PULLEY_X + ox} cy={FIXED_Y} r={SHEAVE_R} fill="none" stroke="currentColor" strokeWidth="1.2" opacity="0.60" />
+            <circle cx={PULLEY_X + ox} cy={FIXED_Y} r={SHEAVE_R * 0.38} fill="none" stroke="currentColor" strokeWidth="0.7" opacity="0.35" />
+          </g>
+        ))}
+        <rect x={PULLEY_X - 20} y={FIXED_Y - 3} width="40" height="6" rx="2" fill="currentColor" opacity="0.18" />
+
+        {/* Movable block (spring-animated) */}
+        <g className="gpd-mov-block">
+          {[-10, 10].map((ox, i) => (
+            <g key={`mbs-${i}`}>
+              <circle cx={PULLEY_X + ox} cy={INIT_LOAD_Y} r={SHEAVE_R} fill="none" stroke="currentColor" strokeWidth="1.2" opacity="0.60" />
+              <circle cx={PULLEY_X + ox} cy={INIT_LOAD_Y} r={SHEAVE_R * 0.38} fill="none" stroke="currentColor" strokeWidth="0.7" opacity="0.35" />
+            </g>
+          ))}
+          <rect x={PULLEY_X - 20} y={INIT_LOAD_Y - 3} width="40" height="6" rx="2" fill="currentColor" opacity="0.18" />
+          {/* Load mass */}
+          <rect x={PULLEY_X - 18} y={INIT_LOAD_Y + SHEAVE_R + 1} width="36" height="18" rx="2" fill="currentColor" opacity="0.22" />
+          <line x1={PULLEY_X - 18} y1={INIT_LOAD_Y + SHEAVE_R + 9} x2={PULLEY_X + 18} y2={INIT_LOAD_Y + SHEAVE_R + 9}
+            stroke="#f4f2ee" strokeWidth="0.7" opacity="0.35" />
+          <text x={PULLEY_X} y={INIT_LOAD_Y + SHEAVE_R + 32} textAnchor="middle" fontFamily="monospace" fontSize="5" fill="currentColor" opacity="0.40">LOAD  4:1 MA</text>
+        </g>
+
+        {/* Ratio summary */}
+        <text x="520" y="15" textAnchor="end" fontFamily="monospace" fontSize="5.5" fill="currentColor" opacity="0.22">∑ ~12× REDUCTION</text>
+      </svg>
+    </div>
+  );
+}
+
+// kept for reference from global app root usage — now replaced by GearboxPulleyDrive
 function CompoundGearSystem() {
   const svgRef = useRef<SVGSVGElement>(null);
 
@@ -1245,8 +1592,7 @@ function HeroSection() {
       <HeroCrosshair />
       <CornerBrackets />
       <FourBarLinkage />
-      <PulleySystem />
-      <CompoundGearSystem />
+      <GearboxPulleyDrive />
       <BloodFlowParticles />
       {/* Folio line */}
       <div className="mx-auto max-w-container px-6 md:px-10 lg:px-14 xl:px-16 pt-10 md:pt-14">
@@ -3065,7 +3411,7 @@ export default function App() {
 
   return (
     <div className="relative">
-      <CompoundGearSystem />
+      <GearboxPulleyDrive />
       <BlueprintParallax />
       <SpringCursor />
       <ScrollRPMGauge />
