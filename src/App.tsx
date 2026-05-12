@@ -244,11 +244,12 @@ function GearboxPulleyDrive() {
   const SPROCKET = { cx: 305, cy: 145, r: 12 };  // driven by epicyclic carrier shaft
   const DRUM     = { cx: 356, cy: 145, r: 16 };  // winch drum, ω = -0.347×12/16 = -0.260
 
-  // ── Pulley block geometry ──
-  const PULLEY_X = 460;
-  const GUIDE_Y  = 80;    // guide sheave fixed top
-  const FIXED_Y  = 32;    // fixed pulley block top
-  const INIT_LOAD_Y = 140; // movable block initial Y
+  // ── Elevator shaft geometry (scroll indicator) ──
+  const PULLEY_X    = 460;
+  const GUIDE_Y     = 80;   // guide sheave fixed top
+  const FIXED_Y     = 32;   // fixed pulley block top
+  const INIT_LOAD_Y = 62;   // cabin start Y (scroll = 0 → top of shaft)
+  const SHAFT_BOT   = 195;  // cabin end Y   (scroll = max → bottom of shaft)
 
   const angRef = useRef({
     g: [0, 0, 0, 0, 0, 0] as number[],
@@ -275,10 +276,11 @@ function GearboxPulleyDrive() {
       // Drum
       ag.drum = (ag.drum + d * 0.260 + 360) % 360;
 
-      // Spring physics for pulley load
-      const scrollFrac = ((scrollY % 400) / 400);
-      const targetY    = INIT_LOAD_Y + scrollFrac * 90;
-      const [ny, nv]   = springStep(loadRef.current.y, targetY, loadRef.current.vy, 0.04, 0.82);
+      // Elevator: true page scroll fraction → cabin position (acts as scroll bar)
+      const maxScroll  = Math.max(1, document.body.scrollHeight - window.innerHeight);
+      const scrollFrac = Math.min(1, scrollY / maxScroll);
+      const targetY    = INIT_LOAD_Y + scrollFrac * (SHAFT_BOT - INIT_LOAD_Y);
+      const [ny, nv]   = springStep(loadRef.current.y, targetY, loadRef.current.vy, 0.06, 0.78);
       loadRef.current  = { y: ny, vy: nv };
       const mY = loadRef.current.y;
 
@@ -312,9 +314,11 @@ function GearboxPulleyDrive() {
       const drumEl = svg.querySelector<SVGGElement>('.gpd-drum');
       if (drumEl) drumEl.style.transform = `rotate(${ag.drum}deg)`;
 
-      // Movable block
+      // Elevator cabin
       const movEl = svg.querySelector<SVGGElement>('.gpd-mov-block');
       if (movEl) movEl.style.transform = `translateY(${(mY - INIT_LOAD_Y).toFixed(1)}px)`;
+      const pctEl = svg.querySelector<SVGTextElement>('.gpd-scroll-pct');
+      if (pctEl) pctEl.textContent = `${Math.round(scrollFrac * 100)}%`;
 
       // Update rope strands
       const ropes = svg.querySelectorAll<SVGLineElement>('.gpd-rope');
@@ -494,10 +498,39 @@ function GearboxPulleyDrive() {
         </g>
         <text x={DRUM.cx} y={DRUM.cy + DRUM.r + 12} textAnchor="middle" fontFamily="monospace" fontSize="5.5" fill="currentColor" opacity="0.20">WINCH DRUM</text>
 
-        {/* ══ ROPE + PULLEY BLOCK-AND-TACKLE ══ */}
+        {/* ══ ELEVATOR SHAFT + SCROLL INDICATOR ══ */}
+        {/* Shaft pit background */}
+        <rect x={PULLEY_X - 32} y={FIXED_Y - 6} width="64" height={SHAFT_BOT - FIXED_Y + 28}
+          rx="3" fill="currentColor" opacity="0.03" />
+        {/* Guide rails */}
+        <line x1={PULLEY_X - 28} y1={FIXED_Y + SHEAVE_R + 4} x2={PULLEY_X - 28} y2={SHAFT_BOT + 6}
+          stroke="currentColor" strokeWidth="0.5" opacity="0.18" strokeDasharray="2 6" />
+        <line x1={PULLEY_X + 28} y1={FIXED_Y + SHEAVE_R + 4} x2={PULLEY_X + 28} y2={SHAFT_BOT + 6}
+          stroke="currentColor" strokeWidth="0.5" opacity="0.18" strokeDasharray="2 6" />
+
+        {/* ELEV label */}
+        <text x={PULLEY_X} y={FIXED_Y - 16} textAnchor="middle" fontFamily="monospace" fontSize="5"
+          fill="currentColor" opacity="0.26" letterSpacing="2">ELEV</text>
+
         {/* Overhead anchor bar */}
         <rect x={PULLEY_X - 22} y="18" width="44" height="5" rx="1.5" fill="currentColor" opacity="0.40" />
-        <line x1={PULLEY_X} y1="23" x2={PULLEY_X} y2={FIXED_Y - SHEAVE_R} stroke="currentColor" strokeWidth="1.5" opacity="0.30" />
+        <line x1={PULLEY_X} y1="23" x2={PULLEY_X} y2={FIXED_Y - SHEAVE_R}
+          stroke="currentColor" strokeWidth="1.5" opacity="0.30" />
+
+        {/* Floor markers at 0% 25% 50% 75% 100% scroll */}
+        {([0, 0.25, 0.5, 0.75, 1] as const).map((f, fi) => {
+          const fy = INIT_LOAD_Y + f * (SHAFT_BOT - INIT_LOAD_Y);
+          return (
+            <g key={`fl-${fi}`}>
+              <line x1={PULLEY_X + 30} y1={fy} x2={PULLEY_X + 40} y2={fy}
+                stroke="currentColor" strokeWidth="0.6" opacity="0.22" />
+              <text x={PULLEY_X + 43} y={fy + 2} fontFamily="monospace" fontSize="4"
+                fill="currentColor" opacity="0.28">
+                {['G', '3', '2', '1', 'B'][fi]}
+              </text>
+            </g>
+          );
+        })}
 
         {/* Rope strands (updated in RAF) */}
         {[0, 1, 2, 3, 4, 5].map(i => (
@@ -510,31 +543,45 @@ function GearboxPulleyDrive() {
         {/* Guide sheave (fixed) */}
         <circle cx={PULLEY_X - 30} cy={GUIDE_Y} r="8" fill="none" stroke="currentColor" strokeWidth="1.2" opacity="0.55" />
         <circle cx={PULLEY_X - 30} cy={GUIDE_Y} r="3" fill="none" stroke="currentColor" strokeWidth="0.8" opacity="0.35" />
-        <line x1={PULLEY_X - 30} y1={GUIDE_Y - 3} x2={PULLEY_X - 30} y2={GUIDE_Y + 3} stroke="currentColor" strokeWidth="0.8" opacity="0.35" />
+        <line x1={PULLEY_X - 30} y1={GUIDE_Y - 3} x2={PULLEY_X - 30} y2={GUIDE_Y + 3}
+          stroke="currentColor" strokeWidth="0.8" opacity="0.35" />
 
-        {/* Fixed block (2 sheaves) */}
+        {/* Fixed sheave block (top of shaft, permanently fixed) */}
         {[-10, 10].map((ox, i) => (
           <g key={`fps-${i}`}>
             <circle cx={PULLEY_X + ox} cy={FIXED_Y} r={SHEAVE_R} fill="none" stroke="currentColor" strokeWidth="1.2" opacity="0.60" />
             <circle cx={PULLEY_X + ox} cy={FIXED_Y} r={SHEAVE_R * 0.38} fill="none" stroke="currentColor" strokeWidth="0.7" opacity="0.35" />
           </g>
         ))}
-        <rect x={PULLEY_X - 20} y={FIXED_Y - 3} width="40" height="6" rx="2" fill="currentColor" opacity="0.18" />
+        <rect x={PULLEY_X - 20} y={FIXED_Y - 3} width="40" height="6" rx="2" fill="currentColor" opacity="0.22" />
 
-        {/* Movable block (spring-animated) */}
+        {/* Elevator cabin (spring-animated, tracks true scroll position) */}
         <g className="gpd-mov-block">
+          {/* Upper sheaves (cable attachment) */}
           {[-10, 10].map((ox, i) => (
             <g key={`mbs-${i}`}>
               <circle cx={PULLEY_X + ox} cy={INIT_LOAD_Y} r={SHEAVE_R} fill="none" stroke="currentColor" strokeWidth="1.2" opacity="0.60" />
               <circle cx={PULLEY_X + ox} cy={INIT_LOAD_Y} r={SHEAVE_R * 0.38} fill="none" stroke="currentColor" strokeWidth="0.7" opacity="0.35" />
             </g>
           ))}
-          <rect x={PULLEY_X - 20} y={INIT_LOAD_Y - 3} width="40" height="6" rx="2" fill="currentColor" opacity="0.18" />
-          {/* Load mass */}
-          <rect x={PULLEY_X - 18} y={INIT_LOAD_Y + SHEAVE_R + 1} width="36" height="18" rx="2" fill="currentColor" opacity="0.22" />
-          <line x1={PULLEY_X - 18} y1={INIT_LOAD_Y + SHEAVE_R + 9} x2={PULLEY_X + 18} y2={INIT_LOAD_Y + SHEAVE_R + 9}
-            stroke="#f4f2ee" strokeWidth="0.7" opacity="0.35" />
-          <text x={PULLEY_X} y={INIT_LOAD_Y + SHEAVE_R + 32} textAnchor="middle" fontFamily="monospace" fontSize="5" fill="currentColor" opacity="0.40">LOAD  4:1 MA</text>
+          {/* Mounting bar */}
+          <rect x={PULLEY_X - 20} y={INIT_LOAD_Y - 3} width="40" height="6" rx="2" fill="currentColor" opacity="0.22" />
+          {/* Cabin body */}
+          <rect x={PULLEY_X - 20} y={INIT_LOAD_Y + SHEAVE_R + 1} width="40" height="26" rx="2"
+            fill="currentColor" opacity="0.15" stroke="currentColor" strokeWidth="0.7" strokeOpacity="0.40" />
+          {/* Cabin interior dividers */}
+          <line x1={PULLEY_X - 18} y1={INIT_LOAD_Y + SHEAVE_R + 9}
+            x2={PULLEY_X + 18} y2={INIT_LOAD_Y + SHEAVE_R + 9}
+            stroke="currentColor" strokeWidth="0.4" opacity="0.20" />
+          <line x1={PULLEY_X - 18} y1={INIT_LOAD_Y + SHEAVE_R + 18}
+            x2={PULLEY_X + 18} y2={INIT_LOAD_Y + SHEAVE_R + 18}
+            stroke="currentColor" strokeWidth="0.4" opacity="0.20" />
+          {/* Scroll % readout */}
+          <text className="gpd-scroll-pct" x={PULLEY_X} y={INIT_LOAD_Y + SHEAVE_R + 15}
+            textAnchor="middle" fontFamily="monospace" fontSize="5.5" fill="currentColor" opacity="0.60">0%</text>
+          {/* ↕ indicator */}
+          <text x={PULLEY_X - 15} y={INIT_LOAD_Y + SHEAVE_R + 23}
+            fontFamily="monospace" fontSize="5" fill="currentColor" opacity="0.28">↕</text>
         </g>
 
         {/* Ratio summary */}
@@ -2641,41 +2688,63 @@ function PublicationsSection() {
   return (
     <section className="relative ed-dark">
       <div className="mx-auto max-w-container px-6 md:px-10 lg:px-14 xl:px-16 py-20 md:py-28">
-        <div className="mb-12" data-reveal>
+        <div className="mb-14" data-reveal>
           <FolioLabel text="006 · Publications + Abstracts" />
         </div>
 
-        <div className="flex flex-col gap-0 divide-y divide-white/10">
+        <div className="flex flex-col gap-8">
           {PUBLICATIONS.map((pub, i) => (
-            <div
+            <article
               key={i}
               data-reveal
               data-reveal-delay={String(i + 1)}
-              className="py-10 md:py-12 grid md:grid-cols-[120px_1fr] gap-6 md:gap-10"
+              className="rounded-sm p-8 md:p-10"
+              style={{ border: '1px solid rgba(244,242,238,0.12)' }}
             >
-              {/* Hanging year */}
-              <div>
-                <p className="font-grotesk text-vital leading-none tracking-tightest" style={{ fontSize: 'clamp(48px, 8vw, 100px)' }}>
+              {/* Header row: status · conference · year */}
+              <div className="flex flex-wrap items-center gap-3 mb-7">
+                <StatusBadge status={pub.status} />
+                <span className="font-mono text-[10px] uppercase tracking-[0.18em]"
+                  style={{ color: 'rgba(244,242,238,0.50)' }}>
+                  {pub.conference}
+                </span>
+                <span className="ml-auto font-grotesk text-vital leading-none tracking-tightest"
+                  style={{ fontSize: 'clamp(26px, 3.5vw, 40px)' }}>
                   {pub.year}
-                </p>
-                <p className="font-mono text-[9px] uppercase tracking-[0.2em] text-steel mt-2">{pub.conference}</p>
+                </span>
               </div>
 
-              {/* Content */}
-              <div>
-                <div className="flex items-center gap-3 mb-5">
-                  <StatusBadge status={pub.status} />
-                  <span className="font-mono text-[9px] uppercase tracking-[0.16em] text-steel">{pub.venue}</span>
-                </div>
-                <p className="font-serif-italic text-graphite text-xl md:text-2xl leading-[1.35] mb-4">
-                  {pub.title}
+              {/* Title */}
+              <p className="font-serif-italic text-graphite leading-[1.45] mb-7"
+                style={{ fontSize: 'clamp(17px, 2.2vw, 24px)' }}>
+                {pub.title}
+              </p>
+
+              {/* Divider */}
+              <div className="mb-6" style={{ height: '1px', background: 'rgba(244,242,238,0.09)' }} />
+
+              {/* Authors */}
+              <div className="mb-5">
+                <p className="font-mono text-[9px] uppercase tracking-[0.22em] mb-2"
+                  style={{ color: 'rgba(244,242,238,0.38)' }}>Authors</p>
+                <p className="font-mono leading-[1.95]" style={{ fontSize: '13px', color: 'rgba(244,242,238,0.76)' }}>
+                  {pub.authors.split('Kim S*').map((part, pi, arr) =>
+                    pi < arr.length - 1
+                      ? <span key={pi}>{part}<span style={{ color: '#c8102e' }}>Kim S*</span></span>
+                      : <span key={pi}>{part}</span>
+                  )}
                 </p>
-                <p className="font-mono text-[11px] leading-[1.75] text-steel">
-                  {pub.authors}
+                <p className="font-mono text-[9px] mt-2" style={{ color: 'rgba(244,242,238,0.35)' }}>
+                  * Spencer Kim
                 </p>
-                <p className="font-mono text-[9px] text-steel/50 mt-1">* Spencer Kim</p>
               </div>
-            </div>
+
+              {/* Venue */}
+              <p className="font-mono text-[11px] leading-[1.65]"
+                style={{ color: 'rgba(244,242,238,0.48)' }}>
+                {pub.venue}
+              </p>
+            </article>
           ))}
         </div>
       </div>
