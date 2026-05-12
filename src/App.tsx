@@ -144,7 +144,50 @@ function useTimelineScroll(containerRef: React.RefObject<HTMLDivElement>) {
 
 /* ── Global chrome ────────────────────────────────────────────────── */
 
-// Full-page elevator scroll indicator — replaces the old thin red bar
+// Elevator shaft — absolutely positioned so it spans the full document height.
+// Placed inside the page's position:relative wrapper so bottom:0 = page bottom.
+function ElevatorShaft() {
+  const FLOORS = ['G', '4', '3', '2', '1', 'B'];
+  return (
+    <div
+      aria-hidden="true"
+      style={{
+        position: 'absolute', right: 0, top: 0, bottom: 0,
+        width: 38, zIndex: 15, pointerEvents: 'none',
+      }}
+    >
+      {/* Left guide rail — full document height */}
+      <div style={{
+        position: 'absolute', left: 9, top: 0, bottom: 0, width: 1,
+        background: 'repeating-linear-gradient(to bottom, rgba(100,100,100,0.26) 0px, rgba(100,100,100,0.26) 3px, transparent 3px, transparent 12px)',
+      }} />
+      {/* Right guide rail */}
+      <div style={{
+        position: 'absolute', right: 9, top: 0, bottom: 0, width: 1,
+        background: 'repeating-linear-gradient(to bottom, rgba(100,100,100,0.26) 0px, rgba(100,100,100,0.26) 3px, transparent 3px, transparent 12px)',
+      }} />
+      {/* Floor markers spread across full document height */}
+      {FLOORS.map((lbl, i) => {
+        const pct = (i / (FLOORS.length - 1)) * 100;
+        return (
+          <div key={i} style={{
+            position: 'absolute', left: 0, right: 0, top: `${pct}%`,
+            display: 'flex', alignItems: 'center',
+            transform: 'translateY(-50%)',
+          }}>
+            <div style={{ flex: 1, height: 1, background: 'rgba(100,100,100,0.18)' }} />
+            <span style={{
+              fontFamily: 'monospace', fontSize: 6, lineHeight: 1,
+              width: 10, textAlign: 'center', color: 'rgba(100,100,100,0.35)',
+            }}>{lbl}</span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// Elevator cabin — fixed so it stays in viewport, spring-animates with scroll.
 function ElevatorScrollbar() {
   const cabinRef = useRef<HTMLDivElement>(null);
   const pctRef   = useRef<HTMLSpanElement>(null);
@@ -173,46 +216,14 @@ function ElevatorScrollbar() {
     return () => cancelAnimationFrame(rafRef.current);
   }, []);
 
-  const FLOORS = ['G', '4', '3', '2', '1', 'B'];
-
   return (
     <div
       aria-hidden="true"
       style={{
-        position: 'fixed', right: 0, top: 0, bottom: 0,
-        width: 38, zIndex: 20, pointerEvents: 'none',
+        position: 'fixed', right: 0, top: 0,
+        width: 38, height: '100vh', zIndex: 20, pointerEvents: 'none',
       }}
     >
-      {/* Left guide rail */}
-      <div style={{
-        position: 'absolute', left: 9, top: 0, bottom: 0, width: 1,
-        background: 'repeating-linear-gradient(to bottom, rgba(100,100,100,0.28) 0px, rgba(100,100,100,0.28) 3px, transparent 3px, transparent 12px)',
-      }} />
-      {/* Right guide rail */}
-      <div style={{
-        position: 'absolute', right: 9, top: 0, bottom: 0, width: 1,
-        background: 'repeating-linear-gradient(to bottom, rgba(100,100,100,0.28) 0px, rgba(100,100,100,0.28) 3px, transparent 3px, transparent 12px)',
-      }} />
-
-      {/* Floor markers */}
-      {FLOORS.map((lbl, i) => {
-        const pct = (i / (FLOORS.length - 1)) * 100;
-        return (
-          <div key={i} style={{
-            position: 'absolute', left: 0, right: 0, top: `${pct}%`,
-            display: 'flex', alignItems: 'center',
-            transform: 'translateY(-50%)',
-          }}>
-            <div style={{ flex: 1, height: 1, background: 'rgba(100,100,100,0.20)' }} />
-            <span style={{
-              fontFamily: 'monospace', fontSize: 6, lineHeight: 1,
-              width: 10, textAlign: 'center',
-              color: 'rgba(100,100,100,0.38)',
-            }}>{lbl}</span>
-          </div>
-        );
-      })}
-
       {/* Cabin */}
       <div ref={cabinRef} style={{
         position: 'absolute', top: 0, left: 4, right: 4, height: 56,
@@ -223,7 +234,6 @@ function ElevatorScrollbar() {
         alignItems: 'center', justifyContent: 'center',
         gap: 2,
       }}>
-        {/* Sheave attachment circles */}
         <div style={{ display: 'flex', gap: 8, marginBottom: 2 }}>
           {[0, 1].map(j => (
             <div key={j} style={{
@@ -232,9 +242,7 @@ function ElevatorScrollbar() {
             }} />
           ))}
         </div>
-        {/* Cabin divider */}
         <div style={{ width: '65%', height: 1, background: 'rgba(200,16,46,0.18)', marginBottom: 1 }} />
-        {/* Scroll % */}
         <div style={{ display: 'flex', alignItems: 'baseline', gap: 1 }}>
           <span ref={pctRef} style={{
             fontFamily: 'monospace', fontSize: 9, fontWeight: 700, lineHeight: 1,
@@ -447,9 +455,6 @@ function GearboxPulleyDrive() {
         className="gear-train-svg"
         style={{ width: 'clamp(440px, 56vw, 840px)', bottom: '0%', right: '0%', position: 'absolute' }}
       >
-        {/* ── Title ── */}
-        <text x="280" y="11" textAnchor="middle" fontFamily="monospace" fontSize="6" fill="currentColor" opacity="0.22" letterSpacing="1.8">SPUR CASCADE → EPICYCLIC → CHAIN DRIVE → BLOCK & TACKLE</text>
-
         {/* ══ SPUR CASCADE ══ */}
         {/* Shaft lines (compound gears share a shaft) */}
         <line x1={GEARS[1].cx} y1={GEARS[1].cy - GEARS[1].r + 1} x2={GEARS[1].cx} y2={GEARS[1].cy + GEARS[1].r - 1}
@@ -501,7 +506,6 @@ function GearboxPulleyDrive() {
         <line x1={GEARS[5].cx + GEARS[5].r} y1={GEARS[5].cy}
           x2={EPI.cx - EPI.RS - 5} y2={EPI.cy}
           stroke="currentColor" strokeWidth="2" opacity="0.15" strokeDasharray="4 3" />
-        <text x={(GEARS[0].cx + GEARS[5].cx)/2} y="220" textAnchor="middle" fontFamily="monospace" fontSize="5.5" fill="currentColor" opacity="0.20">SPUR CASCADE  1.04× REDUCTION</text>
 
         {/* ══ EPICYCLIC (5 planets) ══ */}
         {/* Housing circle */}
@@ -552,7 +556,6 @@ function GearboxPulleyDrive() {
             cy={(EPI.cy + Math.sin(a) * EPI_CARRIER_R).toFixed(1)}
             r="1.8" fill="rgba(200,16,46,0.40)" />;
         })}
-        <text x={EPI.cx} y={EPI.cy + EPI_RING_RO + 14} textAnchor="middle" fontFamily="monospace" fontSize="5.5" fill="currentColor" opacity="0.20">5-PLANET EPICYCLIC  3× REDUCTION</text>
 
         {/* ══ CHAIN + DRUM ══ */}
         {/* Shaft from epicyclic output to drive sprocket */}
@@ -586,7 +589,6 @@ function GearboxPulleyDrive() {
           })}
           <circle cx={DRUM.cx} cy={DRUM.cy} r="3" fill="rgba(200,16,46,0.8)" />
         </g>
-        <text x={DRUM.cx} y={DRUM.cy + DRUM.r + 12} textAnchor="middle" fontFamily="monospace" fontSize="5.5" fill="currentColor" opacity="0.20">WINCH DRUM</text>
 
         {/* ══ ELEVATOR SHAFT + SCROLL INDICATOR ══ */}
         {/* Shaft pit background */}
@@ -597,10 +599,6 @@ function GearboxPulleyDrive() {
           stroke="currentColor" strokeWidth="0.5" opacity="0.18" strokeDasharray="2 6" />
         <line x1={PULLEY_X + 28} y1={FIXED_Y + SHEAVE_R + 4} x2={PULLEY_X + 28} y2={SHAFT_BOT + 6}
           stroke="currentColor" strokeWidth="0.5" opacity="0.18" strokeDasharray="2 6" />
-
-        {/* ELEV label */}
-        <text x={PULLEY_X} y={FIXED_Y - 16} textAnchor="middle" fontFamily="monospace" fontSize="5"
-          fill="currentColor" opacity="0.26" letterSpacing="2">ELEV</text>
 
         {/* Overhead anchor bar */}
         <rect x={PULLEY_X - 22} y="18" width="44" height="5" rx="1.5" fill="currentColor" opacity="0.40" />
@@ -674,8 +672,6 @@ function GearboxPulleyDrive() {
             fontFamily="monospace" fontSize="5" fill="currentColor" opacity="0.28">↕</text>
         </g>
 
-        {/* Ratio summary */}
-        <text x="520" y="15" textAnchor="end" fontFamily="monospace" fontSize="5.5" fill="currentColor" opacity="0.22">∑ ~12× REDUCTION</text>
       </svg>
     </div>
   );
@@ -786,15 +782,11 @@ function CompoundGearSystem() {
         className="gear-train-svg"
         style={{ width: 'clamp(280px, 38vw, 560px)', bottom: '2%', right: '0.5%', position: 'absolute' }}
       >
-        {/* ── Label ── */}
-        <text x="220" y="13" textAnchor="middle" fontFamily="monospace" fontSize="7" fill="currentColor" opacity="0.25" letterSpacing="2">COMPOUND EPICYCLIC — 10× REDUCTION</text>
-
         {/* ── Coupling shaft between stages ── */}
         <line x1={beltX1} y1={beltY1} x2={shaftMidX} y2={beltY1} stroke="currentColor" strokeWidth="2.5" opacity="0.18" strokeDasharray="5 3" />
         <line x1={shaftMidX} y1={beltY2} x2={beltX2} y2={beltY2} stroke="currentColor" strokeWidth="2.5" opacity="0.18" strokeDasharray="5 3" />
         <line x1={shaftMidX} y1={Math.min(beltY1,beltY2)-4} x2={shaftMidX} y2={Math.max(beltY1,beltY2)+4} stroke="currentColor" strokeWidth="1.5" opacity="0.15" />
         <circle cx={shaftMidX} cy={CY1} r="5" fill="none" stroke="currentColor" strokeWidth="1.2" opacity="0.22" />
-        <text x={shaftMidX} y={CY1 + 14} textAnchor="middle" fontFamily="monospace" fontSize="6" fill="currentColor" opacity="0.2">3×</text>
 
         {/* ══ STAGE 1 ══ */}
         {/* Ring gear housing */}
@@ -3570,6 +3562,7 @@ export default function App() {
 
   return (
     <div className="relative">
+      <ElevatorShaft />
       <GearboxPulleyDrive />
       <BlueprintParallax />
       <SpringCursor />
