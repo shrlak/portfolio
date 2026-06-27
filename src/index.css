@@ -12,10 +12,30 @@
   }
   body { overflow-x: hidden; }
   /* Hide native scrollbar — elevator component replaces it */
-  html { scrollbar-width: none; }
+  html { scrollbar-width: none; scroll-behavior: smooth; }
   ::-webkit-scrollbar { display: none; }
   * { -webkit-tap-highlight-color: transparent; }
   ::selection { background-color: #c8102e; color: #f4f2ee; }
+
+  /* Keep anchored sections clear of the sticky header */
+  section[id] { scroll-margin-top: 64px; }
+
+  /* Keyboard focus — visible for keyboard users even with the custom cursor.
+     :focus-visible does not fire on mouse clicks, so pointer UX is untouched. */
+  a:focus-visible,
+  button:focus-visible,
+  input:focus-visible,
+  textarea:focus-visible,
+  select:focus-visible,
+  [tabindex]:focus-visible {
+    outline: 2px solid #c8102e;
+    outline-offset: 3px;
+    border-radius: 1px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
 }
 
 @layer components {
@@ -93,10 +113,6 @@
     transition: width 0.28s cubic-bezier(0.4, 0, 0.2, 1);
   }
   .ed-link:hover::after { width: 100%; }
-
-  /* ── Nav active indicator ────────────────────────────────────── */
-  .nav-active-ed { color: #0d0d0d !important; }
-  .nav-active-ed::before { content: '■'; color: #c8102e; margin-right: 5px; font-size: 7px; }
 
   /* ── Research entry invert on hover ──────────────────────────── */
   .ed-entry {
@@ -718,4 +734,164 @@ tr:hover .tolerance-note { opacity: 1; }
   display: block;
   width: 100%;
   cursor: crosshair;
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   NAVIGATION — header tabs, progress, mobile overlay
+   ══════════════════════════════════════════════════════════════════ */
+
+/* Scroll-progress rule (replaces the old static 2px top rule) */
+.nav-progress-track {
+  position: relative;
+  height: 2px;
+  width: 100%;
+  background: rgba(13, 13, 13, 0.9);
+  overflow: hidden;
+}
+.nav-progress-fill {
+  position: absolute;
+  inset: 0;
+  background: #c8102e;
+  transform-origin: left center;
+  transform: scaleX(0);
+  will-change: transform;
+}
+
+/* Desktop nav link */
+.nav-link { position: relative; }
+
+/* Sliding active-tab indicator */
+.nav-indicator {
+  position: absolute;
+  bottom: -1px;
+  height: 2px;
+  background: #c8102e;
+  transition: left 0.34s cubic-bezier(0.16, 1, 0.3, 1),
+              width 0.34s cubic-bezier(0.16, 1, 0.3, 1),
+              opacity 0.2s ease;
+  pointer-events: none;
+}
+
+/* Animated hamburger */
+.nav-burger {
+  position: relative;
+  width: 26px; height: 18px;
+  display: flex; flex-direction: column;
+  justify-content: space-between;
+  background: none; border: none; cursor: pointer;
+  padding: 0;
+}
+.nav-burger-bar {
+  display: block;
+  width: 100%; height: 2px;
+  background: #f4f2ee;
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s ease;
+  transform-origin: center;
+}
+.nav-burger-bar.is-x1     { transform: translateY(8px) rotate(45deg); }
+.nav-burger-bar.is-x2     { transform: translateY(-8px) rotate(-45deg); }
+.nav-burger-bar.is-hidden { opacity: 0; transform: scaleX(0); }
+
+/* Full-screen mobile overlay */
+.mobile-menu {
+  position: fixed;
+  inset: 0;
+  z-index: 39;
+  background: #0d0d0d;
+  background-image:
+    radial-gradient(circle, rgba(244, 242, 238, 0.05) 1px, transparent 1px);
+  background-size: 26px 26px;
+  opacity: 0;
+  visibility: hidden;
+  clip-path: inset(0 0 100% 0);
+  transition: clip-path 0.42s cubic-bezier(0.16, 1, 0.3, 1),
+              opacity 0.3s ease, visibility 0s linear 0.42s;
+}
+.mobile-menu.is-open {
+  opacity: 1;
+  visibility: visible;
+  clip-path: inset(0 0 0 0);
+  transition: clip-path 0.42s cubic-bezier(0.16, 1, 0.3, 1),
+              opacity 0.3s ease, visibility 0s;
+}
+.mobile-menu-inner {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  padding: 88px 28px 40px;
+  max-width: 540px;
+}
+.mobile-menu-link {
+  display: flex;
+  align-items: baseline;
+  gap: 16px;
+  padding: 18px 0;
+  border-bottom: 1px solid rgba(244, 242, 238, 0.1);
+  font-family: 'Anton', sans-serif;
+  font-size: clamp(30px, 9vw, 46px);
+  letter-spacing: -0.02em;
+  text-transform: uppercase;
+  color: #f4f2ee;
+  line-height: 1;
+  opacity: 0;
+  transform: translateY(14px);
+  transition: opacity 0.4s ease, transform 0.45s cubic-bezier(0.16, 1, 0.3, 1), color 0.18s ease;
+}
+.mobile-menu.is-open .mobile-menu-link { opacity: 1; transform: translateY(0); }
+.mobile-menu-link:hover,
+.mobile-menu-link:active { color: #c8102e; }
+.mobile-menu-link.is-active { color: #c8102e; }
+.mobile-menu-num {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  color: #c8102e;
+  opacity: 0.7;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nav-indicator { transition: opacity 0.2s ease; }
+  .mobile-menu { transition: opacity 0.2s ease, visibility 0s; clip-path: none; }
+  .mobile-menu-link { transition: color 0.18s ease; transform: none; }
+  .nav-burger-bar { transition: opacity 0.2s ease; }
+}
+
+/* ── Skip-to-content link (keyboard/AT) ──────────────────────────── */
+.skip-link {
+  position: fixed;
+  top: 8px; left: 8px;
+  z-index: 9999;
+  transform: translateY(-150%);
+  background: #c8102e;
+  color: #f4f2ee;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  padding: 10px 16px;
+  transition: transform 0.2s ease;
+}
+.skip-link:focus { transform: translateY(0); }
+
+/* ── Interactive panel lift ──────────────────────────────────────── */
+.panel-lift {
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+              border-color 0.2s ease, background-color 0.2s ease;
+}
+.panel-lift:hover { transform: translateY(-2px); }
+
+/* ── Print (CV page → clean PDF) ─────────────────────────────────── */
+@media print {
+  html, body { background: #fff !important; }
+  body.has-custom-cursor * { cursor: auto !important; }
+  .skip-link,
+  .print-hide,
+  header.sticky,
+  .paper-grain,
+  .mobile-menu,
+  .cursor-ring-spring,
+  .cursor-dot,
+  .cursor-field-svg { display: none !important; }
+  main { display: block !important; }
+  * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 }

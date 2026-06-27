@@ -1427,72 +1427,185 @@ const SOCIAL = [
 
 const SECTION_IDS = ['home', 'credentials', 'about', 'research', 'contact'];
 
+// True page-scroll fraction (0..1) — drives the header progress rule.
+function useScrollProgress(): number {
+  const [p, setP] = useState(0);
+  useEffect(() => {
+    const update = () => {
+      const max = Math.max(1, document.body.scrollHeight - window.innerHeight);
+      setP(Math.min(1, Math.max(0, window.scrollY / max)));
+    };
+    window.addEventListener('scroll', update, { passive: true });
+    window.addEventListener('resize', update);
+    update();
+    return () => {
+      window.removeEventListener('scroll', update);
+      window.removeEventListener('resize', update);
+    };
+  }, []);
+  return p;
+}
+
 function Navbar({ onHome = false }: { onHome?: boolean }) {
-  const active  = useActiveSection(onHome ? SECTION_IDS : []);
+  const active   = useActiveSection(onHome ? SECTION_IDS : []);
+  const progress = useScrollProgress();
   const [menuOpen, setMenuOpen] = useState(false);
+
+  // Sliding active indicator — measures the active link's box within the nav.
+  const navRef   = useRef<HTMLDivElement>(null);
+  const linkRefs = useRef<Record<string, HTMLAnchorElement | null>>({});
+  const [ind, setInd] = useState({ left: 0, width: 0, visible: false });
+
+  useEffect(() => {
+    if (!onHome) { setInd((s) => ({ ...s, visible: false })); return; }
+    const measure = () => {
+      const el = linkRefs.current[active];
+      if (el) setInd({ left: el.offsetLeft, width: el.offsetWidth, visible: true });
+      else setInd((s) => ({ ...s, visible: false }));
+    };
+    measure();
+    window.addEventListener('resize', measure);
+    return () => window.removeEventListener('resize', measure);
+  }, [active, onHome]);
+
+  // Lock body scroll while the mobile overlay is open.
+  useEffect(() => {
+    document.body.style.overflow = menuOpen ? 'hidden' : '';
+    return () => { document.body.style.overflow = ''; };
+  }, [menuOpen]);
+
+  // Close the overlay when navigating to a hash.
+  useEffect(() => {
+    const close = () => setMenuOpen(false);
+    window.addEventListener('hashchange', close);
+    return () => window.removeEventListener('hashchange', close);
+  }, []);
 
   return (
     <>
-      <header className="sticky top-0 z-40 bg-graphite">
-        <div className="ed-rule-thick" />
+      <header className="sticky top-0 z-40 bg-graphite/95 backdrop-blur-sm supports-[backdrop-filter]:bg-graphite/80">
+        {/* Scroll-progress rule */}
+        <div className="nav-progress-track">
+          <div className="nav-progress-fill" style={{ transform: `scaleX(${progress})` }} />
+        </div>
+
         <div className="mx-auto max-w-container px-6 md:px-10 lg:px-14 xl:px-16 py-3 flex items-center justify-between gap-6">
           {/* Logo */}
-          <EdLink href="#home" className="font-grotesk text-bone text-sm tracking-[0.12em] uppercase">
-            SK.
-          </EdLink>
+          <a href="#home" className="nav-logo group flex items-center gap-2" aria-label="Home">
+            <span className="vital-dot-ed" aria-hidden="true" />
+            <span className="font-grotesk text-bone text-sm tracking-[0.12em] uppercase group-hover:text-vital transition-colors">
+              SK.
+            </span>
+          </a>
 
           {/* Desktop nav */}
-          <nav className="hidden md:flex items-center gap-0">
-            {NAV_ITEMS.map((item) => {
-              const isActive = onHome && active === item.href.replace('#', '');
-              return (
-                <a
-                  key={item.label}
-                  href={item.href}
-                  className={`font-mono text-[10px] uppercase tracking-[0.2em] px-4 py-2 transition-colors ${
-                    isActive ? 'nav-active-ed text-bone' : 'text-muted hover:text-bone'
-                  }`}
-                >
-                  {item.label}
-                </a>
-              );
-            })}
+          <nav className="hidden md:flex items-center" aria-label="Primary">
+            <div ref={navRef} className="relative flex items-center">
+              {NAV_ITEMS.map((item) => {
+                const id = item.href.replace('#', '');
+                const isActive = onHome && active === id;
+                return (
+                  <a
+                    key={item.label}
+                    ref={(el) => { linkRefs.current[id] = el; }}
+                    href={item.href}
+                    aria-current={isActive ? 'true' : undefined}
+                    className={`nav-link font-mono text-[10px] uppercase tracking-[0.2em] px-4 py-2 transition-colors ${
+                      isActive ? 'text-bone' : 'text-muted hover:text-bone'
+                    }`}
+                  >
+                    {item.label}
+                  </a>
+                );
+              })}
+              {/* Sliding indicator */}
+              <span
+                aria-hidden="true"
+                className="nav-indicator"
+                style={{
+                  left: ind.left, width: ind.width,
+                  opacity: ind.visible ? 1 : 0,
+                }}
+              />
+            </div>
+
+            {/* CV — separated route link */}
+            <span className="mx-3 h-3 w-px bg-bone/20" aria-hidden="true" />
+            <a
+              href="#/cv"
+              className="font-mono text-[10px] uppercase tracking-[0.2em] px-3 py-1.5 border border-bone/25 text-bone hover:bg-vital hover:border-vital hover:text-graphite transition-colors"
+            >
+              CV
+            </a>
           </nav>
 
           {/* Mobile toggle */}
           <button
-            className="md:hidden font-mono text-[9px] uppercase tracking-[0.2em] text-bone"
-            onClick={() => setMenuOpen(o => !o)}
-            aria-label="Menu"
+            className="md:hidden nav-burger"
+            onClick={() => setMenuOpen((o) => !o)}
+            aria-label={menuOpen ? 'Close menu' : 'Open menu'}
+            aria-expanded={menuOpen}
           >
-            {menuOpen ? 'CLOSE' : 'MENU'}
+            <span className={`nav-burger-bar ${menuOpen ? 'is-x1' : ''}`} />
+            <span className={`nav-burger-bar ${menuOpen ? 'is-hidden' : ''}`} />
+            <span className={`nav-burger-bar ${menuOpen ? 'is-x2' : ''}`} />
           </button>
         </div>
         <div className="ed-rule" />
+      </header>
 
-        {/* Mobile drawer */}
-        {menuOpen && (
-          <nav className="md:hidden bg-graphite border-b border-bone">
-            {NAV_ITEMS.map((item) => (
+      {/* Mobile full-screen overlay */}
+      <div
+        className={`mobile-menu md:hidden ${menuOpen ? 'is-open' : ''}`}
+        aria-hidden={!menuOpen}
+      >
+        <div className="mobile-menu-inner">
+          <p className="font-mono text-[8.5px] uppercase tracking-[0.28em] text-steel mb-8">
+            {PERSON.fullName} · Navigation
+          </p>
+          <nav className="flex flex-col" aria-label="Mobile">
+            {NAV_ITEMS.map((item, i) => {
+              const id = item.href.replace('#', '');
+              const isActive = onHome && active === id;
+              return (
+                <a
+                  key={item.label}
+                  href={item.href}
+                  onClick={() => setMenuOpen(false)}
+                  className={`mobile-menu-link ${isActive ? 'is-active' : ''}`}
+                  style={{ transitionDelay: menuOpen ? `${0.06 + i * 0.05}s` : '0s' }}
+                >
+                  <span className="mobile-menu-num">{String(i + 1).padStart(2, '0')}</span>
+                  <span>{item.label}</span>
+                </a>
+              );
+            })}
+            <a
+              href="#/cv"
+              onClick={() => setMenuOpen(false)}
+              className="mobile-menu-link"
+              style={{ transitionDelay: menuOpen ? `${0.06 + NAV_ITEMS.length * 0.05}s` : '0s' }}
+            >
+              <span className="mobile-menu-num">06</span>
+              <span>CV</span>
+            </a>
+          </nav>
+
+          <div className="mt-auto pt-10 flex items-center gap-6">
+            {SOCIAL.map((s) => (
               <a
-                key={item.label}
-                href={item.href}
-                onClick={() => setMenuOpen(false)}
-                className="block font-mono text-[10px] uppercase tracking-[0.2em] text-bone px-6 py-4 border-b border-bone/10 hover:text-vital transition-colors"
+                key={s.label}
+                href={s.href}
+                target={s.external ? '_blank' : undefined}
+                rel={s.external ? 'noreferrer' : undefined}
+                className="font-mono text-[9px] uppercase tracking-[0.18em] text-muted hover:text-vital transition-colors"
               >
-                {item.label}
+                {s.label}
               </a>
             ))}
-            <div className="flex items-center gap-4 px-6 py-4">
-              {SOCIAL.map((s) => (
-                <a key={s.label} href={s.href} target={s.external ? '_blank' : undefined} rel={s.external ? 'noreferrer' : undefined} className="font-mono text-[9px] uppercase tracking-[0.18em] text-muted hover:text-vital transition-colors">
-                  {s.label}
-                </a>
-              ))}
-            </div>
-          </nav>
-        )}
-      </header>
+          </div>
+        </div>
+      </div>
     </>
   );
 }
@@ -2518,7 +2631,7 @@ function SkillsSection() {
     <section className="relative bg-surface">
       <div className="mx-auto max-w-container px-6 md:px-10 lg:px-14 xl:px-16 py-16 md:py-20">
         <div className="mb-10" data-reveal>
-          <FolioLabel text="005 · TECHNICAL SKILLS" />
+          <FolioLabel text="004 · TECHNICAL SKILLS" />
           <div className="mt-4 overflow-hidden" style={{ height: '18px' }} aria-hidden="true">
             <svg viewBox="0 0 200 18" width="200" height="18" style={{ display: 'block' }}>
               {/* Worm gear thread */}
@@ -2985,16 +3098,20 @@ function ContactSection() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {[
-                { label: 'Name',    type: 'text',  value: name,    setter: setName,    placeholder: 'Your name',              span: 1 },
-                { label: 'Email',   type: 'email', value: email,   setter: setEmail,   placeholder: 'you@domain.com',         span: 1 },
-                { label: 'Subject', type: 'text',  value: subject, setter: setSubject, placeholder: 'Collaboration · inquiry', span: 2 },
+                { label: 'Name',    type: 'text',  value: name,    setter: setName,    placeholder: 'Your name',              span: 1, autoComplete: 'name',    required: true  },
+                { label: 'Email',   type: 'email', value: email,   setter: setEmail,   placeholder: 'you@domain.com',         span: 1, autoComplete: 'email',   required: true  },
+                { label: 'Subject', type: 'text',  value: subject, setter: setSubject, placeholder: 'Collaboration · inquiry', span: 2, autoComplete: 'off',     required: false },
               ].map((f) => (
                 <label key={f.label} className={`block ${f.span === 2 ? 'sm:col-span-2' : ''}`}>
-                  <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-muted block mb-1.5">{f.label}</span>
+                  <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-muted block mb-1.5">
+                    {f.label}{f.required && <span className="text-vital ml-1">*</span>}
+                  </span>
                   <input
                     type={f.type} value={f.value}
                     onChange={(e) => f.setter(e.target.value)}
                     placeholder={f.placeholder}
+                    autoComplete={f.autoComplete}
+                    required={f.required}
                     className="ed-input"
                   />
                 </label>
@@ -3109,59 +3226,112 @@ function HomePage() {
 
 /* ── Detail shell ────────────────────────────────────────────────── */
 
+function ProjectPager({ slug }: { slug: CardSlug }) {
+  const others = RESEARCH_CARDS.filter((c) => c.slug !== slug);
+  return (
+    <section className="border-t border-bone/12 pt-12 md:pt-16">
+      <div className="flex items-center justify-between mb-8" data-reveal>
+        <FolioLabel text="More research" />
+        <EdLink href="#research" className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted hover:text-bone">
+          All instruments →
+        </EdLink>
+      </div>
+      <div className="grid gap-4 md:grid-cols-2">
+        {others.map((c, i) => (
+          <a
+            key={c.slug}
+            href={`#/research/${c.slug}`}
+            data-reveal
+            data-reveal-delay={String(i + 1)}
+            className="panel-lift ed-panel block p-6 md:p-8 group hover:border-vital"
+          >
+            <div className="flex items-center justify-between">
+              <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-vital">{c.index}</span>
+              <span className="font-mono text-[8px] uppercase tracking-[0.18em] text-steel">{c.status}</span>
+            </div>
+            <h3 className="mt-4 font-grotesk uppercase text-bone leading-[0.9] tracking-tightest text-3xl md:text-4xl group-hover:text-vital transition-colors">
+              {c.title} {c.titleTwo}
+            </h3>
+            <p className="mt-3 font-serif-italic text-muted text-lg leading-snug">{c.subtitle}</p>
+            <div className="mt-5 flex items-center gap-2 font-mono text-[9px] uppercase tracking-[0.2em] text-muted group-hover:text-bone transition-colors">
+              Open dossier <ArrowRight className="h-3 w-3" strokeWidth={2} />
+            </div>
+          </a>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 function DetailShell({
-  index, category, shortTitle, fullTitle, subtitle, meta, schematic, children, accent,
+  slug, index, category, shortTitle, fullTitle, subtitle, meta, schematic, children, accent,
 }: {
+  slug: CardSlug;
   index: string; category: string; shortTitle: string; fullTitle: string;
   subtitle: string; meta: Array<{ label: string; value: string }>;
   schematic: JSX.Element; children: React.ReactNode; accent: string;
 }) {
+  useScrollReveal();
   return (
     <div className="relative min-h-screen bg-graphite text-bone page-enter">
+      <a href="#main-content" className="skip-link">Skip to content</a>
       <PaperGrain />
+      <Navbar />
       <div className="mx-auto max-w-container px-6 md:px-10 lg:px-14 xl:px-16">
-        <Navbar />
+        {/* Breadcrumb */}
+        <nav className="pt-6 md:pt-8 flex items-center gap-2 font-mono text-[9px] uppercase tracking-[0.2em] text-steel" aria-label="Breadcrumb">
+          <EdLink href="#research" className="hover:text-bone inline-flex items-center gap-1.5">
+            <ArrowLeft className="h-3 w-3" strokeWidth={2} /> Research index
+          </EdLink>
+          <span className="text-bone/20">/</span>
+          <span className="text-muted">{index}</span>
+        </nav>
 
-        {/* Header */}
-        <section className="pt-10 md:pt-14 pb-12 md:pb-16">
-          <div className="grid gap-10 md:grid-cols-12">
-            <div className="md:col-span-8">
-              <FolioLabel text={`${index} · ${category}`} />
-              <span className="mt-5 font-serif-italic block text-vital text-3xl sm:text-4xl md:text-5xl leading-[1.1]">
-                {accent}
-              </span>
-              <h1 className="mt-2 font-grotesk uppercase text-bone leading-[0.9] tracking-tightest text-4xl sm:text-5xl md:text-6xl lg:text-7xl">
-                {shortTitle}
-              </h1>
-              <p className="mt-6 max-w-[56ch] font-mono text-[13px] md:text-[15px] leading-[1.75] text-muted">
-                {fullTitle}
-              </p>
-              <p className="mt-2 font-mono text-[10px] uppercase tracking-[0.2em] text-steel">{subtitle}</p>
-            </div>
+        <main id="main-content">
+          {/* Header */}
+          <section className="pt-6 md:pt-8 pb-12 md:pb-16">
+            <div className="grid gap-10 md:grid-cols-12">
+              <div className="md:col-span-8">
+                <FolioLabel text={`${index} · ${category}`} />
+                <span className="mt-5 font-serif-italic block text-vital text-3xl sm:text-4xl md:text-5xl leading-[1.1]">
+                  {accent}
+                </span>
+                <h1 className="mt-2 font-grotesk uppercase text-bone leading-[0.9] tracking-tightest text-4xl sm:text-5xl md:text-6xl lg:text-7xl">
+                  {shortTitle}
+                </h1>
+                <p className="mt-6 max-w-[56ch] font-mono text-[13px] md:text-[15px] leading-[1.75] text-muted">
+                  {fullTitle}
+                </p>
+                <p className="mt-2 font-mono text-[10px] uppercase tracking-[0.2em] text-steel">{subtitle}</p>
+              </div>
 
-            <div className="md:col-span-4">
-              <div className="ed-panel">
-                {meta.map((m, i) => (
-                  <div key={i} className="px-4 py-3.5 border-b border-bone/12 last:border-0">
-                    <p className="font-mono text-[8.5px] uppercase tracking-[0.2em] text-vital">{m.label}</p>
-                    <p className="mt-1 font-mono text-[11px] uppercase tracking-[0.08em] text-bone">{m.value}</p>
-                  </div>
-                ))}
+              <div className="md:col-span-4">
+                <div className="ed-panel">
+                  {meta.map((m, i) => (
+                    <div key={i} className="px-4 py-3.5 border-b border-bone/12 last:border-0">
+                      <p className="font-mono text-[8.5px] uppercase tracking-[0.2em] text-vital">{m.label}</p>
+                      <p className="mt-1 font-mono text-[11px] uppercase tracking-[0.08em] text-bone">{m.value}</p>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
-          </div>
-        </section>
+          </section>
 
-        {/* Schematic banner — now as ink drawing on paper */}
-        <section className="relative overflow-hidden border border-bone/12 bg-surface">
-          {schematic}
-        </section>
+          {/* Schematic banner — now as ink drawing on paper */}
+          <section className="relative overflow-hidden border border-bone/12 bg-surface">
+            {schematic}
+          </section>
 
-        {/* Body */}
-        <section className="py-14 md:py-20">{children}</section>
+          {/* Body */}
+          <section className="py-14 md:py-20">{children}</section>
+
+          {/* Cross-project pager */}
+          <ProjectPager slug={slug} />
+        </main>
 
         {/* Footer CTA */}
-        <section className="border-t border-bone/12 py-10 md:py-14">
+        <section className="mt-12 border-t border-bone/12 py-10 md:py-14">
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <p className="font-mono text-[9px] uppercase tracking-[0.22em] text-muted">Continue the dossier</p>
             <div className="flex flex-wrap gap-5">
@@ -3203,6 +3373,7 @@ function PASDetailPage() {
   const d = PAS_DETAIL;
   return (
     <DetailShell
+      slug={d.slug}
       index={d.index} category={d.category} shortTitle={d.shortTitle}
       fullTitle={d.fullTitle} subtitle={d.subtitle}
       accent="Ambulatory respiratory support."
@@ -3299,6 +3470,7 @@ function CoagDetailPage() {
   const d = COAG_DETAIL;
   return (
     <DetailShell
+      slug={d.slug}
       index={d.index} category={d.category} shortTitle={d.shortTitle}
       fullTitle={d.fullTitle} subtitle={d.subtitle}
       accent="Targeting contact pathway coagulation."
@@ -3373,6 +3545,7 @@ function CaneDetailPage() {
   const d = CANE_DETAIL;
   return (
     <DetailShell
+      slug={d.slug}
       index={d.index} category={d.category} shortTitle={d.shortTitle}
       fullTitle={d.fullTitle} subtitle={d.subtitle}
       accent="Active assistive mobility."
@@ -3459,11 +3632,20 @@ function CaneDetailPage() {
 function CVPage() {
   return (
     <div className="relative min-h-screen bg-graphite text-bone page-enter">
+      <a href="#main-content" className="skip-link">Skip to content</a>
       <PaperGrain />
+      <Navbar />
       <div className="mx-auto max-w-container px-6 md:px-10 lg:px-14 xl:px-16">
-        <Navbar />
+        <nav className="pt-6 md:pt-8 print-hide flex items-center gap-2 font-mono text-[9px] uppercase tracking-[0.2em] text-steel" aria-label="Breadcrumb">
+          <EdLink href="#home" className="hover:text-bone inline-flex items-center gap-1.5">
+            <ArrowLeft className="h-3 w-3" strokeWidth={2} /> Portfolio
+          </EdLink>
+          <span className="text-bone/20">/</span>
+          <span className="text-muted">Curriculum Vitae</span>
+        </nav>
 
-        <section className="pt-10 md:pt-14 pb-10 md:pb-14">
+        <main id="main-content">
+        <section className="pt-6 md:pt-8 pb-10 md:pb-14">
           <div className="grid gap-8 md:grid-cols-12">
             <div className="md:col-span-8">
               <FolioLabel text={CV.tag} />
@@ -3471,6 +3653,12 @@ function CVPage() {
                 {CV.heading}
               </h1>
               <p className="mt-4 font-mono text-[13px] md:text-[14px] leading-[1.75] text-muted">{CV.subheading}</p>
+              <button
+                onClick={() => window.print()}
+                className="print-hide mt-6 inline-flex items-center gap-2 font-mono text-[9px] uppercase tracking-[0.2em] px-4 py-2 border border-bone/25 text-bone hover:bg-vital hover:border-vital hover:text-graphite transition-colors"
+              >
+                <FileText className="h-3.5 w-3.5" strokeWidth={1.75} /> Print / Save PDF
+              </button>
             </div>
 
             <div className="md:col-span-4 md:pt-6">
@@ -3552,10 +3740,11 @@ function CVPage() {
           </div>
         </section>
 
-        <section className="mt-14 border-t border-bone/10 py-10 flex flex-col sm:flex-row justify-between gap-3">
+        <section className="mt-14 border-t border-bone/10 py-10 print-hide flex flex-col sm:flex-row justify-between gap-3">
           <EdLink href="#home" className="font-mono text-[9px] uppercase tracking-[0.22em] text-muted hover:text-bone">← Back to Portfolio</EdLink>
           <EdLink href="#contact" className="font-mono text-[9px] uppercase tracking-[0.22em] text-muted hover:text-bone">Get in Touch →</EdLink>
         </section>
+        </main>
       </div>
     </div>
   );
@@ -3579,6 +3768,7 @@ export default function App() {
 
   return (
     <div className="relative">
+      <a href="#main-content" className="skip-link">Skip to content</a>
       <ElevatorShaft />
       <GearboxPulleyDrive />
       <BlueprintParallax />
@@ -3588,7 +3778,7 @@ export default function App() {
       <ElevatorScrollbar />
       <BackToTop />
       <Navbar onHome />
-      <main>
+      <main id="main-content">
         <HomePage />
       </main>
     </div>
