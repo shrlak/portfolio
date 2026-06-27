@@ -880,6 +880,34 @@ tr:hover .tolerance-note { opacity: 1; }
 }
 .panel-lift:hover { transform: translateY(-2px); }
 
+/* ── Skill gauge (segmented instrument bar) ──────────────────────── */
+.skill-track {
+  position: relative;
+  height: 9px;
+  width: 100%;
+  background: rgba(13, 13, 13, 0.06);
+  border: 1px solid rgba(13, 13, 13, 0.14);
+  overflow: hidden;
+}
+.skill-fill {
+  position: absolute;
+  top: 0; bottom: 0; left: 0;
+  background: linear-gradient(90deg, #c8102e 0%, #e0364f 100%);
+  will-change: width;
+}
+.skill-ticks {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image: repeating-linear-gradient(
+    90deg,
+    rgba(13, 13, 13, 0.16) 0,
+    rgba(13, 13, 13, 0.16) 1px,
+    transparent 1px,
+    transparent 10%
+  );
+}
+
 /* ── Print (CV page → clean PDF) ─────────────────────────────────── */
 @media print {
   html, body { background: #fff !important; }

@@ -1937,6 +1937,50 @@ function HeroSection() {
             ))}
           </div>
         </div>
+
+        {/* Condensed data panel — mobile only */}
+        <div className="md:hidden">
+          <div className="ed-panel">
+            <div className="px-4 py-3 border-b border-bone flex items-center gap-2">
+              <span className="vital-dot-ed shrink-0" />
+              <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-vital">Active Study</span>
+            </div>
+            {[
+              { k: 'PAS · VV ECMO', v: 'STUDY' },
+              { k: '2 / 6',         v: 'SUBJECTS' },
+              { k: '30 DAY OVINE',  v: 'ENDPOINT' },
+              { k: 'KR 10-2675388', v: 'PATENT' },
+            ].map(({ k, v }) => (
+              <div key={v} className="grid grid-cols-[40%_60%] border-b border-bone/15 last:border-0">
+                <div className="px-3 py-2.5 border-r border-bone/15">
+                  <p className="font-mono text-[8px] uppercase tracking-[0.14em] text-muted">{v}</p>
+                </div>
+                <div className="px-3 py-2.5">
+                  <p className="font-mono text-[9.5px] uppercase tracking-[0.06em] text-bone">{k}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="mt-4 ed-panel">
+            <div className="px-3 py-2 border-b border-bone/15">
+              <p className="font-mono text-[8px] uppercase tracking-[0.2em] text-muted">Instrumentation index</p>
+            </div>
+            {RESEARCH_CARDS.map((card) => (
+              <a
+                key={card.slug}
+                href={`#/research/${card.slug}`}
+                className="grid grid-cols-[auto_1fr_auto] gap-3 items-center px-3 py-3 border-b border-bone/12 last:border-0 active:bg-bone/[0.06] transition-colors group"
+              >
+                <span className="font-mono text-[8px] text-vital tracking-[0.14em]">{card.index}</span>
+                <span className="font-mono text-[10px] uppercase tracking-[0.06em] text-bone truncate">
+                  {card.title} {card.titleTwo}
+                </span>
+                <ArrowUpRight className="h-3.5 w-3.5 text-steel group-hover:text-vital transition-colors" strokeWidth={2} />
+              </a>
+            ))}
+          </div>
+        </div>
       </div>
 
       {/* Bottom rule + stats */}
@@ -2607,18 +2651,18 @@ function SkillBar({ name, pct }: { name: string; pct: number }) {
 
   return (
     <div className="skill-bar-item">
-      <div className="flex items-baseline justify-between mb-1.5">
-        <p className="font-mono text-[9.5px] uppercase tracking-[0.14em] text-bone leading-none">{name}</p>
-        <span ref={pctRef} className="font-grotesk text-vital text-sm leading-none tracking-tightest">0%</span>
+      <div className="flex items-baseline justify-between mb-2">
+        <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-bone leading-none">{name}</p>
+        <span ref={pctRef} className="font-grotesk text-vital text-base leading-none tracking-tightest tabular-nums">0%</span>
       </div>
-      <div className="relative h-[3px] w-full bg-[rgba(13,13,13,0.10)] rounded-full overflow-hidden">
-        <div
-          ref={barRef}
-          className="absolute inset-y-0 left-0 bg-vital rounded-full"
-          style={{ width: '0%' }}
-        />
+      <div className="skill-track">
+        <div ref={barRef} className="skill-fill" style={{ width: '0%' }} />
+        <div className="skill-ticks" aria-hidden="true" />
       </div>
-      <p className="mt-1 font-mono text-[7.5px] uppercase tracking-[0.14em] text-muted">{rated}</p>
+      <div className="mt-1.5 flex items-center justify-between">
+        <p className="font-mono text-[7.5px] uppercase tracking-[0.18em] text-muted">{rated}</p>
+        <p className="font-mono text-[7.5px] uppercase tracking-[0.18em] text-steel">0—100</p>
+      </div>
     </div>
   );
 }
@@ -3185,17 +3229,94 @@ function ContactSection() {
           </div>
         </div>
 
-        <div className="mt-16 pt-6 border-t border-bone/10 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <p className="font-mono text-[9px] uppercase tracking-[0.22em] text-steel">
-            © {new Date().getFullYear()} · {PERSON.fullName} · Research Dossier
-          </p>
-          <div className="flex items-center gap-1.5 font-mono text-[9px] uppercase tracking-[0.22em] text-steel">
-            <MapPin className="h-3 w-3 text-vital/60" strokeWidth={1.5} />
-            {PERSON.location}
-          </div>
-        </div>
       </div>
     </section>
+  );
+}
+
+/* ── Footer ──────────────────────────────────────────────────────── */
+
+function Footer() {
+  return (
+    <footer className="ed-dark relative">
+      <div className="ed-rule" />
+      <div className="mx-auto max-w-container px-6 md:px-10 lg:px-14 xl:px-16 py-14 md:py-16">
+        <div className="grid gap-10 md:grid-cols-12">
+          {/* Brand */}
+          <div className="md:col-span-5">
+            <a href="#home" className="inline-flex items-center gap-2 group">
+              <span className="vital-dot-ed" aria-hidden="true" />
+              <span className="font-grotesk text-graphite text-base tracking-[0.12em] uppercase group-hover:text-vital transition-colors">SK.</span>
+            </a>
+            <p className="mt-5 font-serif-italic text-graphite text-2xl md:text-3xl leading-[1.15] max-w-[24ch]">
+              Engineering at the body–device interface.
+            </p>
+            <p className="mt-4 font-mono text-[10px] uppercase tracking-[0.2em] text-steel">
+              {PERSON.institution} · {PERSON.classYear}
+            </p>
+          </div>
+
+          {/* Navigate */}
+          <div className="md:col-span-3">
+            <p className="font-mono text-[9px] uppercase tracking-[0.22em] text-vital mb-4">Navigate</p>
+            <ul className="space-y-2.5">
+              {NAV_ITEMS.map((n) => (
+                <li key={n.label}>
+                  <a href={n.href} className="ed-link font-mono text-[11px] uppercase tracking-[0.14em] text-steel hover:text-graphite transition-colors">{n.label}</a>
+                </li>
+              ))}
+              <li>
+                <a href="#/cv" className="ed-link font-mono text-[11px] uppercase tracking-[0.14em] text-steel hover:text-graphite transition-colors">CV</a>
+              </li>
+            </ul>
+          </div>
+
+          {/* Research */}
+          <div className="md:col-span-2">
+            <p className="font-mono text-[9px] uppercase tracking-[0.22em] text-vital mb-4">Research</p>
+            <ul className="space-y-2.5">
+              {RESEARCH_CARDS.map((c) => (
+                <li key={c.slug}>
+                  <a href={`#/research/${c.slug}`} className="ed-link font-mono text-[11px] uppercase tracking-[0.14em] text-steel hover:text-graphite transition-colors">{c.title} {c.titleTwo}</a>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Connect */}
+          <div className="md:col-span-2">
+            <p className="font-mono text-[9px] uppercase tracking-[0.22em] text-vital mb-4">Connect</p>
+            <ul className="space-y-2.5">
+              {SOCIAL.map((s) => (
+                <li key={s.label}>
+                  <a
+                    href={s.href}
+                    target={s.external ? '_blank' : undefined}
+                    rel={s.external ? 'noreferrer' : undefined}
+                    className="ed-link font-mono text-[11px] uppercase tracking-[0.14em] text-steel hover:text-graphite transition-colors"
+                  >
+                    {s.label}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+
+        {/* Bottom bar */}
+        <div className="mt-12 pt-6 border-t border-white/10 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <p className="font-mono text-[9px] uppercase tracking-[0.2em] text-steel">
+            © {new Date().getFullYear()} · {PERSON.fullName} · Research Dossier
+          </p>
+          <div className="flex items-center gap-1.5 font-mono text-[9px] uppercase tracking-[0.2em] text-steel">
+            <MapPin className="h-3 w-3 text-vital/60" strokeWidth={1.5} /> {PERSON.location}
+          </div>
+          <a href="#home" className="font-mono text-[9px] uppercase tracking-[0.2em] text-steel hover:text-graphite transition-colors inline-flex items-center gap-1.5">
+            Back to top <span aria-hidden="true">↑</span>
+          </a>
+        </div>
+      </div>
+    </footer>
   );
 }
 
@@ -3220,6 +3341,7 @@ function HomePage() {
       <TimelineStrip />
       <SectionDivider />
       <ContactSection />
+      <Footer />
     </>
   );
 }
