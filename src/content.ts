@@ -1,468 +1,438 @@
 /* ----------------------------------------------------------------------------
  * CONTENT — Spencer Hoyun Kim
- * Undergraduate · Carnegie Mellon University College of Engineering
- * B.S. Mechanical Engineering with additional major in Biomedical Engineering
- * Research: Cook Cardiopulmonary Engineering Lab
+ * Undergraduate · Carnegie Mellon University
+ * B.S. Mechanical Engineering & Biomedical Engineering · Class of 2027
+ *
+ * All content grounded in the CV of record. Descriptions paraphrase the CV
+ * without inventing figures beyond what it states.
  * -------------------------------------------------------------------------- */
 
 export const PERSON = {
-  shortName: 'SPENCER KIM',
-  fullName: 'SPENCER HOYUN KIM',
+  shortName: 'Spencer Kim',
+  fullName: 'Spencer Hoyun Kim',
   email: 'spencer3@cmu.edu',
   personalEmail: 'spencerkim1235@gmail.com',
+  phone: '+1 (404) 740-1028',
+  phoneHref: 'tel:+14047401028',
   linkedin: 'https://www.linkedin.com/in/shrla/',
   linkedinHandle: 'in/shrla',
   github: 'https://github.com/shrlak',
-  location: 'Pittsburgh, PA · Seoul, KR',
+  githubHandle: 'shrlak',
+  location: 'Pittsburgh, PA',
+  citizenship: 'U.S. Citizen',
   institution: 'Carnegie Mellon University',
-  college: 'College of Engineering',
-  degree: 'Bachelor of Science',
   primaryMajor: 'Mechanical Engineering',
   additionalMajor: 'Biomedical Engineering',
   classYear: 'Class of 2027',
   lab: 'Cook Cardiopulmonary Engineering Lab',
-  pi: 'Keith Cook, PhD',
-  advisors: ['Ander Dorken Gallastegi, MD', 'Ryuji Nakamura, MD'],
+  pi: 'Keith E. Cook, PhD',
 };
 
 export const HERO = {
-  tag: 'A-001 · RESEARCH DOSSIER',
-  accent: 'Engineering at the body-device interface.',
-  heading: ['ARTIFICIAL', 'ORGANS.', 'ASSISTIVE', 'INSTRUMENTS.'],
-  footnote:
-    'CARNEGIE MELLON · UNDERGRADUATE · B.S. MECHANICAL ENGINEERING + ADDITIONAL MAJOR IN BIOMEDICAL ENGINEERING · CLASS OF 2027',
-};
-
-export const CREDENTIALS = {
-  tag: '002 · ACADEMIC CREDENTIALS',
-  accent: 'Engineer in training.',
-  heading: ['UNDERGRADUATE', 'AT CARNEGIE MELLON.'],
-  statement:
-    'Undergraduate student in the College of Engineering at Carnegie Mellon University, pursuing a Bachelor of Science in Mechanical Engineering with an additional major in Biomedical Engineering.',
-  items: [
-    { label: 'INSTITUTION', value: 'Carnegie Mellon University' },
-    { label: 'COLLEGE', value: 'College of Engineering' },
-    { label: 'DEGREE', value: 'Bachelor of Science (B.S.)' },
-    { label: 'PRIMARY MAJOR', value: 'Mechanical Engineering' },
-    { label: 'ADDITIONAL MAJOR', value: 'Biomedical Engineering' },
-    { label: 'EXPECTED GRADUATION', value: 'May 2027' },
-    { label: 'RESEARCH HOME', value: 'Cook Cardiopulmonary Engineering Lab' },
-    { label: 'PRINCIPAL INVESTIGATOR', value: 'Keith Cook, PhD' },
+  eyebrow: 'MECHANICAL + BIOMEDICAL ENGINEERING',
+  name: 'Spencer Kim',
+  headline: ['Engineering the', 'hardware that keeps', 'people alive.'],
+  subhead:
+    'Undergraduate researcher at Carnegie Mellon building artificial-organ support and assistive medical devices — from ambulatory lung machines to a patented sensing cane.',
+  stats: [
+    { value: 2027, label: 'B.S. — ME + BME', prefix: '', suffix: '', mono: 'CLASS OF' },
+    { value: 1, label: 'granted patent', prefix: '', suffix: '', mono: 'KR 10-2675388' },
+    { value: 2, label: 'conference abstracts', prefix: '', suffix: '', mono: 'ISTH · MCS' },
   ],
 };
+
+export const MARQUEE = [
+  'ARTIFICIAL LUNGS',
+  'ECMO',
+  'PULMONARY ASSIST SYSTEM',
+  'ANTICOAGULATION',
+  'SOLIDWORKS',
+  'ANSYS / FEA',
+  'FORMULA SAE',
+  'MATLAB',
+  'HEMOCOMPATIBILITY',
+  'ASSISTIVE DEVICES',
+  'FUSION 360',
+  'PATENTED INVENTOR',
+];
 
 export const ABOUT = {
-  tag: '003 · PROFILE',
-  accent: 'Device engineer.',
-  heading: ['HELLO.', "I'M SPENCER."],
+  eyebrow: 'PROFILE',
+  heading: 'I work at the boundary between a living system and an engineered one.',
   body: [
-    'I design and validate the hardware that takes over when a human organ fails. My work sits at the intersection of mechanical design, fluid dynamics, and surgical-grade biomaterials — with a bias toward artificial lungs and assistive medical devices.',
-    'At the Cook Cardiopulmonary Engineering Lab I work on the Pulmonary Assist System (PAS): a compact, ambulatory successor to ECMO intended to let patients with end-stage lung disease leave the ICU. Prior to CMU I co-invented a sensing cane with a motor-driven brake mechanism for the visually impaired, now registered with the Korean Intellectual Property Office.',
+    'I’m a Mechanical and Biomedical Engineering undergraduate at Carnegie Mellon, drawn to the moment a device has to take over for a failing organ. My research home is the Cook Cardiopulmonary Engineering Lab, where I help evaluate a Pulmonary Assist System — a compact, ambulatory alternative to conventional ECMO — and study anticoagulation strategies that keep blood-contacting surfaces from clotting.',
+    'That same instinct — build the thing that helps a person keep moving — runs through my project work: a patented obstacle-sensing cane for the visually impaired, an assistive page-turner for readers with limited hand mobility, and a full-electric Formula SAE car. I like problems where mechanical design and human physiology have to agree on an answer.',
   ],
-  keywordRows: [
-    'ARTIFICIAL LUNGS · PULMONARY ASSIST SYSTEMS · IMPLANTABLE DEVICES · HEMOCOMPATIBLE SURFACES',
-    'SURGICAL INSTRUMENTATION · ORAL ANTICOAGULATION · PHARMACOKINETICS · IN-VIVO VALIDATION',
-    'COMPUTATIONAL MODELING · FEA · CFD · BLOOD-CONTACTING DEVICE RELIABILITY',
+  facts: [
+    { label: 'FOCUS', value: 'Artificial organs · assistive medical devices' },
+    { label: 'BASED IN', value: 'Pittsburgh, PA · from Duluth, GA' },
+    { label: 'STATUS', value: 'U.S. Citizen · open to Summer 2026 roles' },
+    { label: 'LANGUAGES', value: 'English (fluent) · Korean (fluent)' },
   ],
 };
+
+/* ── Education ─────────────────────────────────────────────────────── */
+
+export const EDUCATION: Array<{
+  inst: string;
+  loc: string;
+  credential: string;
+  detail: string;
+  gpa: string;
+  dates: string;
+}> = [
+  {
+    inst: 'Carnegie Mellon University',
+    loc: 'Pittsburgh, PA',
+    credential: 'B.S. Mechanical Engineering & Biomedical Engineering',
+    detail: 'College of Engineering',
+    gpa: 'GPA 3.32 / 4.0',
+    dates: 'Expected May 2027',
+  },
+  {
+    inst: 'Northview High School',
+    loc: 'Duluth, GA',
+    credential: 'High School Diploma',
+    detail: '',
+    gpa: 'GPA 3.8 / 4.0',
+    dates: 'May 2023',
+  },
+];
+
+/* ── Research ──────────────────────────────────────────────────────── */
 
 export const RESEARCH = {
-  tag: '005 · INSTRUMENTATION INDEX',
-  headingTop: 'SELECTED',
-  headingAccent: 'instruments',
-  cta: 'VIEW FULL CV',
+  eyebrow: 'RESEARCH',
+  lab: 'Cook Cardiopulmonary Engineering Lab',
+  role: 'Undergraduate Student Researcher',
+  inst: 'Carnegie Mellon University · Department of Biomedical Engineering',
+  pi: 'Principal Investigator — Keith E. Cook, PhD',
+  dates: 'May 2025 — Present',
+  intro:
+    'Cardiopulmonary device research spanning large-animal evaluation of an ambulatory lung machine and the anticoagulation chemistry that makes chronic blood-contacting devices safe.',
+  studies: [
+    {
+      tag: 'OVINE · 30-DAY',
+      title: '30-Day Sheep Study — Pulmonary Assist System',
+      body: 'Long-term ambulatory respiratory support for chronic lung disease: testing whether the Pulmonary Assist System (PAS), paired with oral anticoagulation and biocompatible surface coatings, can safely provide 30 days of support in an ovine model. Assist with sheep surgery, blood sampling, sample testing, data analysis, and around-the-clock study support.',
+    },
+    {
+      tag: 'OVINE · 15-DAY',
+      title: '15-Day Sheep Study — Pulmonary Assist System',
+      body: 'A companion 15-day evaluation of the same ambulatory respiratory-support approach — PAS with oral anticoagulation and biocompatible coatings — in an ovine model, supporting surgery, blood sampling, sample testing, and data analysis across the study period.',
+    },
+    {
+      tag: 'RABBIT · PK/PD',
+      title: 'FXII900 Pharmacokinetics & Pharmacodynamics',
+      body: 'A rabbit PK/PD study of FXII900’s effect on clotting time and on plasma and platelet counts sampled at 30 min, 1, 2, 4, 6, 8, and 24 hours. Assist with the coagulation testing and activated clotting time (ACT) measurements.',
+    },
+    {
+      tag: 'RABBIT · SURGERY',
+      title: 'FXII900 Anticoagulation — Acute Surgery',
+      body: 'Rabbit surgery testing the anticoagulant benefits of FXII900: running CBC, ELISA, and coagulation assays (PT and aPTT) and charting the animal’s condition through a 2-hour surgery and 4-hour study period.',
+    },
+  ],
 };
 
-export type CardSlug = 'pas' | 'coagulation' | 'cane';
+/* ── Publications & Patents ────────────────────────────────────────── */
 
-export const RESEARCH_CARDS: Array<{
-  slug: CardSlug;
-  index: string;
-  category: string;
+export const PUBLICATIONS: Array<{
+  kind: 'PUBLICATION' | 'PATENT';
+  year: string;
+  authors: string;
   title: string;
-  titleTwo: string;
-  subtitle: string;
-  metaLabel: string;
-  metaValue: string;
+  venue: string;
   status: string;
 }> = [
   {
-    slug: 'pas',
-    index: 'R-01',
-    category: 'ARTIFICIAL ORGAN ENGINEERING',
-    title: 'ARTIFICIAL',
-    titleTwo: 'LUNG',
-    subtitle: 'Pulmonary Assist System · 30-day ovine trial · In Progress',
-    metaLabel: 'SYSTEM',
-    metaValue: 'PAS · VV ECMO · IV RIVAROXABAN',
-    status: 'ACTIVE',
-  },
-  {
-    slug: 'coagulation',
-    index: 'R-02',
-    category: 'THROMBOSIS + ANTICOAGULATION',
-    title: 'ANTI-',
-    titleTwo: 'COAGULATION',
-    subtitle: 'FXIIa inhibitor · hollow fiber surfaces',
-    metaLabel: 'ABSTRACT',
-    metaValue: 'FXII900-PCB · ISTH 2026',
-    status: 'SUBMITTED',
-  },
-  {
-    slug: 'cane',
-    index: 'R-03',
-    category: 'ASSISTIVE MEDICAL DEVICES',
-    title: 'SENSING',
-    titleTwo: 'CANE',
-    subtitle: 'Obstacle-sensing mobility aid · KR Patent',
-    metaLabel: 'PATENT',
-    metaValue: 'KR · 10-2675388 · GRANTED 2024',
-    status: 'REGISTERED',
-  },
-];
-
-/* ----------------------------------------------------------------------------
- * DETAIL CONTENT — full landing pages for each research project
- * -------------------------------------------------------------------------- */
-
-export const PAS_DETAIL = {
-  slug: 'pas' as const,
-  index: 'R-01',
-  category: 'ARTIFICIAL ORGAN ENGINEERING',
-  shortTitle: 'PULMONARY ASSIST SYSTEM',
-  fullTitle: '30-DAY OVINE EVALUATION OF THE PULMONARY ASSIST SYSTEM',
-  subtitle: 'Ovine Model · Chronic Respiratory Support · In Progress',
-  lab: 'Cook Cardiopulmonary Engineering Lab',
-  pi: 'Keith Cook, PhD',
-  studyLead: ['Ander Dorken Gallastegi, MD', 'Ryuji Nakamura, MD'],
-  role: 'Undergraduate Research Assistant · Fall 2025 onward',
-  abstract:
-    'Chronic lung disease is a leading cause of death, with end-stage treatment constrained by donor shortages and the short-term confinement of conventional ECMO. The Pulmonary Assist System (PAS) is a compact, mobile, and hemocompatible device designed to provide long-term pulmonary support outside the ICU setting. This ongoing study evaluates PAS function, safety, and biocompatibility in a 30-day ovine (sheep) model using IV rivaroxaban in PEG as the primary anticoagulation strategy — replacing the standard continuous IV heparin drip. Results are ongoing and will be published upon study completion.',
-  objectives: [
-    'Evaluate 30-day device patency, flow resistance, and stable gas exchange in an ovine model.',
-    'Assess IV rivaroxaban in PEG as a viable anticoagulation strategy for long-term ECMO.',
-    'Characterize ovine pharmacokinetics and biocompatibility over chronic device use.',
-    'Inform protocol refinements to support a future powered efficacy trial.',
-  ],
-  methods: [
-    {
-      label: 'CONFIGURATION',
-      value: 'Veno-venous (VV) cannulation · 20 Fr cannulas · right and left external jugular',
-    },
-    { label: 'PUMP', value: 'CDX centrifugal blood pump' },
-    { label: 'OXYGENATOR', value: 'Hollow-fiber membrane · coated surfaces' },
-    { label: 'IMAGING', value: 'C-arm fluoroscopy for intra-operative cannula placement' },
-    {
-      label: 'ANTICOAGULATION',
-      value: 'IV rivaroxaban in PEG · 0.5 mg/kg q4h (dose-optimized from 0.75 mg/kg) · 36-hour heparin bridge post-op',
-    },
-    {
-      label: 'MONITORING',
-      value: 'Device resistance q2h · ABG / ACT / PT / CBC / pfHb / LFT / renal panel on structured timeline',
-    },
-  ],
-  subjects: [
-    { id: 'Sheep #1', name: 'Akio',     tone: 'ok',      start: '2025-09-01', outcome: '30 days', detail: 'Reached primary endpoint. Stable gas exchange, no pump thrombosis.' },
-    { id: 'Sheep #2', name: 'Bento',    tone: 'ok',      start: '2025-09-01', outcome: '30 days', detail: 'Reached primary endpoint. Device resistance stable throughout.' },
-    { id: 'Sheep #3', name: 'Chiikawa', tone: 'neutral', start: '2025-09-15', outcome: '14 days', detail: 'Study terminated at day 14 due to cannula positional drift.' },
-    { id: 'Sheep #4', name: 'Ebisu',    tone: 'neutral', start: '2025-10-01', outcome: '9 days',  detail: 'Terminated day 9. Elevated pfHb — suspected oxygenator clot.' },
-    { id: 'Sheep #5', name: 'Daifuku',  tone: 'neutral', start: '2025-10-15', outcome: '21 days', detail: 'Terminated day 21. Pneumonia unrelated to device.' },
-    { id: 'Sheep #6', name: 'Goku',     tone: 'neutral', start: '2025-11-01', outcome: '6 days',  detail: 'Terminated day 6. Dosing protocol revised post-study.' },
-  ],
-  findings: [
-    { label: 'PATENCY', value: '2 of 6 animals reached the 30-day primary endpoint with stable device function and no circuit thrombosis.' },
-    { label: 'ANTICOAGULATION', value: 'IV rivaroxaban in PEG at 0.5 mg/kg q4h maintained therapeutic anti-Xa levels with acceptable bleeding risk vs. continuous heparin.' },
-    { label: 'GAS EXCHANGE', value: 'Oxygenation and CO₂ clearance remained stable throughout in both endpoint animals; O₂ transfer efficiency >90% at study end.' },
-    { label: 'RESISTANCE', value: 'Device resistance tracked q2h; no significant upward drift in the 30-day cohort, confirming membrane hemocompatibility over chronic use.' },
-    { label: 'DOSE OPTIMIZATION', value: 'Starting dose of 0.75 mg/kg reduced to 0.5 mg/kg q4h after three animals to manage early post-op bleeding without sacrificing anti-Xa coverage.' },
-  ],
-  optimizations: [
-    'Rivaroxaban dose reduced from 0.75 → 0.5 mg/kg q4h after early cohort bleeding events.',
-    '36-hour heparin bridge post-surgery added to cover sub-therapeutic rivaroxaban window.',
-    'Cannula fixation protocol tightened after Sheep #3 positional drift event.',
-    'ABG sampling intervals adjusted from q6h to q4h to detect early gas-exchange decline.',
-    'pfHb threshold for early study termination formalized at 0.5 g/dL.',
-  ],
-  outcome: '2 of 6 animals reached the 30-day endpoint — establishing proof of concept for chronic ambulatory PAS use with oral anticoagulation. Protocol refinements from this cohort inform a planned powered efficacy trial with n=10 targeting ≥80% endpoint survival.',
-  monitoringParams: [
-    { label: 'HEMODYNAMICS', value: 'Device resistance · flow · blood pressure · heart rate' },
-    { label: 'HEMATOLOGY', value: 'CBC · plasma-free hemoglobin · activated clotting time' },
-    { label: 'COAGULATION', value: 'PT/INR · rivaroxaban plasma levels · q4h dosing' },
-    { label: 'ORGAN FUNCTION', value: 'Liver enzymes · renal panel · blood gases · electrolytes' },
-  ],
-  status: 'ONGOING — RESULTS PENDING PUBLICATION' as const,
-};
-
-export const COAG_DETAIL = {
-  slug: 'coagulation' as const,
-  index: 'R-02',
-  category: 'THROMBOSIS + ANTICOAGULATION',
-  shortTitle: 'FXIIa INHIBITION FOR BLOOD-CONTACTING DEVICES',
-  fullTitle: 'SURFACE-INDUCED COAGULATION AND FXII900-PCB — A PATH BEYOND HEPARIN',
-  abstractTitle:
-    'Pharmacokinetic and Pharmacodynamic Profile Evaluation of Polycarboxybetaine-Conjugated FXIIa Inhibitor in Rabbits',
-  subtitle: 'ISTH 2026 abstract · rabbit PK/PD · n=5 per group',
-  authors: [
-    { name: 'Suji Shin', affil: '1' },
-    { name: 'Di Liu', affil: '2' },
-    { name: 'Alexander Potchernikov', affil: '1' },
-    { name: 'Helen Scala', affil: '1' },
-    { name: 'Joshua Bennett', affil: '1' },
-    { name: 'Ryuji Nakamura', affil: '1' },
-    { name: 'McKenna Haggerty', affil: '1' },
-    { name: 'Spencer Kim', affil: '1' },
-    { name: 'Shaoyi Jiang', affil: '2' },
-    { name: 'Keith E. Cook', affil: '1' },
-  ],
-  affiliations: [
-    { id: '1', name: 'Department of Biomedical Engineering, Carnegie Mellon University, Pittsburgh, PA' },
-    { id: '2', name: 'Meinig School of Biomedical Engineering, Cornell University, Ithaca, NY' },
-  ],
-  lab: 'Cook Cardiopulmonary Engineering Lab',
-  pi: 'Keith Cook, PhD',
-  role: 'Co-author · abstract submission for ISTH 2026',
-  abstract:
-    'Extracorporeal devices that contact blood — ECMO, dialysis, cardiopulmonary bypass — activate the contact (intrinsic) pathway of coagulation at their polymer and hollow-fiber surfaces. Heparin, the current standard, prevents clot at the cost of bleeding and HIT. Factor XIIa (FXIIa) inhibitors selectively block surface-induced clot while leaving hemostatic clotting intact. This study evaluated the PK/PD profile of three polycarboxybetaine (PCB) chain-length variants of FXII900 (20, 40, and 60 kDa) in New Zealand white rabbits (n=5 per group). Animals received a bolus IV injection at 0.64 μmol/kg; plasma was sampled at 0.5, 1, 2, 4, 6, 8, and 24 hours post-dose. The 60 kDa conjugate achieved a half-life of 6.60 ± 0.98 hours — a 33-fold improvement over unconjugated FXII900 — without significantly altering prothrombin time, confirming preserved hemostatic safety. ACT and aPTT were prolonged in a chain-length-dependent manner, confirming on-target anticoagulant activity.',
-  problem: [
-    'Hollow-fiber membranes in oxygenators present ~2 m² of synthetic surface to circulating blood.',
-    'Contact with negatively charged surfaces auto-activates Factor XII to FXIIa, triggering the intrinsic cascade.',
-    'Heparin blocks the entire cascade — effective, but with bleeding and heparin-induced thrombocytopenia.',
-    'FXIIa inhibition uncouples surface-induced clot from physiological hemostasis.',
-  ],
-  approach: [
-    { label: 'MOLECULE', value: 'FXII900 — selective small-molecule inhibitor of Factor XIIa' },
-    { label: 'FORMULATION', value: 'Polycarboxybetaine (PCB) conjugate for surface presentation' },
-    { label: 'MODEL', value: 'New Zealand white rabbits · n=5 per group · 3 PCB chain lengths (20, 40, 60 kDa) · bolus IV 0.64 μmol/kg · plasma sampled at 0.5/1/2/4/6/8/24 h' },
-    { label: 'ENDPOINT', value: 'Half-life, ACT, aPTT, PT per chain length — 60 kDa: t½ = 6.60 ± 0.98 h (33× unconjugated), PT unchanged' },
-    { label: 'APPLICATION', value: 'Hollow-fiber oxygenator coating for chronic respiratory support' },
-  ],
-  contributions: [
-    'Literature synthesis on surface-induced thrombosis mechanisms.',
-    'Abstract preparation for International Society on Thrombosis and Haemostasis 2026.',
-    'Analysis of coagulation biomarker timecourses in ovine PAS cohort (ACT, PT, pfHb).',
-    'Cross-referenced findings with FXIIa inhibition literature for translational relevance.',
-  ],
-  references: [
-    'Jaffer et al. — Medical device-induced thrombosis.',
-    'Palta et al. 2015 — Overview of the coagulation system.',
-    'Dalton 2015 — Bleeding time, thrombosis, and ECMO survival.',
-    'Seeliger 2020 — Anticoagulation for VV ECMO comparative study.',
-    'Demarest 2020 — Time course of oxygenator failure.',
-  ],
-};
-
-export const CANE_DETAIL = {
-  slug: 'cane' as const,
-  index: 'R-03',
-  category: 'ASSISTIVE MEDICAL DEVICES',
-  shortTitle: 'OBSTACLE-SENSING CANE — KR PATENT 10-2675388',
-  fullTitle: 'A CANE WITH ULTRASONIC OBSTACLE DETECTION AND AUTOMATED BRAKE',
-  subtitle: 'Assistive mobility for the visually impaired',
-  patentNumber: 'KR 10-2675388',
-  office: 'Korean Intellectual Property Office',
-  filed: '2022.08.04',
-  registered: '2024.06.11',
-  inventor: 'KIM HOYUN (SPENCER)',
-  status: 'GRANTED',
-  role: 'Sole inventor',
-  abstract:
-    'Conventional canes for the visually impaired alert users only through passive touch or simple vibration. When an obstacle is detected, the user often continues walking and the cane itself collides and breaks. This invention adds two coupled safety features: (1) handle-level haptic feedback the moment an ultrasonic sensor detects an obstacle, and (2) a motor-driven brake assembly that extends a rubber bumper from the base of the cane to provide physical resistance — protecting the cane and signalling the user to stop.',
-  problem: [
-    'Existing detection canes notify only via vibration; users may continue walking on momentum.',
-    'Canes frequently fracture on collision with hard obstacles.',
-    'No mechanical stopping force is provided back to the user.',
-  ],
-  solution: [
-    'Ultrasonic sensor mounted on the cane shaft detects obstacles ahead.',
-    'Handle vibrator / vibration motor fires immediately on detection.',
-    'Lower-body brake assembly (case + shaft + gear + motor + slider + guide rail) drives a rubber/silicon bumper out through a front opening.',
-    'As the user approaches the obstacle, the bumper makes contact before the cane tip does, applying resistance to the hand.',
-    'When the obstacle clears, the motor reverses and the bumper retracts into the housing.',
-  ],
-  components: [
-    { id: 'C-01', label: 'SHAFT', detail: 'Main cane body with ergonomic handle' },
-    { id: 'C-02', label: 'DETECTION', detail: 'Ultrasonic obstacle sensor on forward face' },
-    { id: 'C-03', label: 'HAPTIC', detail: 'Vibration motor / vibrator embedded in handle' },
-    { id: 'C-04', label: 'HOUSING', detail: 'Case at base with front opening — contains brake' },
-    { id: 'C-05', label: 'DRIVE', detail: 'Motor + gear train rotating a horizontal shaft' },
-    { id: 'C-06', label: 'SLIDER', detail: 'Threaded carrier on shaft — translates along guide rail' },
-    { id: 'C-07', label: 'BUMPER', detail: 'Rubber / silicon contact element — extends out of case' },
-  ],
-  claims: [
-    'Cane with a sensing unit, vibration unit, and extensible contact unit that couples detection to haptic + mechanical response.',
-    'Brake assembly using a shaft-and-guide-rail slider to translate a protective bumper in and out of a case.',
-    'Bidirectional motor control tied to sensor state — extend on detect, retract on clear.',
-    'Rubber/silicon bumper geometry optimized for low-damage user-obstacle contact.',
-  ],
-  impact:
-    'Converts a passive mobility aid into an active assistive device. Protects the instrument and gives the user a mechanical cue — not just an auditory or tactile alert — that physically couples to their grip.',
-};
-
-/* ----------------------------------------------------------------------------
- * CV content
- * -------------------------------------------------------------------------- */
-
-export const CV = {
-  tag: 'CV · CURRICULUM VITAE',
-  heading: 'SPENCER HOYUN KIM',
-  subheading: 'Undergraduate · Mechanical + Biomedical Engineering · Carnegie Mellon',
-  education: [
-    {
-      inst: 'Carnegie Mellon University',
-      loc: 'Pittsburgh, Pennsylvania',
-      dates: 'Aug 2023 — May 2027 (expected)',
-      degree: 'Bachelor of Science',
-      program: 'College of Engineering — Mechanical Engineering with additional major in Biomedical Engineering',
-    },
-  ],
-  research: [
-    {
-      lab: 'Cook Cardiopulmonary Engineering Lab',
-      inst: 'Carnegie Mellon University · Department of Biomedical Engineering',
-      role: 'Undergraduate Research Assistant',
-      dates: 'Fall 2025 — Present',
-      pi: 'Principal Investigator: Keith Cook, PhD',
-      bullets: [
-        'N=6 ovine evaluation of the Pulmonary Assist System (PAS) under IV rivaroxaban in PEG anticoagulation — 2 of 6 subjects reached the 30-day primary endpoint.',
-        'Structured blood sampling, ABG / ACT / PT / CBC / pfHb / LFT / renal analyses; longitudinal device-resistance and pump-thrombosis surveillance.',
-        'Co-author on FXII900-PCB PK/PD abstract submitted to ISTH 2026 — 60 kDa PCB conjugate achieved 33× half-life extension in New Zealand white rabbits.',
-      ],
-    },
-  ],
-  patents: [
-    {
-      number: 'KR 10-2675388',
-      title: 'CANE — obstacle-sensing cane with motor-driven brake assembly',
-      office: 'Korean Intellectual Property Office',
-      filed: '2022.08.04',
-      granted: '2024.06.11',
-      inventor: 'Sole inventor',
-    },
-  ],
-  skills: [
-    {
-      group: 'MEDICAL DEVICE R&D',
-      items: [
-        'Extracorporeal circuit assembly',
-        'Hollow-fiber oxygenator characterization',
-        'In-vivo large-animal studies',
-        'Blood sampling protocols',
-      ],
-    },
-    {
-      group: 'ENGINEERING',
-      items: ['SolidWorks', 'Fusion 360', 'Finite-element analysis', 'Machining / prototyping'],
-    },
-    {
-      group: 'COMPUTATION',
-      items: ['Python (NumPy / Pandas / Matplotlib)', 'MATLAB', 'Git', 'LaTeX'],
-    },
-    {
-      group: 'CERTIFICATIONS',
-      items: [
-        'CITI — human subjects, animal research',
-        'Bloodborne pathogens training',
-        'OHS laboratory safety',
-      ],
-    },
-  ],
-  languages: ['English (native)', 'Korean (native)'],
-};
-
-/* ----------------------------------------------------------------------------
- * CONTACT content
- * -------------------------------------------------------------------------- */
-
-export const CONTACT = {
-  tag: '007 · ESTABLISH LINE',
-  accent: "Let's build.",
-  heading: ['FROM BLUEPRINT', 'TO IMPLANT.'],
-  body: 'Collaborating on artificial organ support, assistive devices, or anything at the boundary between a living system and an engineered one — whether you want to sponsor an undergrad, recruit for a summer 2026 role, or just compare notes on oxygenator hemocompatibility. The form below drops straight into my inbox.',
-  channels: [
-    { label: 'ACADEMIC EMAIL', value: 'spencer3@cmu.edu', href: 'mailto:spencer3@cmu.edu' },
-    { label: 'PERSONAL EMAIL', value: 'spencerkim1235@gmail.com', href: 'mailto:spencerkim1235@gmail.com' },
-    { label: 'LINKEDIN', value: 'in/shrla', href: 'https://www.linkedin.com/in/shrla/' },
-    { label: 'LAB', value: 'Cook Cardiopulmonary Engineering Lab', href: '#/research/pas' },
-    { label: 'CAMPUS', value: 'Carnegie Mellon · Pittsburgh, PA', href: 'https://maps.apple.com/?q=Carnegie+Mellon+University' },
-  ],
-};
-
-/* ----------------------------------------------------------------------------
- * NAV + SOCIAL
- * -------------------------------------------------------------------------- */
-
-export const NAV_ITEMS = [
-  { label: 'HOME', href: '#home' },
-  { label: 'CREDENTIALS', href: '#credentials' },
-  { label: 'PROFILE', href: '#about' },
-  { label: 'RESEARCH', href: '#research' },
-  { label: 'CONTACT', href: '#contact' },
-];
-
-/* ----------------------------------------------------------------------------
- * PUBLICATIONS
- * -------------------------------------------------------------------------- */
-
-export const PUBLICATIONS: Array<{
-  year: string;
-  conference: string;
-  title: string;
-  authors: string;
-  venue: string;
-  status: 'SUBMITTED' | 'PUBLISHED';
-}> = [
-  {
+    kind: 'PUBLICATION',
     year: '2026',
-    conference: 'ISTH',
+    authors:
+      'Shin S, Liu D, Potchernikov A, Scala H, Bennett J, Nakamura R, Haggerty M, Kim S, Jiang S, Cook KE',
     title:
       'Pharmacokinetic and Pharmacodynamic Profile Evaluation of Polycarboxybetaine-Conjugated FXIIa Inhibitor in Rabbits',
+    venue: '34th Congress of the International Society on Thrombosis and Haemostasis (ISTH) · July 2026',
+    status: 'POSTER PRESENTATION',
+  },
+  {
+    kind: 'PUBLICATION',
+    year: '—',
     authors:
-      'Shin S, Liu D, Potchernikov A, Scala H, Bennett J, Nakamura R, Haggerty M, Kim S*, Jiang S, Cook KE',
-    venue:
-      'International Society on Thrombosis and Haemostasis · Abstract',
+      'Kumpfbeck AR, Bennett J, Kelley JF, Bulard B, Bapatla S, Woo Y, Petrovic M, Kane S, Said B, Akhavanmalayeri A, Kim S, Shin S, Dorken-Gallastegi A, Strong K, Scala H, Demarest CT, Skoog DJ, Bacchetta M, Cook KE, Ukita R',
+    title:
+      'In Vivo Testing of a Novel, Low-Profile, Compact Centrifugal Pump in Veno-Venous and Veno-Arterial Configurations of Mechanical Circulatory Support',
+    venue: 'Conference Abstract',
     status: 'SUBMITTED',
   },
+  {
+    kind: 'PATENT',
+    year: '2024',
+    authors: 'Kim H. (Spencer) — Sole Inventor',
+    title: 'CANE — Obstacle-Sensing Cane with Motor-Driven Brake Assembly',
+    venue: 'Korean Intellectual Property Office · Patent No. 10-2675388',
+    status: 'GRANTED · JUNE 2024',
+  },
 ];
 
-/* ----------------------------------------------------------------------------
- * SKILLS
- * -------------------------------------------------------------------------- */
+/* ── Projects ──────────────────────────────────────────────────────── */
 
-export const SKILLS: Array<{
-  group: string;
-  items: Array<{ name: string; pct: number }>;
+export const PROJECTS: Array<{
+  index: string;
+  domain: string;
+  title: string;
+  dates: string;
+  context: string;
+  bullets: string[];
+  tags: string[];
 }> = [
   {
-    group: 'MEDICAL DEVICE R&D',
-    items: [
-      { name: 'Extracorporeal circuits', pct: 90 },
-      { name: 'In-vivo large-animal studies', pct: 80 },
-      { name: 'Blood sampling protocols', pct: 85 },
-      { name: 'Hollow-fiber oxygenators', pct: 75 },
+    index: 'P-01',
+    domain: 'ASSISTIVE DEVICE',
+    title: 'Assistive Page-Turning Device',
+    dates: 'Oct — Dec 2025',
+    context: '24-370 Mechanical Design Final Project · CMU',
+    bullets: [
+      'Led a user-driven redesign of a page-turner for readers with cerebral palsy.',
+      'Engineered a bidirectional single-page isolation mechanism — a rubber wheel to separate the top sheet and a servo-actuated sweep arm to complete the flip — with a large, low-force button and optional hands-free control.',
+      'Ran hand calculations and FEA on the assembly and subassemblies to de-risk performance and durability.',
+      'Delivered a manufacturable BOM and cost model: prototype built for $115.80 under a $200 budget, unit COGS of $66.12, and a $119.99 target price.',
+    ],
+    tags: ['SolidWorks', 'FEA', 'Servo control', 'DFM / BOM'],
+  },
+  {
+    index: 'P-02',
+    domain: 'MOBILITY AID',
+    title: 'Sensing Cane for the Visually Impaired',
+    dates: '2021 — 2024',
+    context: 'Independent invention · Patented (KR 10-2675388)',
+    bullets: [
+      'Invented a cane that detects obstacles ahead of a visually impaired user and alerts them through vibration.',
+      'Designed it to outperform a traditional cane while avoiding damage to surrounding people and objects.',
+      'Granted a patent in South Korea in 2024 as sole inventor.',
+    ],
+    tags: ['Ultrasonic sensing', 'Haptics', 'Patent', 'Mechanism design'],
+  },
+  {
+    index: 'P-03',
+    domain: 'STRUCTURAL SAFETY',
+    title: 'Bike Crank Arm Redesign for E-Bike Safety',
+    dates: 'Feb — Mar 2025',
+    context: 'Mechanical Design · CMU',
+    bullets: [
+      'Engineered a lightweight crank arm designed to fail predictably at a 40 N pedal load — a factor of safety near 1.0 at the critical threshold.',
+      'Limited deflection under half-load to under 7 mm (10% of span) to keep the part rigid in normal use.',
+      'Optimized geometry and material to minimize mass while forcing any failure to occur safely more than 1 cm from key interfaces.',
+    ],
+    tags: ['FEA', 'Failure analysis', 'FOS design', 'Lightweighting'],
+  },
+  {
+    index: 'P-04',
+    domain: 'THERMAL / ENERGY',
+    title: 'Concentrated Solar Power Plant',
+    dates: 'Mar — Apr 2025',
+    context: 'Simulation project · CMU',
+    bullets: [
+      'Simulated a Brayton-cycle power plant in MATLAB, modifying turbine and compressor models to reflect 90% isentropic efficiency.',
+      'Analyzed how solar intensity, molten-salt temperature, and pressure ratio drive power output and efficiency.',
+      'Designed thermal storage to extend operation through periods of low irradiance.',
+    ],
+    tags: ['MATLAB', 'Brayton cycle', 'Thermal storage', 'Systems modeling'],
+  },
+  {
+    index: 'P-05',
+    domain: 'AERODYNAMICS',
+    title: 'Wind Turbine Blade Design',
+    dates: 'Feb — Mar 2025',
+    context: 'Design + simulation · CMU',
+    bullets: [
+      'Optimized blade geometry with QBlade, MATLAB, and SolidWorks to maximize power output under design constraints.',
+      'Analyzed aerodynamic performance and delivered a technical report with simulation data and design rationale.',
+    ],
+    tags: ['QBlade', 'MATLAB', 'SolidWorks', 'Aerodynamics'],
+  },
+  {
+    index: 'P-06',
+    domain: 'PRODUCT DESIGN',
+    title: 'Custom Wilderness Chair',
+    dates: 'Feb — May 2025',
+    context: 'National Park Expedition Project · CMU',
+    bullets: [
+      'Designed a durable, wildlife-safe outdoor chair for climbers in Yosemite — portable, weather-resistant, and stable on rough terrain.',
+      'Conducted user research to reach a cost-effective, multipurpose solution with quick setup and integrated gear storage for backcountry use.',
+    ],
+    tags: ['User research', 'Industrial design', 'Prototyping'],
+  },
+];
+
+/* ── Experience (work · teaching · leadership) ─────────────────────── */
+
+export type ExpKind = 'RESEARCH' | 'WORK' | 'TEACHING' | 'LEADERSHIP';
+
+export const EXPERIENCE: Array<{
+  kind: ExpKind;
+  role: string;
+  org: string;
+  loc: string;
+  dates: string;
+  bullets: string[];
+}> = [
+  {
+    kind: 'RESEARCH',
+    role: 'Undergraduate Student Researcher',
+    org: 'Cook Cardiopulmonary Engineering Lab · CMU',
+    loc: 'Pittsburgh, PA',
+    dates: 'May 2025 — Present',
+    bullets: [
+      'Evaluate the Pulmonary Assist System in 30-day and 15-day ovine studies of ambulatory respiratory support.',
+      'Run FXII900 anticoagulation studies in rabbits — coagulation testing, ACT, CBC, ELISA, PT/aPTT — and support surgery and data analysis.',
     ],
   },
   {
-    group: 'ENGINEERING + COMPUTATION',
-    items: [
-      { name: 'SolidWorks / Fusion 360', pct: 85 },
-      { name: 'Python · NumPy / Pandas', pct: 80 },
-      { name: 'MATLAB', pct: 75 },
-      { name: 'FEA / CFD', pct: 65 },
+    kind: 'LEADERSHIP',
+    role: 'Founding Member',
+    org: 'American Society for Artificial Internal Organs (ASAIO) — CMU Chapter',
+    loc: 'Pittsburgh, PA',
+    dates: 'Apr 2025 — Present',
+    bullets: [
+      'Help build CMU’s ASAIO student chapter around artificial organs, extracorporeal circulation, and cardiovascular devices.',
+      'Connect students to research, clinical translation, and professional development in cardiopulmonary and artificial-organ technologies.',
+    ],
+  },
+  {
+    kind: 'LEADERSHIP',
+    role: 'President',
+    org: 'Central Church of Pittsburgh — Korean Ministry',
+    loc: 'Pittsburgh, PA',
+    dates: 'Aug 2025 — Present',
+    bullets: [
+      'Lead a CMU Korean ministry community: weekly gatherings, fellowship events, and student outreach.',
+      'Coordinate between student members and church leadership and plan community-building activities around mentorship and belonging.',
+    ],
+  },
+  {
+    kind: 'LEADERSHIP',
+    role: 'Member · Carnegie Mellon Racing (Formula SAE)',
+    org: 'Carnegie Mellon Racing Club',
+    loc: 'Pittsburgh, PA',
+    dates: 'Aug 2024 — May 2026',
+    bullets: [
+      'Design and manufacture a fully electric and gasoline formula-style race car with a multidisciplinary team.',
+      'Designed the carbon monocoque and chassis in SolidWorks and ran FEA in ANSYS Discovery for structural integrity under race loads.',
+      'Machined precision parts on manual lathe, mill, and band saw, and 3D-printed custom components for rapid prototyping.',
+      'Supported vehicle testing, validation, and mechanical troubleshooting for competition reliability.',
+    ],
+  },
+  {
+    kind: 'WORK',
+    role: 'Technology Enhanced Facilities Operator Manager',
+    org: 'Computing Services Department · CMU',
+    loc: 'Pittsburgh, PA',
+    dates: 'Feb 2024 — Present',
+    bullets: [
+      'Monitor campus computer labs, printers, and computing services, assisting students with the machines and devices across campus.',
+    ],
+  },
+  {
+    kind: 'WORK',
+    role: 'Engineering Intern',
+    org: 'XVision Technology',
+    loc: 'Seoul, South Korea',
+    dates: 'May — Jul 2024',
+    bullets: [
+      'Inspired by my younger brother, who is blind, built read-aloud Word files across a range of subjects for easy access by the visually impaired.',
+      'Embedded sound clips into the files so users could hear their subjects — for example, the sound of the wind on Mars.',
+    ],
+  },
+  {
+    kind: 'TEACHING',
+    role: 'Teaching Assistant',
+    org: 'PSI Academy',
+    loc: 'Seoul, South Korea',
+    dates: 'May — Aug 2023',
+    bullets: [
+      'Taught the basics of biology and robotics to students preparing for the 2023 iGEM and FIRST Global competitions.',
+      'Covered synthetic biology and competition topics, and introduced robot building — chassis, drivetrain, and other essentials.',
     ],
   },
 ];
 
-/* ----------------------------------------------------------------------------
- * TIMELINE
- * -------------------------------------------------------------------------- */
+export const EXP_FILTERS: Array<{ key: ExpKind | 'ALL'; label: string }> = [
+  { key: 'ALL', label: 'All' },
+  { key: 'RESEARCH', label: 'Research' },
+  { key: 'LEADERSHIP', label: 'Leadership' },
+  { key: 'WORK', label: 'Work' },
+  { key: 'TEACHING', label: 'Teaching' },
+];
 
-export type TimelineState = 'done' | 'active' | 'pending';
+/* ── Skills ────────────────────────────────────────────────────────── */
 
-export const TIMELINE: Array<{ label: string; sub: string; state: TimelineState }> = [
-  { label: 'Protocol Design', sub: 'Complete', state: 'done' },
-  { label: 'IACUC Approval', sub: 'Complete', state: 'done' },
-  { label: 'Cohort 1', sub: '2/6 endpoint', state: 'done' },
-  { label: 'Protocol Refinement', sub: 'In progress', state: 'active' },
-  { label: 'Powered Trial', sub: 'n=10 planned', state: 'pending' },
-  { label: 'Publication', sub: 'Pending', state: 'pending' },
+export const SKILLS: Array<{ group: string; note: string; items: string[] }> = [
+  {
+    group: 'Software',
+    note: 'Design · simulation · compute',
+    items: [
+      'SolidWorks',
+      'AutoCAD Fusion 360',
+      'ANSYS Discovery',
+      'ANSYS Fluent',
+      'MATLAB',
+      'Python',
+      'Arduino',
+      'Ultimaker Cura',
+      'PreForm',
+      'Visual Studio Code',
+      'Microsoft Office',
+      'Surgical Charting',
+    ],
+  },
+  {
+    group: 'Machines & Fabrication',
+    note: 'Shop · rapid prototyping',
+    items: [
+      'Lathe',
+      'Milling Machine',
+      'CNC Machine',
+      'Hand Mill',
+      'Band Saw',
+      'Grinder',
+      'Laser Cutter',
+      '3D Printer',
+      'Sand Blaster',
+    ],
+  },
+  {
+    group: 'Lab Instrumentation',
+    note: 'Blood gas · coagulation · hematology',
+    items: [
+      'Radiometer ABL 800 FLEX',
+      'Radiometer ABL 90 FLEX PLUS',
+      'Sysmex CA-600 Coagulation Analyzer',
+      'ABAXIS Vetscan HM5',
+    ],
+  },
+];
+
+/* ── Contact ───────────────────────────────────────────────────────── */
+
+export const CONTACT = {
+  eyebrow: 'CONTACT',
+  heading: 'From blueprint to implant.',
+  body: 'Happy to talk about artificial-organ support, assistive devices, or anything at the boundary between a living system and an engineered one — recruiting for a Summer 2026 role, sponsoring an undergrad, or just comparing notes on oxygenator hemocompatibility.',
+  channels: [
+    { label: 'Email', value: 'spencer3@cmu.edu', href: 'mailto:spencer3@cmu.edu' },
+    { label: 'LinkedIn', value: 'in/shrla', href: 'https://www.linkedin.com/in/shrla/' },
+    { label: 'GitHub', value: 'shrlak', href: 'https://github.com/shrlak' },
+    { label: 'Phone', value: '+1 (404) 740-1028', href: 'tel:+14047401028' },
+  ],
+};
+
+/* ── Navigation ────────────────────────────────────────────────────── */
+
+export const NAV_ITEMS = [
+  { label: 'About', href: '#about' },
+  { label: 'Research', href: '#research', mobileOnly: false },
+  { label: 'Work', href: '#publications' },
+  { label: 'Projects', href: '#projects' },
+  { label: 'Experience', href: '#experience' },
+  { label: 'Contact', href: '#contact' },
 ];
