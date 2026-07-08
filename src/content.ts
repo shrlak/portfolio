@@ -26,6 +26,7 @@ export const PERSON = {
   classYear: 'Class of 2027',
   lab: 'Cook Cardiopulmonary Engineering Lab',
   pi: 'Keith E. Cook, PhD',
+  cvHref: `${import.meta.env.BASE_URL}spencer-kim-cv.pdf`,
 };
 
 export const HERO = {
@@ -434,5 +435,6 @@ export const NAV_ITEMS = [
   { label: 'Work', href: '#publications' },
   { label: 'Projects', href: '#projects' },
   { label: 'Experience', href: '#experience' },
+  { label: 'Skills', href: '#skills' },
   { label: 'Contact', href: '#contact' },
 ];
