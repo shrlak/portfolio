@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react';
+import { Link, useLocation } from 'react-router-dom';
 import { ArrowUpRight, ArrowRight, Menu, X, Cog } from 'lucide-react';
 import { CONTACT, NAV_ITEMS, PERSON } from '../../content';
 import { useScrolled } from '../../hooks/useScrolled';
 
-export function Nav({ active }: { active: string }) {
+export function Nav() {
   const scrolled = useScrolled(20);
   const [open, setOpen] = useState(false);
+  const { pathname } = useLocation();
 
   useEffect(() => {
     document.body.style.overflow = open ? 'hidden' : '';
@@ -13,6 +15,10 @@ export function Nav({ active }: { active: string }) {
       document.body.style.overflow = '';
     };
   }, [open]);
+
+  useEffect(() => {
+    setOpen(false);
+  }, [pathname]);
 
   return (
     <header
@@ -24,23 +30,23 @@ export function Nav({ active }: { active: string }) {
       ].join(' ')}
     >
       <div className="shell flex h-16 items-center justify-between">
-        <a href="#top" className="group flex items-center gap-2.5" aria-label="Spencer Kim — home">
+        <Link to="/" className="group flex items-center gap-2.5" aria-label="Spencer Kim — home">
           <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-ink text-white transition-transform duration-300 group-hover:rotate-12">
             <Cog size={17} strokeWidth={2} />
           </span>
           <span className="text-[15px] font-semibold tracking-tight">Spencer Kim</span>
-        </a>
+        </Link>
 
         <nav className="hidden items-center gap-8 md:flex">
           {NAV_ITEMS.map((item) => (
-            <a
+            <Link
               key={item.href}
-              href={item.href}
+              to={item.href}
               className="navlink"
-              data-active={active && item.href === `#${active}` ? 'true' : undefined}
+              data-active={pathname === item.href ? 'true' : undefined}
             >
               {item.label}
-            </a>
+            </Link>
           ))}
         </nav>
 
@@ -72,15 +78,15 @@ export function Nav({ active }: { active: string }) {
       >
         <nav className="shell flex flex-col gap-1 py-4">
           {NAV_ITEMS.map((item) => (
-            <a
+            <Link
               key={item.href}
-              href={item.href}
+              to={item.href}
               onClick={() => setOpen(false)}
               className="flex items-center justify-between rounded-xl px-3 py-3 text-[17px] font-medium text-ink hover:bg-soft"
             >
               {item.label}
               <ArrowUpRight size={17} className="text-faint" />
-            </a>
+            </Link>
           ))}
           <a
             href={PERSON.cvHref}
