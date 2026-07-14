@@ -1,7 +1,8 @@
-import { useEffect } from 'react';
+import { useEffect, type DependencyList } from 'react';
 
 // Reveal-on-scroll: adds .is-in to any [data-reveal] as it enters the viewport.
-export function useScrollReveal() {
+// Pass `deps` (e.g. the current route) so it re-scans the DOM after page navigation.
+export function useScrollReveal(deps: DependencyList = []) {
   useEffect(() => {
     const els = Array.from(document.querySelectorAll<HTMLElement>('[data-reveal]'));
     if (!('IntersectionObserver' in window)) {
@@ -20,5 +21,6 @@ export function useScrollReveal() {
     );
     els.forEach((el) => obs.observe(el));
     return () => obs.disconnect();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, deps);
 }

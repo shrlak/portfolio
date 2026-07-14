@@ -430,11 +430,11 @@ export const CONTACT = {
 /* ── Navigation ────────────────────────────────────────────────────── */
 
 export const NAV_ITEMS = [
-  { label: 'About', href: '#about' },
-  { label: 'Research', href: '#research', mobileOnly: false },
-  { label: 'Work', href: '#publications' },
-  { label: 'Projects', href: '#projects' },
-  { label: 'Experience', href: '#experience' },
-  { label: 'Skills', href: '#skills' },
-  { label: 'Contact', href: '#contact' },
+  { label: 'About', href: '/about' },
+  { label: 'Research', href: '/research' },
+  { label: 'Work', href: '/publications' },
+  { label: 'Projects', href: '/projects' },
+  { label: 'Experience', href: '/experience' },
+  { label: 'Skills', href: '/skills' },
+  { label: 'Contact', href: '/contact' },
 ];

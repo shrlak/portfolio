@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
 import { HERO } from '../../content';
 import { HeroMotif } from '../ui/HeroMotif';
@@ -46,12 +47,12 @@ export function Hero() {
           className="mt-9 flex animate-fade-up flex-wrap items-center gap-3"
           style={{ animationDelay: '620ms' }}
         >
-          <a href="#research" className="btn btn-primary">
+          <Link to="/research" className="btn btn-primary">
             View research <ArrowRight size={16} />
-          </a>
-          <a href="#projects" className="btn btn-ghost">
+          </Link>
+          <Link to="/projects" className="btn btn-ghost">
             See projects
-          </a>
+          </Link>
         </div>
 
         {/* Stat row */}
