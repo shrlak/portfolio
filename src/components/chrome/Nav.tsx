@@ -34,10 +34,10 @@ export function Nav() {
           <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-ink text-white transition-transform duration-300 group-hover:rotate-12">
             <Cog size={17} strokeWidth={2} />
           </span>
-          <span className="text-[15px] font-semibold tracking-tight">Spencer Kim</span>
+          <span className="whitespace-nowrap text-[15px] font-semibold tracking-tight">Spencer Kim</span>
         </Link>
 
-        <nav className="hidden items-center gap-8 md:flex">
+        <nav className="hidden items-center gap-5 lg:flex xl:gap-6">
           {NAV_ITEMS.map((item) => (
             <Link
               key={item.href}
@@ -50,17 +50,17 @@ export function Nav() {
           ))}
         </nav>
 
-        <div className="hidden items-center gap-3 md:flex">
-          <a href={PERSON.cvHref} download="Spencer Kim - CV.pdf" className="btn btn-ghost !px-4 !py-2 !text-[13px]">
+        <div className="hidden items-center gap-3 lg:flex">
+          <a href={PERSON.cvHref} download="Spencer Kim - CV.pdf" className="btn btn-ghost hidden whitespace-nowrap !px-4 !py-2 !text-[13px] xl:inline-flex">
             Download CV
           </a>
-          <a href={CONTACT.channels[0].href} className="btn btn-primary !px-4 !py-2 !text-[13px]">
+          <a href={CONTACT.channels[0].href} className="btn btn-primary whitespace-nowrap !px-4 !py-2 !text-[13px]">
             Get in touch <ArrowRight size={15} />
           </a>
         </div>
 
         <button
-          className="flex h-10 w-10 items-center justify-center rounded-lg text-ink md:hidden"
+          className="flex h-10 w-10 items-center justify-center rounded-lg text-ink lg:hidden"
           onClick={() => setOpen((v) => !v)}
           aria-label={open ? 'Close menu' : 'Open menu'}
           aria-expanded={open}
@@ -72,7 +72,7 @@ export function Nav() {
       {/* Mobile sheet */}
       <div
         className={[
-          'md:hidden overflow-hidden border-t border-line bg-white transition-[max-height,opacity] duration-300',
+          'lg:hidden overflow-hidden border-t border-line bg-white transition-[max-height,opacity] duration-300',
           open ? 'max-h-[80vh] opacity-100' : 'max-h-0 opacity-0',
         ].join(' ')}
       >

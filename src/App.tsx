@@ -7,6 +7,7 @@ import { About } from './components/sections/About';
 import { Research } from './components/sections/Research';
 import { Publications } from './components/sections/Publications';
 import { Projects } from './components/sections/Projects';
+import { Simulation } from './components/sections/Simulation';
 import { Experience } from './components/sections/Experience';
 import { Skills } from './components/sections/Skills';
 import { Contact } from './components/sections/Contact';
@@ -29,6 +30,7 @@ export default function App() {
             <Route path="research" element={<Research />} />
             <Route path="publications" element={<Publications />} />
             <Route path="projects" element={<Projects />} />
+            <Route path="simulation" element={<Simulation />} />
             <Route path="experience" element={<Experience />} />
             <Route path="skills" element={<Skills />} />
             <Route path="contact" element={<Contact />} />
