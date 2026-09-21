@@ -67,7 +67,7 @@ export const ABOUT = {
   facts: [
     { label: 'FOCUS', value: 'Artificial organs · assistive medical devices' },
     { label: 'BASED IN', value: 'Pittsburgh, PA · from Duluth, GA' },
-    { label: 'STATUS', value: 'U.S. Citizen · open to Summer 2026 roles' },
+    { label: 'STATUS', value: 'U.S. Citizen · graduating May 2027' },
     { label: 'LANGUAGES', value: 'English (fluent) · Korean (fluent)' },
   ],
 };
@@ -87,7 +87,7 @@ export const EDUCATION: Array<{
     loc: 'Pittsburgh, PA',
     credential: 'B.S. Mechanical Engineering & Biomedical Engineering',
     detail: 'College of Engineering',
-    gpa: 'GPA 3.32 / 4.0',
+    gpa: 'GPA 3.37 / 4.0',
     dates: 'Expected May 2027',
   },
   {
@@ -106,6 +106,8 @@ export const RESEARCH = {
   eyebrow: 'RESEARCH',
   lab: 'Cook Cardiopulmonary Engineering Lab',
   role: 'Undergraduate Student Researcher',
+  commitment:
+    '135 hours of research for credit (Fall 2025 – Spring 2026) · Paid undergraduate research assistant since Summer 2026, continuing through 2026–27',
   inst: 'Carnegie Mellon University · Department of Biomedical Engineering',
   pi: 'Principal Investigator — Keith E. Cook, PhD',
   dates: 'May 2025 — Present',
@@ -162,7 +164,7 @@ export const PUBLICATIONS: Array<{
       'Kumpfbeck AR, Bennett J, Kelley JF, Bulard B, Bapatla S, Woo Y, Petrovic M, Kane S, Said B, Akhavanmalayeri A, Kim S, Shin S, Dorken-Gallastegi A, Strong K, Scala H, Demarest CT, Skoog DJ, Bacchetta M, Cook KE, Ukita R',
     title:
       'In Vivo Testing of a Novel, Low-Profile, Compact Centrifugal Pump in Veno-Venous and Veno-Arterial Configurations of Mechanical Circulatory Support',
-    venue: 'Conference Abstract',
+    venue: 'AATS Mechanical Circulatory Support abstract · VUMC–CMU–Inspired Therapeutics pump studies',
     status: 'SUBMITTED',
   },
   {
@@ -286,6 +288,8 @@ export const EXPERIENCE: Array<{
     bullets: [
       'Evaluate the Pulmonary Assist System in 30-day and 15-day ovine studies of ambulatory respiratory support.',
       'Run FXII900 anticoagulation studies in rabbits — coagulation testing, ACT, CBC, ELISA, PT/aPTT — and support surgery and data analysis.',
+      'Completed 135 hours of research for credit across the Fall 2025 and Spring 2026 semesters.',
+      'Continued as a paid undergraduate research assistant through Summer 2026 and into the 2026–27 academic year.',
     ],
   },
   {
@@ -315,7 +319,7 @@ export const EXPERIENCE: Array<{
     role: 'Member · Carnegie Mellon Racing (Formula SAE)',
     org: 'Carnegie Mellon Racing Club',
     loc: 'Pittsburgh, PA',
-    dates: 'Aug 2024 — May 2026',
+    dates: 'Aug 2024 — Present',
     bullets: [
       'Design and manufacture a fully electric and gasoline formula-style race car with a multidisciplinary team.',
       'Designed the carbon monocoque and chassis in SolidWorks and ran FEA in ANSYS Discovery for structural integrity under race loads.',
@@ -384,6 +388,7 @@ export const SKILLS: Array<{ group: string; note: string; items: string[] }> = [
       'Visual Studio Code',
       'Microsoft Office',
       'Surgical Charting',
+      'BIOPAC',
     ],
   },
   {
@@ -411,6 +416,15 @@ export const SKILLS: Array<{ group: string; note: string; items: string[] }> = [
       'ABAXIS Vetscan HM5',
     ],
   },
+  {
+    group: 'Certifications & Languages',
+    note: 'Credentials · communication',
+    items: [
+      'SolidWorks CSWA (2021)',
+      'English (fluent)',
+      'Korean (fluent)',
+    ],
+  },
 ];
 
 /* ── Contact ───────────────────────────────────────────────────────── */
@@ -418,7 +432,7 @@ export const SKILLS: Array<{ group: string; note: string; items: string[] }> = [
 export const CONTACT = {
   eyebrow: 'CONTACT',
   heading: 'From blueprint to implant.',
-  body: 'Happy to talk about artificial-organ support, assistive devices, or anything at the boundary between a living system and an engineered one — recruiting for a Summer 2026 role, sponsoring an undergrad, or just comparing notes on oxygenator hemocompatibility.',
+  body: 'Happy to talk about artificial-organ support, assistive devices, or anything at the boundary between a living system and an engineered one — recruiting for a 2027 role, sponsoring an undergrad, or just comparing notes on oxygenator hemocompatibility.',
   channels: [
     { label: 'Email', value: 'spencer3@cmu.edu', href: 'mailto:spencer3@cmu.edu' },
     { label: 'LinkedIn', value: 'in/shrla', href: 'https://www.linkedin.com/in/shrla/' },

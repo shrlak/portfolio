@@ -6,7 +6,7 @@ export function Skills() {
     <section id="skills" className="section bg-soft">
       <div className="shell">
         <SectionHead eyebrow="TOOLKIT" title="Software, shop & instrumentation" />
-        <div className="mt-12 grid gap-5 md:grid-cols-3">
+        <div className="mt-12 grid gap-5 md:grid-cols-2">
           {SKILLS.map((group, i) => (
             <div
               key={group.group}
