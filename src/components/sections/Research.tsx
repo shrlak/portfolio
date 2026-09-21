@@ -34,6 +34,10 @@ export function Research() {
           <span className="mono ml-auto text-[12px] tracking-wide text-faint">{RESEARCH.dates}</span>
         </div>
 
+        <p className="mt-3 text-[13.5px] leading-relaxed text-faint" data-reveal>
+          {RESEARCH.commitment}
+        </p>
+
         <div className="mt-6 grid gap-5 sm:grid-cols-2">
           {RESEARCH.studies.map((s, i) => (
             <article
