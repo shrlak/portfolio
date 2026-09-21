@@ -448,6 +448,7 @@ export const NAV_ITEMS = [
   { label: 'Research', href: '/research' },
   { label: 'Work', href: '/publications' },
   { label: 'Projects', href: '/projects' },
+  { label: 'Simulation', href: '/simulation' },
   { label: 'Experience', href: '/experience' },
   { label: 'Skills', href: '/skills' },
   { label: 'Contact', href: '/contact' },
