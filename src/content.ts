@@ -197,7 +197,7 @@ export const PROJECTS: Array<{
     bullets: [
       'Led a user-driven redesign of a page-turner for readers with cerebral palsy.',
       'Engineered a bidirectional single-page isolation mechanism — a rubber wheel to separate the top sheet and a servo-actuated sweep arm to complete the flip — with a large, low-force button and optional hands-free control.',
-      'Ran hand calculations and FEA on the assembly and subassemblies to de-risk performance and durability.',
+      'Ran hand calculations on the drive mechanism and cross-checked them against the team’s ANSYS FEA to de-risk performance and durability.',
       'Delivered a manufacturable BOM and cost model: prototype built for $115.80 under a $200 budget, unit COGS of $66.12, and a $119.99 target price.',
     ],
     tags: ['SolidWorks', 'FEA', 'Servo control', 'DFM / BOM'],
